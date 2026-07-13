@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cpp-dose/clinical/protocol.schema.json",
+  "title": "CPP-DOSE Clinical Protocol",
+  "description": "Schema for the versioned, source-tagged, Owner-verified clinical content file. Enforces Constitution Articles I-II: every clinical record must carry a source tag and a review_status, and no schema path permits an un-sourced clinical value.",
+  "type": "object",
+  "required": ["meta", "sources", "drugs", "antibiotic_prophylaxis", "formulas"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["schema_version", "protocol_version", "disclaimer_uk", "generated_note"],
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": { "type": "string" },
+        "protocol_version": { "type": "string" },
+        "disclaimer_uk": { "type": "string", "minLength": 20 },
+        "generated_note": { "type": "string" }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "drugs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/drug" }
+    },
+    "antibiotic_prophylaxis": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/prophylaxis" }
+    },
+    "formulas": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/formula" }
+    }
+  },
+  "$defs": {
+    "review_status": {
+      "description": "UNVERIFIED and TODO(clinical-review) may be written by agents; VERIFIED:<name>:<date> may be written ONLY by the Owner.",
+      "type": "string",
+      "pattern": "^(UNVERIFIED|TODO\\(clinical-review\\)|VERIFIED:[^:]+:[0-9]{4}-[0-9]{2}-[0-9]{2})$"
+    },
+    "source_ref": {
+      "type": "object",
+      "required": ["source_document", "source_version", "source_citation"],
+      "additionalProperties": false,
+      "properties": {
+        "source_document": { "type": "string", "description": "id from sources[]" },
+        "source_version": { "type": "string" },
+        "source_citation": { "type": "string", "minLength": 3, "description": "exact locator: section / table / page" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "title", "publisher", "version", "checksum_sha256", "archived_path"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "publisher": { "type": "string" },
+        "version": { "type": "string" },
+        "checksum_sha256": { "type": "string" },
+        "archived_path": { "type": "string" },
+        "url": { "type": "string" }
+      }
+    },
+    "drug": {
+      "type": "object",
+      "required": ["id", "drug", "indication", "route", "review_status", "source_document", "source_version", "source_citation"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "drug": { "type": "string" },
+        "indication": { "type": "string" },
+        "route": { "type": "string", "description": "e.g. IV, IO, IM, IN, PO, topical" },
+        "fixed_dose": { "type": "string", "description": "as written in source, e.g. '2 g'" },
+        "dose_per_kg": { "type": "string", "description": "as written, e.g. '15-20 mg/kg'" },
+        "max_dose": { "type": "string" },
+        "dilution": { "type": "string" },
+        "rate": { "type": "string", "description": "administration rate/interval as written, e.g. 'q8h', 'slow push over 1 min'" },
+        "infusion": {
+          "type": "object",
+          "description": "Present ONLY for drip-eligible records; marks this drug for the Drip Drug List (Spec 002). All values transcribed from a registered source — never invented (Art. I).",
+          "additionalProperties": false,
+          "properties": {
+            "diluent": { "type": "string", "description": "e.g. 'NS 0.9%', \"Lactated Ringer's\"" },
+            "diluent_volume_ml": { "type": "string", "description": "as written, e.g. '500 ml'" },
+            "concentration": { "type": "string", "description": "as written, e.g. '1 mg/ml'" },
+            "duration": { "type": "string", "description": "target infusion time as written, e.g. '20 h'" },
+            "target_rate": { "type": "string", "description": "as written, e.g. '0.2-0.3 mg/kg/h'" }
+          }
+        },
+        "min_max": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "min": { "type": "string" },
+            "max": { "type": "string" }
+          }
+        },
+        "notes": { "type": "string" },
+        "review_status": { "$ref": "#/$defs/review_status" },
+        "source_document": { "type": "string" },
+        "source_version": { "type": "string" },
+        "source_citation": { "type": "string", "minLength": 3 }
+      },
+      "anyOf": [
+        { "required": ["fixed_dose"] },
+        { "required": ["dose_per_kg"] }
+      ]
+    },
+    "prophylaxis": {
+      "type": "object",
+      "required": ["id", "injury_type", "drug_of_choice", "duration", "review_status", "source_document", "source_version", "source_citation"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "injury_type": { "type": "string" },
+        "drug_of_choice": { "type": "array", "items": { "type": "string" }, "description": "drug ids that make up the primary regimen (multiple = 'and')" },
+        "alternative": { "type": "array", "items": { "type": "string" }, "description": "drug ids for the alternative regimen" },
+        "duration": { "type": "string" },
+        "notes": { "type": "string" },
+        "review_status": { "$ref": "#/$defs/review_status" },
+        "source_document": { "type": "string" },
+        "source_version": { "type": "string" },
+        "source_citation": { "type": "string", "minLength": 3 }
+      }
+    },
+    "formula": {
+      "type": "object",
+      "required": ["id", "name", "kind", "expression", "review_status", "source_document", "source_version", "source_citation"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "kind": { "type": "string", "enum": ["clinical", "engineering"], "description": "engineering formulas are deterministic math (exempt from Owner clinical verification) but still cited; clinical formulas require VERIFIED status to display" },
+        "expression": { "type": "string" },
+        "inputs": { "type": "array", "items": { "type": "string" } },
+        "applicability": { "type": "string" },
+        "notes": { "type": "string" },
+        "review_status": { "$ref": "#/$defs/review_status" },
+        "source_document": { "type": "string" },
+        "source_version": { "type": "string" },
+        "source_citation": { "type": "string", "minLength": 3 }
+      }
+    }
+  }
+}
