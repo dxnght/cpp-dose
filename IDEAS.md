@@ -56,6 +56,8 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 - Content update channel (still offline-install only; signed protocol bundles).
 - Multi-casualty / multi-line management.
 - Configurable pre-empty alert lead times; shift/handover notes (no PII).
+- **Night-vision red mode toggle** — optional red-on-black theme that preserves
+  scotopic (night) vision for field use; the default is now a modern dark theme.
 - Larger accessibility options (color-blind-safe night palette variants).
 
 ## Explicitly excluded (MVP red lines — need a Constitution amendment, not just a

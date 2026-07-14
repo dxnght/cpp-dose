@@ -104,7 +104,9 @@ than extrapolated.
 
 ## 7. Night / field UI
 
-- Red-on-black night theme as default; brightness-friendly, no white flashes.
+- Modern dark theme (calm, phone-first) as default (Owner, 2026-07-13). A dedicated
+  **night-vision red mode** (preserves scotopic vision) is deferred to `IDEAS.md` as
+  a user toggle — the original always-on red-on-black was too harsh.
 - All interactive targets ≥ 48 px (audited).
 - Ukrainian UI strings (`i18n/uk.json`); no English UI (non-goal).
 - Persistent disclaimer banner; first-run full disclaimer; disclaimer reachable

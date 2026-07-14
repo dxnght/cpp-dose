@@ -1,12 +1,21 @@
-/* Red-on-black night/field theme (plan/architecture.md §7). No white flashes;
-   brightness-friendly for night use. All interactive targets ≥ 48 px. */
+/* Modern dark theme (Owner request 2026-07-13 — replaces the red-on-black field
+   theme; a dedicated night-vision red mode is deferred to IDEAS). Calm, Apple-style,
+   phone-first. All interactive targets >= 48 px. */
 :root {
-  --bg: #000000;
-  --fg: #ff3b30;
-  --fg-dim: #a12318;
-  --fg-muted: #6b1610;
-  --line: #3a0d08;
-  --warn-bg: #1a0300;
+  --bg: #0b0b0d;
+  --surface: #1a1a1d;
+  --surface-2: #232327;
+  --fg: #f2f2f7;
+  --fg-dim: #9a9aa2;
+  --fg-muted: #6a6a72;
+  --line: #2c2c31;
+  --accent: #0a84ff;
+  --accent-tint: rgba(10, 132, 255, 0.16);
+  --go: #30d158;
+  --go-tint: rgba(48, 209, 88, 0.14);
+  --warn: #ff9f0a;
+  --warn-bg: rgba(255, 159, 10, 0.12);
+  --radius: 12px;
   --touch: 48px;
   color-scheme: dark;
 }
@@ -22,12 +31,12 @@ body,
   height: 100%;
   background: var(--bg);
   color: var(--fg);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
   -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.4;
 }
 
@@ -42,22 +51,26 @@ body {
   top: 0;
   z-index: 10;
   background: var(--warn-bg);
-  color: var(--fg);
+  color: var(--warn);
   border-bottom: 1px solid var(--line);
-  padding: 10px 12px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
 }
 
 .content {
   flex: 1;
-  padding: 16px;
+  padding: 12px 14px 20px;
+  max-width: 520px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .nav {
   display: flex;
   border-top: 1px solid var(--line);
-  background: var(--bg);
+  background: rgba(11, 11, 13, 0.92);
+  backdrop-filter: blur(12px);
   position: sticky;
   bottom: 0;
 }
@@ -65,50 +78,60 @@ body {
 .nav button {
   flex: 1;
   min-height: var(--touch);
-  padding: 12px 8px;
+  padding: 10px 6px;
   background: transparent;
   color: var(--fg-dim);
   border: none;
-  border-top: 3px solid transparent;
-  font-size: 14px;
-  font-weight: 600;
+  border-top: 2px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .nav button[aria-current="page"] {
-  color: var(--fg);
-  border-top-color: var(--fg);
+  color: var(--accent);
+  border-top-color: var(--accent);
 }
 
 button {
   min-height: var(--touch);
   color: var(--fg);
-  background: transparent;
-  border: 1px solid var(--fg-dim);
-  border-radius: 6px;
-  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
   font-size: 16px;
   cursor: pointer;
 }
-
 button.primary {
-  border-color: var(--fg);
-  font-weight: 700;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+button.on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-tint);
+  font-weight: 600;
 }
 
 h1 {
-  font-size: 22px;
-  margin: 0 0 12px;
+  font-size: 21px;
+  margin: 4px 0 12px;
+  font-weight: 600;
 }
 h2 {
-  font-size: 18px;
-  margin: 20px 0 8px;
+  font-size: 16px;
+  margin: 18px 0 8px;
+  font-weight: 600;
 }
 
 .empty-state {
-  border: 1px dashed var(--fg-dim);
-  border-radius: 8px;
-  padding: 20px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 18px;
   margin-top: 12px;
 }
 
@@ -117,41 +140,219 @@ h2 {
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  font-size: 12px;
-  margin-top: 6px;
+  font-size: 11.5px;
+  margin-top: 8px;
 }
-
 .source-badge .tag {
-  border: 1px solid var(--fg-muted);
-  border-radius: 4px;
-  padding: 2px 6px;
-  white-space: nowrap;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  border-radius: 6px;
+  padding: 2px 7px;
 }
-
 .source-badge .tag.verified {
-  border-color: var(--fg);
-  color: var(--fg);
+  border-color: var(--go);
+  color: var(--go);
 }
 .source-badge .tag.unverified {
-  border-color: var(--fg-muted);
-  color: var(--fg-muted);
+  border-color: var(--warn);
+  color: var(--warn);
 }
 
-/* Full-screen first-run disclaimer overlay */
+/* ---- Drip engine (Spec 001) ---- */
+.fieldlabel {
+  font-size: 12px;
+  color: var(--fg-dim);
+  margin: 16px 0 7px;
+  text-transform: none;
+}
+.seg {
+  display: flex;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.seg button {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+}
+.df-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+}
+.df-grid button {
+  min-height: 52px;
+  font-size: 16px;
+}
+.conc-select {
+  width: 100%;
+  min-height: var(--touch);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;
+}
+.stepper {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 9px;
+}
+.stepper > button {
+  width: 60px;
+  min-height: 60px;
+  font-size: 26px;
+  font-weight: 500;
+  background: var(--surface-2);
+}
+.stepper > button:active {
+  background: var(--accent-tint);
+}
+.stepper-value {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+.stepper-label {
+  font-size: 11.5px;
+  color: var(--fg-dim);
+}
+.stepper-num {
+  font-size: 23px;
+  font-weight: 600;
+}
+.runtime {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--fg-dim);
+  margin-top: 6px;
+}
+.hero {
+  margin: 14px 0 8px;
+  background: var(--go-tint);
+  border: 1px solid var(--go);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+.hero-label {
+  font-size: 12px;
+  color: var(--go);
+}
+.hero-num {
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--go);
+}
+.hero-sub {
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+.add-btn {
+  width: 100%;
+  margin-top: 8px;
+}
+.add-btn:disabled {
+  opacity: 0.45;
+}
+.drip-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 11px 12px;
+  margin-top: 9px;
+}
+.drip-card.active {
+  border-color: var(--accent);
+}
+.drip-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.drip-row.small {
+  font-size: 12.5px;
+  color: var(--fg-dim);
+  margin-top: 2px;
+}
+.drip-label {
+  font-size: 16px;
+  font-weight: 600;
+}
+.drip-gtt {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.drop-anim {
+  height: 16px;
+  margin: 8px 0;
+  position: relative;
+}
+.drop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation-name: dropfall;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  animation-iteration-count: infinite;
+}
+@keyframes dropfall {
+  0% { opacity: 0.15; transform: translateY(0) scale(0.7); }
+  45% { opacity: 1; transform: translateY(5px) scale(1); }
+  100% { opacity: 0.15; transform: translateY(11px) scale(0.6); }
+}
+.drip-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+.drip-actions button {
+  flex: 1;
+  min-height: 44px;
+  font-size: 14px;
+}
+.toggles {
+  display: flex;
+  gap: 20px;
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--fg-dim);
+}
+.toggles input {
+  width: 20px;
+  height: 20px;
+  vertical-align: middle;
+  accent-color: var(--accent);
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(0, 0, 0, 0.72);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 18px;
   z-index: 100;
 }
 .modal {
-  max-width: 560px;
-  border: 1px solid var(--fg);
-  border-radius: 10px;
-  background: var(--bg);
+  max-width: 520px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
   padding: 20px;
 }
