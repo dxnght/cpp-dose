@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 
-export type Screen = "home" | "drugs" | "about";
+export type Screen = "drip" | "drugs" | "about";
 
 // Bottom navigation. The disclaimer is reachable from every screen via the
 // dedicated button here (Constitution Art. IV.2).
@@ -14,7 +14,7 @@ export function Navigation({
   onOpenDisclaimer: () => void;
 }) {
   const items: { id: Screen; label: string }[] = [
-    { id: "home", label: t("nav.home") },
+    { id: "drip", label: t("nav.drip") },
     { id: "drugs", label: t("nav.drugs") },
     { id: "about", label: t("nav.about") },
   ];

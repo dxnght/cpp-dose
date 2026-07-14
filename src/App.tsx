@@ -2,14 +2,14 @@ import { useState } from "react";
 import { DisclaimerBanner } from "./components/DisclaimerBanner";
 import { FirstRunDisclaimer } from "./components/FirstRunDisclaimer";
 import { Navigation, type Screen } from "./components/Navigation";
-import { HomeScreen } from "./screens/HomeScreen";
 import { DrugsScreen } from "./screens/DrugsScreen";
 import { AboutScreen } from "./screens/AboutScreen";
+import { DripScreen } from "./drip/DripScreen";
 
 const DISCLAIMER_ACK_KEY = "cpp-dose.disclaimer.acknowledged.v1";
 
 export function App() {
-  const [screen, setScreen] = useState<Screen>("home");
+  const [screen, setScreen] = useState<Screen>("drip");
   // Show the full disclaimer on first run (Constitution Art. IV.2).
   const [showDisclaimer, setShowDisclaimer] = useState(
     () => localStorage.getItem(DISCLAIMER_ACK_KEY) !== "1",
@@ -24,7 +24,7 @@ export function App() {
     <div className="app">
       <DisclaimerBanner />
       <main className="content">
-        {screen === "home" && <HomeScreen />}
+        {screen === "drip" && <DripScreen />}
         {screen === "drugs" && <DrugsScreen />}
         {screen === "about" && <AboutScreen />}
       </main>

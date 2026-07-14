@@ -1,0 +1,108 @@
+// Metronome — AudioContext look-ahead scheduler (ADR-0005 / Spec 001 FR-4/5).
+// One clock (the AudioContext timeline) drives all channels: the audio tick is
+// scheduled on the timeline; the haptic pulse and the animation callback are fired
+// at the same tick time, so the three channels cannot drift apart.
+//
+// No network, no persistence. Audio uses a short synthesized click (no asset).
+
+export interface MetronomeChannels {
+  audio: boolean;
+  haptic: boolean;
+  animation: boolean;
+}
+
+type TickHandler = () => void;
+
+type AudioCtor = typeof AudioContext;
+
+function getAudioCtor(): AudioCtor | null {
+  const w = window as unknown as { AudioContext?: AudioCtor; webkitAudioContext?: AudioCtor };
+  return w.AudioContext ?? w.webkitAudioContext ?? null;
+}
+
+export class Metronome {
+  private ctx: AudioContext | null = null;
+  private readonly tickMs = 25; // scheduler wake interval
+  private readonly lookahead = 0.2; // seconds scheduled ahead
+  private nextTickTime = 0;
+  private timer: number | null = null;
+  private gttPerMin = 0;
+  private channels: MetronomeChannels = { audio: true, haptic: true, animation: true };
+  private onTick: TickHandler | null = null;
+
+  setTickHandler(cb: TickHandler | null): void {
+    this.onTick = cb;
+  }
+
+  setChannels(c: MetronomeChannels): void {
+    this.channels = c;
+  }
+
+  setRate(gttPerMin: number): void {
+    this.gttPerMin = gttPerMin;
+  }
+
+  get running(): boolean {
+    return this.timer !== null;
+  }
+
+  start(gttPerMin: number): void {
+    if (gttPerMin <= 0) return;
+    this.gttPerMin = gttPerMin;
+    if (!this.ctx) {
+      const Ctor = getAudioCtor();
+      if (!Ctor) return; // no Web Audio (e.g. jsdom) — silently no-op
+      this.ctx = new Ctor();
+    }
+    if (this.ctx.state === "suspended") void this.ctx.resume();
+    this.nextTickTime = this.ctx.currentTime + 0.1;
+    if (this.timer === null) {
+      this.timer = window.setInterval(() => this.schedule(), this.tickMs);
+    }
+  }
+
+  stop(): void {
+    if (this.timer !== null) {
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+  }
+
+  private intervalSec(): number {
+    return this.gttPerMin > 0 ? 60 / this.gttPerMin : 1;
+  }
+
+  private schedule(): void {
+    if (!this.ctx) return;
+    // Re-anchor if the OS suspended/resumed audio (never replay missed ticks).
+    if (this.nextTickTime < this.ctx.currentTime) {
+      this.nextTickTime = this.ctx.currentTime + 0.05;
+    }
+    while (this.nextTickTime < this.ctx.currentTime + this.lookahead) {
+      const tickTime = this.nextTickTime;
+      if (this.channels.audio) this.click(tickTime);
+      const delayMs = Math.max(0, (tickTime - this.ctx.currentTime) * 1000);
+      window.setTimeout(() => {
+        if (this.channels.haptic && typeof navigator !== "undefined" && "vibrate" in navigator) {
+          navigator.vibrate(25);
+        }
+        if (this.channels.animation) this.onTick?.();
+      }, delayMs);
+      this.nextTickTime += this.intervalSec();
+    }
+  }
+
+  private click(time: number): void {
+    if (!this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.exponentialRampToValueAtTime(0.3, time + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + 0.05);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(time);
+    osc.stop(time + 0.06);
+  }
+}

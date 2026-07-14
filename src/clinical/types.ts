@@ -32,6 +32,13 @@ export interface Drug extends Sourced {
   rate?: string;
   min_max?: { min?: string; max?: string };
   notes?: string;
+  infusion?: {
+    diluent?: string;
+    diluent_volume_ml?: string;
+    concentration?: string;
+    duration?: string;
+    target_rate?: string;
+  };
 }
 
 export interface Prophylaxis extends Sourced {
