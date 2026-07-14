@@ -13,7 +13,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       injectRegister: "auto",
       workbox: {
-        globPatterns: ["**/*.{js,css,html,json,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,json,svg,png,woff2}"],
         // No runtimeCaching: nothing is fetched from the network at runtime.
         runtimeCaching: [],
         navigateFallback: "index.html",
@@ -23,11 +23,15 @@ export default defineConfig({
         short_name: "CPP-DOSE",
         description: "Offline field dosing / drip-rate support for Prolonged Casualty Care",
         lang: "uk",
-        theme_color: "#000000",
-        background_color: "#000000",
+        theme_color: "#0b0b0d",
+        background_color: "#0b0b0d",
         display: "standalone",
         orientation: "portrait",
-        icons: [],
+        icons: [
+          { src: "icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
       },
     }),
   ],

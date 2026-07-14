@@ -5,8 +5,10 @@
   "type": "module",
   "description": "CPP-DOSE — offline field dosing/drip tool (Sprint 0 foundation)",
   "scripts": {
+    "predev": "npm run compile:field",
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "apk:debug": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
     "lint": "eslint .",
     "validate": "node scripts/validate.mjs",
