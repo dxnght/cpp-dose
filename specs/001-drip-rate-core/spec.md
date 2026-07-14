@@ -56,6 +56,24 @@ unambiguous, usable one-handed with gloves at night.
   centred numerals — **no fine sliders** (glove-friendly, one-tap changes). Steps:
   weight 5 kg, dose 0.05 mg/kg/h (confirm). Values clamp to Spec-000 bounds.
   Drops/min is the hero output; ml/h and mg/h are secondary. (Owner design, 2026-07-13.)
+- **FR-3d** If a drip has a linked loading/priming bolus record (`bolus_for`), show
+  that bolus computed for the patient weight (e.g. 0.2–0.3 mg/kg → 16–24 mg), **only
+  when the bolus record is VERIFIED**. Selecting a sedation concentration shows a
+  telemedicine caution ("седація без телемедицини краще не застосовувати"). Analgesia
+  is the default; sedation is never the default. (Owner, 2026-07-13.)
+- **FR-3e Focus mode.** Tap an active drip → full-screen night view: big label, big
+  drops/min with live **retitration** (±1 gtt/min), and a large chamber. The chamber
+  shares the card's phase via a per-drip `animStart` anchor, so opening focus
+  **continues the phase — it never restarts**.
+- **FR-3f Phase sync.** The audio metronome, the optional silent **screen flash**,
+  and the chamber animation are all anchored to the active drip's `animStart` (ticks
+  at `animStart + n·period`) so sound, flash and drop share one phase. (ADR-0005.)
+- **FR-3g Tap calibrator.** Tapping in time with the real chamber (≥3 taps) measures
+  the actual gtt/min being run + its bag run-time; applies to the "Час мішка" calc.
+- **FR-3h** Confirm-to-remove (two-tap) for a running drip; remembered last drop
+  factor + drug (local only); distinct alarm patterns for the 5-min warning vs empty.
+- **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
+  plugin + native build; deferred to the APK step.*
 - **FR-4** Metronome interval = `60 / gtt_per_min` s. Channels: (a) audio tick,
   (b) haptic pulse, (c) animated falling drop — each independently on/off.
 - **FR-5** Audio/haptics scheduled on a monotonic audio clock (ADR-0005), NOT

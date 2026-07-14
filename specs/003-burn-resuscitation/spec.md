@@ -36,8 +36,12 @@ engine. **The tappable body diagram is deferred to `IDEAS.md`.**
 
 ## 3. Functional requirements
 
-- **FR-1** Manual **%TBSA** input (0–100, guidance to estimate to nearest 10% by
-  Rule of Nines). **No body diagram in the MVP.**
+- **FR-0** Implemented as the **"Опіки" mode of the drip screen** (Spec 001): a
+  minimal −/% TBSA/+ stepper + weight → Rule of Ten ml/h → gtt/min. The computed
+  result is **gated on the VERIFIED `burn_rule_of_ten` record** — until the Owner
+  verifies it, the mode shows the fail-closed state (inputs visible, no result).
+- **FR-1** Manual **%TBSA** input (0–100, step 5; guidance to estimate to nearest
+  10% by Rule of Nines). **No body diagram in the MVP.**
 - **FR-2** Rate: `rate_ml_per_hr = TBSA% × 10` for adults 40–80 kg; for weight
   >80 kg, `+100 ml/hr` per full 10 kg above 80. Computed strictly from the
   `burn_rule_of_ten` record's `expression`.

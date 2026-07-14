@@ -58,6 +58,10 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 - Configurable pre-empty alert lead times; shift/handover notes (no PII).
 - **Night-vision red mode toggle** — optional red-on-black theme that preserves
   scotopic (night) vision for field use; the default is now a modern dark theme.
+- **Drip start-time (HH:MM) on the card** and a **"болюс введено" checkbox** — for
+  handover/tracking (no PII).
+- **Auto-dim in night focus** — via the Capacitor screen-brightness plugin (native
+  build); tracked as Spec 001 FR-3i.
 - Larger accessibility options (color-blind-safe night palette variants).
 
 ## Explicitly excluded (MVP red lines — need a Constitution amendment, not just a
