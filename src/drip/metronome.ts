@@ -46,7 +46,7 @@ export class Metronome {
     return this.timer !== null;
   }
 
-  start(gttPerMin: number): void {
+  start(gttPerMin: number, anchorWallSec?: number): void {
     if (gttPerMin <= 0) return;
     this.gttPerMin = gttPerMin;
     if (!this.ctx) {
@@ -55,7 +55,17 @@ export class Metronome {
       this.ctx = new Ctor();
     }
     if (this.ctx.state === "suspended") void this.ctx.resume();
-    this.nextTickTime = this.ctx.currentTime + 0.1;
+    const period = 60 / gttPerMin;
+    if (anchorWallSec != null && typeof performance !== "undefined") {
+      // Align ticks to the visual chamber's phase (anchorWallSec + n·period) so the
+      // audio tick, the screen flash and the drop animation share one phase.
+      const wallNow = performance.now() / 1000;
+      const off = wallNow - this.ctx.currentTime; // wall = audio + off
+      const k = Math.ceil((wallNow + 0.08 - anchorWallSec) / period);
+      this.nextTickTime = anchorWallSec + k * period - off;
+    } else {
+      this.nextTickTime = this.ctx.currentTime + 0.1;
+    }
     if (this.timer === null) {
       this.timer = window.setInterval(() => this.schedule(), this.tickMs);
     }

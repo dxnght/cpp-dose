@@ -6,9 +6,31 @@ import {
   secPerDrop,
   bagRunHours,
   parseConcentrationMgPerMl,
+  burnRuleOfTenMlPerH,
+  doseRangeMg,
   clamp,
   WEIGHT,
 } from "../src/drip/calc";
+
+describe("burn Rule of Ten", () => {
+  it("(40%,70kg)=400, (40%,100kg)=600, (30%,80kg)=300", () => {
+    expect(burnRuleOfTenMlPerH(40, 70)).toBe(400);
+    expect(burnRuleOfTenMlPerH(40, 100)).toBe(600);
+    expect(burnRuleOfTenMlPerH(30, 80)).toBe(300);
+  });
+  it("nearest-10 weight rule: 84kg no +100, 85kg +100, 95kg +200", () => {
+    expect(burnRuleOfTenMlPerH(40, 84)).toBe(400);
+    expect(burnRuleOfTenMlPerH(40, 85)).toBe(500);
+    expect(burnRuleOfTenMlPerH(40, 95)).toBe(600);
+  });
+});
+
+describe("bolus mg from mg/kg string", () => {
+  it("range and single", () => {
+    expect(doseRangeMg("0.2-0.3 mg/kg", 80)).toBe("16–24 мг");
+    expect(doseRangeMg("1 mg/kg", 80)).toBe("80 мг");
+  });
+});
 
 describe("classic gravity drip (drip_rate) — SC-1", () => {
   it("(500 ml, 4 h, 20) -> 42", () => expect(volumeTimeToGtt(500, 240, 20)).toBe(42));

@@ -54,3 +54,22 @@ export function parseConcentrationMgPerMl(s?: string): number | null {
   const m = s.match(/([\d.]+)\s*mg\s*\/\s*ml/i);
   return m ? Number(m[1]) : null;
 }
+
+/** Burn initial fluid rate — TCCC/USAISR Rule of Ten. Clinical: the caller must
+    gate display on the VERIFIED `burn_rule_of_ten` record being present. */
+export function burnRuleOfTenMlPerH(tbsaPct: number, weightKg: number): number {
+  // Owner rule (2026-07): round weight to the nearest 10 kg for the +100 step —
+  // 80-84 kg add nothing; 85+ rounds up (85-94 -> +100, 95-104 -> +200).
+  let r = tbsaPct * 10;
+  if (weightKg > 80) r += 100 * Math.round((weightKg - 80) / 10);
+  return r;
+}
+
+/** Weight-scale a "0.2-0.3 mg/kg" or "1 mg/kg" bolus string to a mg (range). */
+export function doseRangeMg(dosePerKg: string, weightKg: number): string | null {
+  const range = dosePerKg.match(/([\d.]+)\s*(?:-|–|to)\s*([\d.]+)\s*mg\s*\/\s*kg/i);
+  if (range) return `${Math.round(Number(range[1]) * weightKg)}–${Math.round(Number(range[2]) * weightKg)} мг`;
+  const single = dosePerKg.match(/([\d.]+)\s*mg\s*\/\s*kg/i);
+  if (single) return `${Math.round(Number(single[1]) * weightKg)} мг`;
+  return null;
+}
