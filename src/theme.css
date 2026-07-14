@@ -2,6 +2,24 @@
    theme; a dedicated night-vision red mode is deferred to IDEAS). Calm, Apple-style,
    phone-first. All interactive targets >= 48 px. */
 :root {
+  --bg: #f2f2f7;
+  --surface: #ffffff;
+  --surface-2: #ececf0;
+  --fg: #1c1c1e;
+  --fg-dim: #6e6e73;
+  --fg-muted: #a1a1a6;
+  --line: #e2e2e7;
+  --accent: #007aff;
+  --accent-tint: rgba(0, 122, 255, 0.12);
+  --go: #248a3d;
+  --go-tint: rgba(52, 199, 89, 0.16);
+  --warn: #8a5a00;
+  --warn-bg: rgba(255, 159, 10, 0.16);
+  --radius: 12px;
+  --touch: 48px;
+  color-scheme: light dark;
+}
+:root[data-theme="dark"] {
   --bg: #0b0b0d;
   --surface: #1a1a1d;
   --surface-2: #232327;
@@ -15,9 +33,23 @@
   --go-tint: rgba(48, 209, 88, 0.14);
   --warn: #ff9f0a;
   --warn-bg: rgba(255, 159, 10, 0.12);
-  --radius: 12px;
-  --touch: 48px;
-  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0b0d;
+    --surface: #1a1a1d;
+    --surface-2: #232327;
+    --fg: #f2f2f7;
+    --fg-dim: #9a9aa2;
+    --fg-muted: #6a6a72;
+    --line: #2c2c31;
+    --accent: #0a84ff;
+    --accent-tint: rgba(10, 132, 255, 0.16);
+    --go: #30d158;
+    --go-tint: rgba(48, 209, 88, 0.14);
+    --warn: #ff9f0a;
+    --warn-bg: rgba(255, 159, 10, 0.12);
+  }
 }
 
 * {
@@ -50,12 +82,29 @@ body {
   position: sticky;
   top: 0;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   background: var(--warn-bg);
   color: var(--warn);
   border-bottom: 1px solid var(--line);
   padding: 8px 12px;
   font-size: 12.5px;
   font-weight: 500;
+}
+.disclaimer-banner .banner-text {
+  flex: 1;
+}
+.theme-toggle {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 4px 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  flex-shrink: 0;
 }
 
 .content {
