@@ -488,10 +488,11 @@
       "dose_per_kg": "1 mg/kg",
       "rate": "slow IV/IO push over 60 seconds; start the continuous drip ~10-15 min later",
       "notes": "Endpoint of effect: nystagmus. Rapid push >1 mg/kg -> respiratory depression. Loading dose always precedes the drip.",
-      "review_status": "UNVERIFIED",
+      "review_status": "VERIFIED:Ihor:2026-07-14",
       "source_document": "JTS-CPG-61",
       "source_version": "JTS CPG ID 61 (11 May 2017); transcribed via UA translation — confirm vs EN original",
-      "source_citation": "PCC Analgesia & Sedation — footnote 3 + Appendix B (loading 1 mg/kg IV/IO over 60 s)"
+      "source_citation": "PCC Analgesia & Sedation — footnote 3 + Appendix B (loading 1 mg/kg IV/IO over 60 s)",
+      "bolus_for": "pcc_ketamine_sedation_infusion"
     },
     {
       "id": "pcc_ketamine_sedation_infusion",
@@ -552,6 +553,20 @@
       "source_document": "PCC-BURN",
       "source_version": "JTS burn PFC CPG (UA translation, tccc.org.ua), 2026-07-13 — confirm ID/version",
       "source_citation": "JTS Burn PFC CPG (UA) — Fluid Resuscitation section + Appendix D (Rule of Ten; LR/Plasmalyte; urine 30-50 ml/h; adjust +/-25%); fluid choice: PCC burns 'Найкраще: ізотонічні кристалоїди (Рінгер Лактат, Плазмаліт)' + TCCC 2026 §15.e (LR, NS, or Hextend)"
+    },
+    {
+      "id": "pcc_ketamine_analgesia_priming",
+      "drug": "Ketamine",
+      "indication": "Priming analgesia bolus before the analgesia drip",
+      "route": "IV/IO",
+      "dose_per_kg": "0.2-0.3 mg/kg",
+      "rate": "slow IV/IO push BEFORE hanging the drip; Owner uses 0.2 mg/kg then assesses effect (guideline analgesia range 0.1-0.2 mg/kg)",
+      "notes": "Priming ('working') analgesic dose before the 1 mg/ml drip. Endpoint: pain relief; NYSTAGMUS = sedation overshoot, avoid.",
+      "bolus_for": "pcc_ketamine_analgesia_infusion",
+      "review_status": "VERIFIED:Ihor:2026-07-14",
+      "source_document": "JTS-CPG-61",
+      "source_version": "JTS CPG ID 61 (11 May 2017); Owner priming practice — confirm",
+      "source_citation": "Owner priming practice before the analgesia drip (0.2-0.3 mg/kg); CPG-61 ketamine analgesia push range 0.1-0.2 mg/kg"
     }
   ],
   "antibiotic_prophylaxis": [
@@ -781,7 +796,7 @@
       ],
       "applicability": "Adults 40-80 kg base; TBSA > 20%. Initiate as soon as IV/IO access established. If hemorrhagic shock also present, shock resuscitation takes precedence. Consider oral fluids for burns up to 30% TBSA if conscious.",
       "notes": "Resuscitation fluid: Lactated Ringer's, normal saline, or Hextend (Hextend max 1000 ml, then LR/NS). Estimate TBSA to nearest 10% by Rule of Nines.",
-      "review_status": "UNVERIFIED",
+      "review_status": "VERIFIED:Ihor:2026-07-14",
       "source_document": "TCCC-2026",
       "source_version": "01 May 2026",
       "source_citation": "TFC §15 Burns, e Fluid resuscitation (USAISR Rule of Ten): %TBSA x 10 ml/hr for 40-80 kg; +100 ml/hr per 10 kg above 80 kg"

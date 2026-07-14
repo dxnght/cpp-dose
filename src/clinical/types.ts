@@ -32,6 +32,7 @@ export interface Drug extends Sourced {
   rate?: string;
   min_max?: { min?: string; max?: string };
   notes?: string;
+  bolus_for?: string;
   infusion?: {
     diluent?: string;
     diluent_volume_ml?: string;

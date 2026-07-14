@@ -115,6 +115,14 @@ npm run compile:field && npm run gate:release
 The command stamps `VERIFIED:Ihor:<date>`, logs it to `VERIFICATION-LOG.md`, and
 warns if the source isn't archived yet (in which case it still won't ship).
 
+## F. Rule of Ten — weight rounding above 80 kg (RESOLVED)
+
+**Owner decision 2026-07-14: round weight to the nearest 10 kg** for the "+100 ml/h
+per 10 kg above 80 kg" step. So **80–84 kg → no +100**; **85–94 kg → +100**;
+**95–104 kg → +200**. Implemented in `burnRuleOfTenMlPerH`
+(`Math.round((weight-80)/10) * 100`). Confirm against the source when verifying
+`burn_rule_of_ten`.
+
 ## D. How to close a row
 
 Owner verifies the value against the archived source, edits `review_status` to

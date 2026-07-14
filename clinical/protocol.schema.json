@@ -101,6 +101,7 @@
           }
         },
         "notes": { "type": "string" },
+        "bolus_for": { "type": "string", "description": "id of the drip drug this record is the loading/priming bolus for" },
         "review_status": { "$ref": "#/$defs/review_status" },
         "source_document": { "type": "string" },
         "source_version": { "type": "string" },
