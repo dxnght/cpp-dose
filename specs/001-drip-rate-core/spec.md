@@ -74,6 +74,16 @@ unambiguous, usable one-handed with gloves at night.
   factor + drug (local only); distinct alarm patterns for the 5-min warning vs empty.
 - **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
   plugin + native build; deferred to the APK step.*
+- **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
+  Pacing is an explicit play/pause control on the card **and** in focus; **opening
+  focus never starts or stops pacing**. The audio/haptic/flash channel toggles are
+  shown **only while a drip is pacing** (they only describe how the metronome
+  signals) — so there is no "sound is on but nothing plays" state. (Fixed 2026-07-15.)
+- **FR-3k** The drip-chamber drop is **muted/grey when that drip is not pacing** (its
+  animation then has no true rhythm). The channel toggles are also available inside
+  the focus view, only while that drip is pacing. The animation models a real
+  chamber: the drop **forms slowly** (this is what varies with flow rate) then falls
+  in a **short, snappy segment** (a fall always looks quick). (2026-07-15.)
 - **FR-4** Metronome interval = `60 / gtt_per_min` s. Channels: (a) audio tick,
   (b) haptic pulse, (c) animated falling drop — each independently on/off.
 - **FR-5** Audio/haptics scheduled on a monotonic audio clock (ADR-0005), NOT
