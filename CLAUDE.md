@@ -51,6 +51,12 @@ this fully before acting. `memory/constitution.md` overrides everything.
 - `npm run gate:release` — fails if any exposed record is unverified/un-archived
   or any included content still contains `TODO(`.
 
+## Conventions
+
+- **Timezone: always `Europe/Kyiv`** (never "Kiev"). Use it anywhere an explicit
+  timezone is needed (scheduled tasks, formatted timestamps, docs). Runtime
+  finish/run-time display uses the device's local time.
+
 ## Definition of done (per task)
 
 Global DoD in `sprints/sprint-plan.md` + the task's AC green + no new network calls
