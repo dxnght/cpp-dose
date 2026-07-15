@@ -4,51 +4,57 @@
 :root {
   --bg: #f2f2f7;
   --surface: #ffffff;
-  --surface-2: #ececf0;
+  --surface-2: #e8e8ed;
   --fg: #1c1c1e;
-  --fg-dim: #6e6e73;
-  --fg-muted: #a1a1a6;
-  --line: #e2e2e7;
-  --accent: #007aff;
-  --accent-tint: rgba(0, 122, 255, 0.12);
-  --go: #248a3d;
-  --go-tint: rgba(52, 199, 89, 0.16);
+  --fg-dim: #5c5c63;
+  --fg-muted: #78787d;
+  --line: #d6d6db;
+  --accent: #0067da;
+  --accent-tint: rgba(0, 103, 218, 0.12);
+  --go: #1c7a33;
+  --go-tint: rgba(48, 199, 89, 0.14);
   --warn: #8a5a00;
-  --warn-bg: rgba(255, 159, 10, 0.16);
+  --warn-bg: rgba(255, 159, 10, 0.18);
+  --danger: #d70015;
   --radius: 12px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
   --touch: 48px;
   color-scheme: light dark;
 }
 :root[data-theme="dark"] {
   --bg: #0b0b0d;
   --surface: #1a1a1d;
-  --surface-2: #232327;
+  --surface-2: #26262b;
   --fg: #f2f2f7;
   --fg-dim: #9a9aa2;
-  --fg-muted: #6a6a72;
-  --line: #2c2c31;
+  --fg-muted: #7c7c84;
+  --line: #313136;
   --accent: #0a84ff;
   --accent-tint: rgba(10, 132, 255, 0.16);
   --go: #30d158;
-  --go-tint: rgba(48, 209, 88, 0.14);
+  --go-tint: rgba(48, 209, 88, 0.16);
   --warn: #ff9f0a;
-  --warn-bg: rgba(255, 159, 10, 0.12);
+  --warn-bg: rgba(255, 159, 10, 0.16);
+  --danger: #ff453a;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0b0b0d;
     --surface: #1a1a1d;
-    --surface-2: #232327;
+    --surface-2: #26262b;
     --fg: #f2f2f7;
     --fg-dim: #9a9aa2;
-    --fg-muted: #6a6a72;
-    --line: #2c2c31;
+    --fg-muted: #7c7c84;
+    --line: #313136;
     --accent: #0a84ff;
     --accent-tint: rgba(10, 132, 255, 0.16);
     --go: #30d158;
-    --go-tint: rgba(48, 209, 88, 0.14);
+    --go-tint: rgba(48, 209, 88, 0.16);
     --warn: #ff9f0a;
-    --warn-bg: rgba(255, 159, 10, 0.12);
+    --warn-bg: rgba(255, 159, 10, 0.16);
+    --danger: #ff453a;
   }
 }
 
@@ -147,7 +153,7 @@ button {
   color: var(--fg);
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--r-md);
   padding: 10px 14px;
   font-size: 16px;
   cursor: pointer;
@@ -216,13 +222,26 @@ h2 {
 }
 .seg {
   display: flex;
-  gap: 7px;
-  margin-bottom: 6px;
+  gap: 3px;
+  margin-bottom: 8px;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 3px;
 }
 .seg button {
   flex: 1;
-  min-height: 48px;
+  min-height: 44px;
   font-size: 14px;
+  background: transparent;
+  border: none;
+  border-radius: 9px;
+  color: var(--fg-dim);
+}
+.seg button.on {
+  background: var(--surface);
+  color: var(--fg);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
 }
 .df-grid {
   display: grid;
@@ -310,11 +329,11 @@ h2 {
   font-size: 12px;
 }
 .hero {
-  margin: 14px 0 8px;
+  margin: 16px 0 8px;
   background: var(--go-tint);
-  border: 1px solid var(--go);
-  border-radius: var(--radius);
-  padding: 12px;
+  border: none;
+  border-radius: var(--r-lg);
+  padding: 16px 14px;
   text-align: center;
 }
 .hero-label {
@@ -341,12 +360,14 @@ h2 {
 .drip-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 11px 12px;
-  margin-top: 9px;
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  margin-top: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 .drip-card.active {
   border-color: var(--accent);
+  background: var(--accent-tint);
 }
 .drip-row {
   display: flex;
@@ -394,8 +415,8 @@ h2 {
   right: 0;
   bottom: 0;
   height: 11px;
-  background: var(--accent-tint);
-  border-top: 1.5px solid var(--accent);
+  background: var(--go-tint);
+  border-top: 1.5px solid var(--go);
 }
 .chamber-drop {
   position: absolute;
@@ -404,20 +425,30 @@ h2 {
   width: 8px;
   height: 8px;
   margin-left: -4px;
-  background: var(--accent);
+  background: var(--go);
   border-radius: 50%;
   animation-name: dripchamber;
-  animation-timing-function: cubic-bezier(0.45, 0, 0.9, 1);
+  animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform, opacity;
 }
+/* Realistic chamber: the drop SLOWLY forms/swells at the nozzle for most of the
+   interval (what actually varies with flow rate), then detaches and falls in a
+   short, snappy, ease-in segment (a fall always looks quick — gravity). */
 @keyframes dripchamber {
-  0% { transform: translateY(0) scale(0.15); border-radius: 50%; opacity: 0.55; }
-  28% { transform: translateY(0) scale(1); border-radius: 46% 46% 54% 54%; opacity: 1; }
-  36% { transform: translateY(1px) scaleX(0.82) scaleY(1.32); border-radius: 45% 45% 55% 55%; }
-  88% { transform: translateY(36px) scale(1); border-radius: 50%; opacity: 1; }
-  96% { transform: translateY(40px) scaleX(1.5) scaleY(0.55); opacity: 0.75; }
-  100% { transform: translateY(40px) scale(1); opacity: 0; }
+  0% { transform: translateY(0) scale(0.12); border-radius: 50%; opacity: 0.4; }
+  62% { transform: translateY(0) scale(1); border-radius: 46% 46% 54% 54%; opacity: 1; }
+  74% { transform: translateY(2px) scaleX(0.8) scaleY(1.4); border-radius: 45% 45% 60% 55%; animation-timing-function: cubic-bezier(0.6, 0, 1, 1); }
+  90% { transform: translateY(40px) scale(1); border-radius: 50%; opacity: 1; }
+  96% { transform: translateY(44px) scaleX(1.55) scaleY(0.5); opacity: 0.7; }
+  100% { transform: translateY(44px) scale(1); opacity: 0; }
+}
+.chamber-muted .chamber-drop {
+  background: var(--fg-muted);
+}
+.chamber-muted .chamber-pool {
+  background: transparent;
+  border-top-color: var(--line);
 }
 .drip-actions {
   display: flex;
@@ -446,8 +477,8 @@ h2 {
   cursor: pointer;
 }
 button.danger {
-  border-color: #ff453a;
-  color: #ff453a;
+  border-color: var(--danger);
+  color: var(--danger);
   background: transparent;
 }
 .flash-layer {
@@ -569,6 +600,20 @@ button.danger {
 }
 .calib-actions button {
   min-width: 92px;
+}
+.hero-num,
+.stepper-num,
+.drip-mini-gtt,
+.focus-gtt,
+.drip-gtt {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.focus-pace {
+  min-width: 210px;
+  min-height: 54px;
+  font-size: 16px;
+  border-radius: var(--r-md);
 }
 
 .modal-backdrop {

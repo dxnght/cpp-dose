@@ -141,10 +141,10 @@ function Stepper(props: {
 
 // The chamber picks up the shared phase (animStart) at mount via a negative delay,
 // so a freshly-opened focus chamber continues the card's phase (never restarts).
-function Chamber({ gtt, animStart }: { gtt: number; animStart: number }) {
+function Chamber({ gtt, animStart, muted }: { gtt: number; animStart: number; muted?: boolean }) {
   const delayRef = useRef(-((nowMs() - animStart) / 1000));
   return (
-    <div className="chamber" aria-hidden="true">
+    <div className={muted ? "chamber chamber-muted" : "chamber"} aria-hidden="true">
       <span className="chamber-pool" />
       <span className="chamber-drop" style={{ animationDuration: dur(gtt), animationDelay: `${delayRef.current}s` }} />
     </div>
@@ -369,9 +369,16 @@ export function DripScreen() {
     );
   }
 
+  // Focus is a view only — opening it never starts/stops pacing (the metronome
+  // stays wherever the user left it). Pacing is controlled by togglePacing.
   function enterFocus(id: string) {
-    setActiveId(id);
     setFocusId(id);
+  }
+
+  // The single pacing control: start this drip's metronome (stopping any other,
+  // since activeId is one value) or stop it if it's already the active one.
+  function togglePacing(id: string) {
+    setActiveId((cur) => (cur === id ? null : id));
   }
 
   function applyCalib() {
@@ -409,9 +416,31 @@ export function DripScreen() {
             </button>
           </div>
           <div className="focus-chamber-scale">
-            <Chamber gtt={focusDrip.gtt} animStart={focusDrip.animStart} />
+            <Chamber gtt={focusDrip.gtt} animStart={focusDrip.animStart} muted={focusDrip.id !== activeId} />
           </div>
           <div className="focus-rem">Залишок: {remaining(focusDrip)}</div>
+          <button
+            className={`focus-pace${focusDrip.id === activeId ? " on" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePacing(focusDrip.id);
+            }}
+          >
+            {focusDrip.id === activeId ? "◼ Метроном" : "▶ Метроном"}
+          </button>
+          {focusDrip.id === activeId && (
+            <div className="toggles" onClick={(e) => e.stopPropagation()}>
+              <label>
+                <input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} /> Звук
+              </label>
+              <label>
+                <input type="checkbox" checked={haptic} onChange={(e) => setHaptic(e.target.checked)} /> Вібрація
+              </label>
+              <label>
+                <input type="checkbox" checked={flashOn} onChange={(e) => setFlashOn(e.target.checked)} /> Спалах
+              </label>
+            </div>
+          )}
           <div className="focus-hint">Торкніться фону, щоб вийти</div>
         </div>
       )}
@@ -576,14 +605,14 @@ export function DripScreen() {
                     {d.gtt}
                     <span> кр/хв</span>
                   </div>
-                  <Chamber gtt={d.gtt} animStart={d.animStart} />
+                  <Chamber gtt={d.gtt} animStart={d.animStart} muted={d.id !== activeId} />
                   <div className="drip-mini-meta">
                     {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год · {remaining(d)}
                   </div>
                   <div className="tap-hint">Тап — на весь екран</div>
                 </div>
                 <div className="drip-actions">
-                  <button className={isActive ? "on" : ""} onClick={() => setActiveId(isActive ? null : d.id)}>
+                  <button className={isActive ? "on" : ""} onClick={() => togglePacing(d.id)}>
                     {isActive ? "◼ Метроном" : "▶ Метроном"}
                   </button>
                   <button className={confirmId === d.id ? "danger" : ""} onClick={() => onRemoveClick(d.id)}>
@@ -593,18 +622,24 @@ export function DripScreen() {
               </article>
             );
           })}
-          <div className="toggles">
-            <label>
-              <input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} /> Звук
-            </label>
-            <label>
-              <input type="checkbox" checked={haptic} onChange={(e) => setHaptic(e.target.checked)} /> Вібрація
-            </label>
-            <label>
-              <input type="checkbox" checked={flashOn} onChange={(e) => setFlashOn(e.target.checked)} /> Спалах
-            </label>
-          </div>
-          <p className="runtime" style={{ textAlign: "left" }}>Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом.</p>
+          {activeId != null && (
+            <div className="toggles">
+              <label>
+                <input type="checkbox" checked={audio} onChange={(e) => setAudio(e.target.checked)} /> Звук
+              </label>
+              <label>
+                <input type="checkbox" checked={haptic} onChange={(e) => setHaptic(e.target.checked)} /> Вібрація
+              </label>
+              <label>
+                <input type="checkbox" checked={flashOn} onChange={(e) => setFlashOn(e.target.checked)} /> Спалах
+              </label>
+            </div>
+          )}
+          <p className="runtime" style={{ textAlign: "left" }}>
+            {activeId != null
+              ? "Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом."
+              : "Тап по дріпу — фокус-режим. Запусти метроном (▶), щоб задати темп."}
+          </p>
         </>
       )}
     </section>
