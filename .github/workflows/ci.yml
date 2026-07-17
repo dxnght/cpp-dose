@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Validate clinical protocol against schema
+        run: npm run validate
+      - name: Lint (incl. no-network + no-VERIFIED rules)
+        run: npm run lint
+      - name: Tests (unit + offline + guard)
+        run: npm run test
+      - name: Release gate (only VERIFIED + archived may ship)
+        run: npm run gate:release
+      - name: Production build
+        run: npm run build
