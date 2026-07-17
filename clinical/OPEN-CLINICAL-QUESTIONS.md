@@ -1,130 +1,125 @@
 # Open Clinical Questions — for the Owner
 
-Every item here blocks a field release until resolved. Agents add rows; only the
-Owner closes them (by verifying content and/or amending a spec). Do **not** guess
-a value to close a row (Constitution Art. I).
+Tracking file. Agents add rows; only the **Owner** closes them (by verifying content
+against an archived source and/or amending a spec). Do **not** guess a value to close
+a row (Constitution Art. I). Changing this file never changes a `review_status`.
 
-## A. Verification backlog (all seed records)
+## Scope key — what blocks v1.0 vs what's parked
 
-All 33 drug records, 12 prophylaxis mappings, and the `burn_rule_of_ten` formula
-in `uk-cpp.v1.json` are `UNVERIFIED`. Each must be checked against its
-`source_citation` and promoted to `VERIFIED:<name>:<date>` by the Owner. Use the
-`verify` report (Spec 005 FR-4) as the checklist. Until then the field bundle is
-empty by design (fail-closed).
+Per `ROADMAP.md` (Owner decision 2026-07-15), **v1.0 = focused minimum**: the ketamine
+analgesia + sedation drips, their priming/loading boluses, burn fluid, and the Rule of
+Ten formula. Everything else in `uk-cpp.v1.json` (antibiotics-by-injury, CNS tree,
+IM ketamine, esketamine, Appendix B numeric tables, pediatric) is **post-v1.0 (M3)** and
+is held out of the field bundle by the release gate — it does **not** block v1.0.
 
-## B. Source-archival TODOs
+- **`[v1.0]`** — must be closed before the first field build.
+- **`[post-v1.0]`** — parked for M3; kept `UNVERIFIED` on purpose; not a blocker.
 
-- [x] **TCCC-2026 checksum** — archived `clinical/sources/tccc-guidelines-2026-en.pdf`
-      (downloaded from the Owner-supplied URL, Sprint 0, 2026-07-12) and recorded its
-      SHA-256 `340a17a03388a1e4479df3737c5b038462494fea4c28a35251410662b1a019b6` in the
-      source registry. **Owner note:** the archived file is 17 pages (314 KB); confirm
-      it is the complete/correct edition before promoting any TCCC record to VERIFIED.
+---
 
-## C. Substantive clinical questions to decide
+## A. v1.0 focused drip set — STATUS: content complete ✅
 
-1. **CNS antibiotic combination logic (brain & spinal).** The MOZ table nests
-   several "and / or (for cephalosporin allergy)" branches. The seed captures the
-   components but marks the exact branching in `notes`. Owner to confirm the
-   precise decision tree before the UI renders it. *(records
-   `moz_prophylaxis_cns_brain`, `moz_prophylaxis_cns_spinal`)*
-2. **Weight domain & burn-rule bounds.** Rule of Ten is stated for adults 40–80 kg
-   with a +100 ml/hr/10 kg extension above 80 kg. Confirm the app's weight slider
-   bounds (plan said 30–150 kg) and how the tool behaves for <40 kg and very high
-   weights. `TODO(clinical-review)` in Spec 003.
-3. **TXA lower age / weight applicability.** TCCC gives a fixed 2 g adult dose;
-   confirm the app's guardrails for edge weights.
-4. **Pediatric dosing (parked).** The MOZ Standard contains pediatric mg/kg doses
-   (cefazolin, metronidazole, clindamycin, ertapenem, ceftriaxone, vancomycin,
-   ciprofloxacin). MVP is adult-only; pediatric path is deferred to `IDEAS.md`.
-   Do not build a partial pediatric path.
-5. **Which antibiotic source leads at the point of care.** Hierarchy is set
-   (TCCC primary, MOZ for prophylaxis-by-injury — ADR-0002), but confirm the UI
-   wording so a medic is never unsure which regimen the app is quoting.
+All six focused records are `VERIFIED` and their sources are archived; `npm run
+gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
 
-## E. PCC analgesia/sedation source — added 2026-07-13 (drip content)
+| Record | Status | Source |
+|---|---|---|
+| `pcc_ketamine_analgesia_infusion` | VERIFIED:Ihor:2026-07-17 | JTS CPG-61 App C |
+| `pcc_ketamine_analgesia_priming` | VERIFIED:Ihor:2026-07-14 | JTS CPG-61 |
+| `pcc_ketamine_sedation_loading` | VERIFIED:Ihor:2026-07-14 | JTS CPG-61 |
+| `pcc_ketamine_sedation_infusion` | VERIFIED:Ihor:2026-07-13 | JTS CPG-61 |
+| `pcc_burn_fluid` | VERIFIED:Ihor:2026-07-13 | PCC-BURN |
+| `burn_rule_of_ten` | VERIFIED:Ihor:2026-07-14 | TCCC-2026 |
 
-Registered source `PCC-ANALGESIA-SEDATION` (JTS CPG, UA translation on tccc.org.ua)
-and transcribed 3 ketamine records (`pcc_ketamine_analgesia_iv`,
-`pcc_ketamine_sedation_loading`, `pcc_ketamine_sedation_infusion`), all `UNVERIFIED`.
-The source is **not yet archived** (checksum `TODO(archive-source)`), so these are
-doubly blocked from the field bundle. To make this content usable:
+### `[v1.0]` Remaining confirmations before the field build (low-risk, Owner sign-off)
 
-1. **Archive the official source + checksum.** Download the JTS PDF (or the
-   tccc.org.ua guide as a stable PDF), place at `clinical/sources/pcc-analgesia-sedation.pdf`,
-   record its SHA-256, and set the exact **JTS CPG version/date** in `sources[]`
-   (currently `TODO(clinical-review)`).
-2. **Translation provenance (Owner decision).** These doses were transcribed from
-   the **Ukrainian translation**. Decide whether to cite the UA translation, the
-   English JTS original, or both. Recommend cross-checking critical doses against
-   the English original before `VERIFIED`.
-3. **Verify Appendix B ketamine drip tables numerically.** The mg/kg/h ↔ mcg/kg/min
-   ↔ ml/hr grid and the drops/min tables (15 & 10 gtt/ml) were **not** transcribed
-   as numbers (table-extraction risk). Transcribe + verify from the source before
-   the app renders them.
-4. **Reconcile a ketamine IM discrepancy.** Footnote 1 = **80 mg IM (0.4-0.8 mg/kg)**
-   when no IV/IO; Appendix D = **40-60 mg (0.5-0.75 mg/kg) IM/IN** for breakthrough.
-   Confirm which applies where. *(record `pcc_ketamine_analgesia_iv` notes)*
-5. **Analgesia vs sedation infusion.** This guide's continuous ketamine drip is for
-   **sedation** (1 mg/kg/h non-intubated). Your example "500 mg / 500 ml / 20 h for
-   analgesia" is a *sub-dissociative analgesic* drip — **not specified in this
-   guide**. It needs its own registered source before it can be a verified recipe.
-6. **Esketamine.** Appendix D states S(+) ketamine ≈ twice as potent → "use half the
-   mg dose of racemic ketamine." Exact esketamine drip doses are **not** given;
-   deriving them = extrapolation (forbidden). Register an esketamine-specific source
-   or record the conversion only, `UNVERIFIED`, for Owner sign-off.
-7. **Burn fluids.** Consider registering the PCC **burn wound management** guide for
-   burn-fluid drip detail (or keep TCCC 2026 Rule of Ten). Source hierarchy in
-   ADR-0006.
+1. **TCCC-2026 edition.** Archived `clinical/sources/tccc-guidelines-2026-en.pdf`
+   (SHA-256 `340a17a0…`) is 17 pages / 314 KB. Confirm it is the complete/correct
+   edition — `burn_rule_of_ten` cites it.
+2. **PCC-BURN exact provenance.** `pcc_burn_fluid` cites the **UA translation** of the
+   JTS Burn Wound Management under PFC guide (archived, SHA-256 `873e2351…`). Confirm
+   the exact **JTS CPG ID/date** of the EN original and whether to cite EN, UA, or both.
+3. **JTS-CPG-61 translation provenance.** The ketamine drips were transcribed from the
+   guide (EN original archived, SHA-256 `e0fd67fb…`; UA translation also archived).
+   Owner may wish to spot-check the critical doses against the EN original — already the
+   citation of record, so this is a confidence check, not a blocker.
 
-## E-notes update — 2026-07-13 (Owner notes applied)
+---
 
-Owner notes were transcribed into the ketamine records (`pcc_ketamine_analgesia_iv`,
-`pcc_ketamine_sedation_loading`, `pcc_ketamine_sedation_infusion`, and NEW
-`pcc_ketamine_analgesia_infusion` = 100 mg/100 ml NS = 1 mg/ml, 0.2-0.3 mg/kg/h).
-All remain `UNVERIFIED`. Still to resolve before a valid `VERIFIED`:
+## B. Resolved decisions (log)
 
-- **Archive the JTS source PDFs** (now identified). Download each official PDF to
-  `clinical/sources/`, record its SHA-256 + version. Until then citing records
-  cannot ship even if verified:
-  - **JTS CPG 61** — Analgesia and Sedation during PFC (11 May 2017):
-    `https://jts.health.mil/assets/docs/cpgs/Analgesia_and_Sedation_Management_during_PFC_11_May_2017_ID61.pdf`
-    (source of the ketamine drip content).
-  - **JTS CPG 91** — Prolonged Casualty Care Guidelines (21 Dec 2021):
-    `https://jts.health.mil/assets/docs/cpgs/Prolonged_Casualty_Care_Guidelines_21_Dec_2021_ID91.pdf`
-  - **PCC-BURN** — JTS Burn Wound Management under PFC (confirm exact CPG ID/version);
-    UA translation at `https://tccc.org.ua/guide/burn-wound-management-under-prolonged-field-care-pcc`.
-  (I cannot download the binary PDFs from here — web tooling returns text only — so
-  archival + checksum is an Owner/local step.)
-- **IM ketamine doses UNCERTAIN** (Owner: "≈4-8 mg/kg, здається; IM not used in
-  prolonged care") — left flagged, not entered as a usable dose. Do not verify.
-- **Esketamine / Ketanest = DOUBLE concentration.** Recorded only as a safety
-  warning in the ketamine records; **no esketamine dose entered** (deriving it =
-  extrapolation). Needs its own registered source before it becomes a record.
-- **Analgesia vs sedation drips are now two distinct records** (1 mg/ml analgesia,
-  3 mg/ml sedation). Verify each against its CPG separately.
+- **Rule of Ten — weight rounding above 80 kg (2026-07-14).** Round weight to the
+  nearest 10 kg for the "+100 ml/h per 10 kg above 80 kg" step: **80–84 → no +100**,
+  **85–94 → +100**, **95–104 → +200**. Implemented in `burnRuleOfTenMlPerH`
+  (`Math.round((weight-80)/10)*100`); covered by `drip-calc.test.ts`.
+- **Analgesia drip citation (2026-07-17).** The sub-dissociative analgesia dose
+  (0.1–0.2 mg/kg IV) is sourced from **JTS CPG-61, Appendix C** (Common IV Meds Cheat
+  Sheet); the Owner's 100 mg / 100 ml NS = 1 mg/ml prep is that dose. Citation corrected
+  and the record re-verified. (Supersedes the earlier "not specified in this guide" note.)
 
-### Owner verification — how to do it yourself (Art. II keeps this in your hand)
+---
 
-Run, per record you have checked against the archived source:
+## C. Post-v1.0 (parked for M3) — kept `UNVERIFIED` on purpose
+
+None of these block v1.0. Do not build a partial path; each needs its own source +
+Owner verification when its milestone comes.
+
+1. **`[post-v1.0 scope, content now complete]` Antibiotics-by-injury (MOZ + TCCC).**
+   **Update 2026-07-17:** the Owner verified all 25 MOZ-ATB-2023 records (13 drugs
+   + 12 by-injury prophylaxis groups) and 3 of 4 TCCC-2026 general antibiotics
+   (`tccc_cefadroxil_po`, `tccc_ceftriaxone_unable_po`, `tccc_ceftriaxone_eye`;
+   `tccc_cephalexin_po` still `UNVERIFIED`). `gate:release` now exposes 38
+   clinical records total. **UI built** on `feature/antibiotics-reference`
+   (Spec 004 / ADR-0007 / Sprint 4) — a read-only, source-separated reference in
+   "Препарати"; with this much verified it now renders real content, not an
+   empty state. Also corrected the 12 `antibiotic_prophylaxis[].injury_type`
+   labels from an English paraphrase to the exact Ukrainian wording in the
+   archived MOZ source (label fix only, no dose/drug value changed).
+   **Open for the Owner:** the module is content-complete enough that it could
+   fold into v1.0 rather than wait for M3 — that's a scope call for the Owner
+   when reviewing the branch, not decided here. Still to close:
+   `tccc_cephalexin_po` verification, and Open Question C.2 (CNS combination
+   branching) before that logic is presented as anything beyond a transcribed list.
+2. **`[post-v1.0]` CNS antibiotic combination tree (brain & spinal).** The MOZ table
+   nests "and / or (for cephalosporin allergy)" branches; confirm the exact decision
+   tree before any UI renders it. *(records `moz_prophylaxis_cns_brain`,
+   `moz_prophylaxis_cns_spinal`)*
+3. **`[post-v1.0]` IM ketamine doses.** `pcc_ketamine_analgesia_iv` holds the push/IM
+   notes (CPG-61 footnote 1: 80 mg / 0.4–0.8 mg/kg IM when no IV/IO; Appendix D:
+   40–60 mg / 0.5–0.75 mg/kg IM/IN breakthrough). Owner: "IM not used in prolonged
+   care" — left flagged, not entered as a usable dose.
+4. **`[post-v1.0]` Esketamine / Ketanest (≈2× potency).** Recorded only as a safety
+   warning in the ketamine records; **no esketamine dose entered** (deriving it =
+   extrapolation). Needs its own registered source before it becomes a record.
+5. **`[post-v1.0]` Appendix B numeric drip tables.** The mg/kg/h ↔ mcg/kg/min ↔ ml/hr
+   grid and the drops/min tables (15 & 10 gtt/ml) were **not** transcribed as numbers
+   (table-extraction risk). Transcribe + verify from the source before rendering.
+6. **`[post-v1.0]` Pediatric dosing.** MOZ contains pediatric mg/kg doses; MVP is
+   adult-only. Deferred to `IDEAS.md`.
+7. **`[post-v1.0]` TXA edge weights.** TCCC gives a fixed 2 g adult dose; confirm app
+   guardrails for edge weights when TXA is added.
+8. **`[post-v1.0]` Which antibiotic source leads at point of care.** Hierarchy set
+   (TCCC primary, MOZ for prophylaxis-by-injury — ADR-0002); confirm UI wording so a
+   medic is never unsure which regimen is quoted.
+
+### `[v1.0]` Weight domain & burn-rule bounds (spec question, not a value)
+
+Rule of Ten is stated for adults 40–80 kg with the +100 ml/h/10 kg extension above 80.
+Confirm the app's weight-slider bounds (currently 30–150 kg) and the intended behavior
+for **< 40 kg** and very high weights. `TODO(clinical-review)` in Spec 003. This is a
+UI-guardrail decision (no clinical value originated), so it can close alongside v1.0.
+
+---
+
+## D. How to verify / close a row (Owner — Art. II keeps this in your hand)
+
+Per record checked against its archived source:
 
 ```
 npm run verify:record -- <recordId> "Ihor"
 npm run compile:field && npm run gate:release
 ```
 
-The command stamps `VERIFIED:Ihor:<date>`, logs it to `VERIFICATION-LOG.md`, and
-warns if the source isn't archived yet (in which case it still won't ship).
-
-## F. Rule of Ten — weight rounding above 80 kg (RESOLVED)
-
-**Owner decision 2026-07-14: round weight to the nearest 10 kg** for the "+100 ml/h
-per 10 kg above 80 kg" step. So **80–84 kg → no +100**; **85–94 kg → +100**;
-**95–104 kg → +200**. Implemented in `burnRuleOfTenMlPerH`
-(`Math.round((weight-80)/10) * 100`). Confirm against the source when verifying
-`burn_rule_of_ten`.
-
-## D. How to close a row
-
-Owner verifies the value against the archived source, edits `review_status` to
-`VERIFIED:<name>:<YYYY-MM-DD>` in `uk-cpp.v1.json`, appends to
-`VERIFICATION-LOG.md`, and ticks/removes the row here.
+The command stamps `VERIFIED:Ihor:<date>`, logs it to `VERIFICATION-LOG.md`, and warns
+if the source isn't archived (in which case it still won't ship). To close a written row
+here: verify the value, then tick/remove the row and note it in section B.
