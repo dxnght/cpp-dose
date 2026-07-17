@@ -84,6 +84,11 @@ android/app/build/outputs/apk/debug/app-debug.apk
 
 - **`EPERM ... unlink dist/...` on build** — a stale `dist/`. `rm -rf dist` then rebuild.
 - **`Unable to locate a Java Runtime`** — `JAVA_HOME` not set / not 17. See step 1.
+- **`Unsupported class file major version NN`** (e.g. 70) — Gradle 8.2.1 (Capacitor 6)
+  needs **JDK 17**; your shell is on a newer JDK. Fix:
+  `export JAVA_HOME=$(/usr/libexec/java_home -v 17)` then rebuild. In Android Studio:
+  Settings → Build Tools → Gradle → **Gradle JDK → 17**. (Install if missing:
+  `brew install --cask temurin@17`.)
 - **`Cannot find module @rollup/rollup-*`** — delete `node_modules` + `package-lock.json`
   and `npm install` again (a known npm optional-deps quirk).
 - **Gradle SDK errors** — open `android/` once in Android Studio; it will offer to
