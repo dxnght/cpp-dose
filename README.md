@@ -1,88 +1,131 @@
-# CPP-DOSE — Spec Repository
+# CPP-DOSE
 
-Weight→dose and IV drip-rate decision-support tool for Prolonged Casualty Care
-(CPP / ПДП). **This repository holds the specifications, plans, decisions, and
-clinical-content pipeline that govern the build — not the app code (yet).**
+Offline IV **drip-rate & dosing** support for **Prolonged Casualty Care** (CPP / ПДП).
+A small, phone-first tool for combat medics: pick a drip drug or fluid, get the
+drops-per-minute for the IV set, and pace it with a synchronized metronome + drip
+animation — all fully offline, at night, with gloves.
 
-> ⚠️ Decision-support / reference tool only. Not a substitute for protocols,
-> medical direction, or clinical judgement. See `memory/constitution.md`.
+> ⚠️ **Decision-support / reference tool only.** It does **not** replace protocols,
+> medical direction, or clinical judgement. Every clinical value shown is transcribed
+> from a registered source and signed off by the Owner. See
+> [`memory/constitution.md`](memory/constitution.md).
 
-## Read this in order
+Ukrainian UI · offline (zero network at runtime) · light + dark themes · Android + iOS.
 
-1. `memory/constitution.md` — **non-negotiable governance.** Start here. Encodes
-   the clinical red lines: sources of truth, the Owner verification gate, fail-closed.
-2. `plan-review.md` — evaluation of the original `cpp-app-plan.md` against
-   Spec-Driven Development, and the changes it drove.
-3. `specs/000-product-overview/spec.md` — the product: problem, users, scope,
-   non-goals, success criteria.
-4. `specs/00X-*/spec.md` — one spec per feature (WHAT & WHY).
-5. `plan/architecture.md` + `plan/data-model.md` — the HOW.
-6. `clinical/` — the safety-critical content pipeline: source registry, schema,
-   seeded protocol data (all `UNVERIFIED` until the Owner signs).
-7. `decisions/ADR-*.md` — why each significant choice was made (for auditors).
-8. `sprints/` — Sprint 0–3 execution plan with acceptance criteria.
-9. `IDEAS.md` — everything deliberately deferred out of the MVP.
+---
 
-## How we work (Spec-Driven Development)
+## What it does
 
-Adapted from GitHub's Spec-Kit. The flow is one-directional:
+- **Drip engine** — drop-factor selector (10 / 15 / 20 gtt/ml), weight + dose
+  steppers, live gtt/min hero, up to **3 concurrent drips** each with an end-of-bag
+  timer and a 5-minute pre-end alarm.
+- **By drug** — a curated list of verified drip medications/fluids (ketamine analgesia
+  1 mg/ml, sedation 3 mg/ml, burn fluid) with the recommended dose + a priming/loading
+  bolus computed for the patient.
+- **Час мішка** — how long a bag lasts at the rate you're running (+ a tap-to-calibrate
+  tool that measures your real drops/min).
+- **Опіки** — burn fluid rate via the TCCC Rule of Ten (%TBSA × 10 ml/h).
+- **Focus mode** — full-screen big count + chamber for one-glance night pacing, with
+  audio / vibration / silent-flash channels and live retitration.
+
+## Clinical safety model (the core idea)
+
+A wrong number can kill, so the app is **fail-closed by construction**:
+
+1. **No invented values.** Every drug/dose/rate/formula is transcribed from a
+   registered source (TCCC 2026, MOZ 2023, JTS PCC CPGs) with a citation.
+2. **Owner verification gate.** Records are `UNVERIFIED` until the Owner personally
+   promotes them to `VERIFIED:<name>:<date>`. Agents/code can never write a `VERIFIED`
+   status.
+3. **Only verified content ships.** A build compiles a `field-bundle.json` containing
+   *only* verified + archived records; the app can't render anything else.
+
+See [`memory/constitution.md`](memory/constitution.md) and
+[`specs/005-clinical-content-pipeline`](specs/005-clinical-content-pipeline/spec.md).
+
+## Quick start
+
+```bash
+npm install
+npm run dev        # local dev server (compiles the field bundle first)
+npm run test       # unit + offline (zero-network) + guard tests
+npm run lint       # incl. no-network + no-VERIFIED lint rules
+npm run build      # production PWA build (service worker, offline)
+```
+
+Clinical-content commands:
+
+```bash
+npm run validate       # JSON-Schema-validate the protocol file
+npm run verify         # Owner checklist of unverified records
+npm run verify:record -- <recordId> "Name"   # Owner-only: promote a record
+npm run gate:release   # fail if any unverified/un-archived record would ship
+```
+
+## Build the apps (offline, no server)
+
+- **Android APK** → [`reports/BUILD-APK.md`](reports/BUILD-APK.md) (needs JDK 17 + Android SDK).
+- **Native iOS** → [`reports/BUILD-IOS.md`](reports/BUILD-IOS.md) (needs a Mac + Xcode).
+- **PWA** → `npm run dev`/`preview`, then "Add to Home Screen" (no toolchain; note the
+  iOS PWA limits documented in the iOS guide).
+
+## Tech
+
+React + TypeScript + Vite, PWA (service worker, full offline), Capacitor for the
+Android/iOS shells. Vibration via Capacitor Haptics. No backend, no accounts, no
+telemetry, no network at runtime — enforced by CSP + a lint rule + an offline test.
+See [`plan/architecture.md`](plan/architecture.md).
+
+## How this repo is built (Spec-Driven Development)
+
+Adapted from GitHub's Spec-Kit. Work flows one direction, and every step re-checks the
+constitution:
 
 ```
-Constitution  →  Spec (WHAT/WHY)  →  Plan (HOW)  →  Tasks  →  Implementation
-     ▲                                                              │
-     └──────────────── every step re-checks the Constitution ◄──────┘
+Constitution → Spec (WHAT/WHY) → Plan (HOW) → Tasks → Implementation
 ```
 
-- **Specs describe intent, not code.** No framework/API names in a spec.
-- **Plans describe construction.** Stack, architecture, data model live here.
-- **Every clinical value** enters only via the pipeline in `clinical/`, carries a
-  source tag, and is `UNVERIFIED` until the Owner promotes it. Agents never write
-  a `VERIFIED:` status and never invent a number. See Constitution Articles I–III.
-- **Decisions are recorded.** If a choice is non-obvious or hard to reverse, it
-  gets an ADR.
-
-## For AI agents (claude-code) working in this repo
-
-Before doing anything, read `memory/constitution.md` and the relevant
-`specs/*/spec.md`. Then:
-
-- Never originate, guess, round, or "recall" a clinical value. Transcribe from a
-  registered source with a citation, mark it `UNVERIFIED`, or write
-  `TODO(clinical-review)`. (Constitution Art. I–II.)
-- Never set `review_status` to `VERIFIED:*`. That is the Owner's action only.
-- Do not add scope beyond `specs/000-product-overview`. Route new ideas to
-  `IDEAS.md`.
-- Begin each unit of work with a Constitution Check and end with one.
+- **Specs** (`specs/`) describe intent; **plans** (`plan/`) describe construction;
+  **ADRs** (`decisions/`) record why each significant choice was made (for auditors).
+- Agents/contributors: read [`CLAUDE.md`](CLAUDE.md) and the constitution first.
 
 ## Repository map
 
 ```
-CPP-DOSE/
-├── README.md                       ← you are here
-├── plan-review.md                  ← review of the original plan
-├── IDEAS.md                        ← deferred backlog (post-MVP)
-├── memory/
-│   └── constitution.md             ← supreme governing document
-├── specs/
-│   ├── 000-product-overview/spec.md
-│   ├── 001-drip-rate-core/spec.md
-│   ├── 002-weight-dose-calculator/spec.md
-│   ├── 003-burn-resuscitation/spec.md
-│   └── 005-clinical-content-pipeline/spec.md
-├── plan/
-│   ├── architecture.md
-│   └── data-model.md
-├── clinical/
-│   ├── protocol.schema.json        ← JSON Schema for every protocol record
-│   ├── uk-cpp.v1.json              ← seeded content, all UNVERIFIED
-│   ├── sources/                    ← registered source documents (read-only)
-│   ├── OPEN-CLINICAL-QUESTIONS.md   ← TODO(clinical-review) items for the Owner
-│   └── VERIFICATION-LOG.md         ← Owner sign-off log
-├── decisions/                      ← ADR-0001 … ADR-000N
-└── sprints/
-    ├── sprint-plan.md
-    ├── sprint-00-foundation.md
-    ├── sprint-01-drip-core.md
-    ├── sprint-02-dose-and-burn.md
-    └── sprint-03-field-hardening.md
+cpp-dose/
+├── src/                     # the app (React + TS)
+│   ├── drip/                # drip engine: calc, metronome, haptics, screen
+│   ├── clinical/            # types, field-bundle loader, fail-closed guard
+│   ├── components/          # disclaimer, theme toggle, source badge, nav
+│   ├── screens/             # drugs / about screens
+│   └── theme.css            # light + dark design system
+├── tests/                   # unit + offline + guard + schema tests
+├── public/                  # app icons (offline)
+├── scripts/                 # validate / verify / compile-field / gate-release
+├── clinical/                # SAFETY-CRITICAL content pipeline
+│   ├── protocol.schema.json #   JSON Schema for every record
+│   ├── uk-cpp.v1.json       #   the protocol data (source-tagged, review_status)
+│   ├── sources/             #   archived source PDFs + checksums
+│   ├── OPEN-CLINICAL-QUESTIONS.md
+│   └── VERIFICATION-LOG.md
+├── memory/constitution.md   # supreme governing document (clinical red lines)
+├── specs/                   # per-feature specs (000 overview, 001 drip, 003 burn, 005 pipeline)
+├── plan/                    # architecture.md + data-model.md
+├── decisions/               # ADR-0001 … ADR-0006
+├── sprints/                 # sprint plan + Sprint 0–3
+├── reports/                 # build guides (APK/iOS) + sprint reports
+├── CLAUDE.md                # operating rules for agents/contributors
+├── IDEAS.md                 # deliberately deferred backlog
+└── plan-review.md           # review of the original plan
 ```
+
+## Status
+
+MVP feature-complete (drip engine, by-drug, bag-time, burn, focus mode, calibrator).
+6 clinical records verified and live. Remaining: on-device Lighthouse pass, and each
+verified record is the Owner's sign-off (`clinical/OPEN-CLINICAL-QUESTIONS.md`).
+
+## License
+
+Not yet licensed — usage/redistribution rights are reserved by the Owner pending a
+license decision. If you intend to use or contribute, contact the Owner first.
