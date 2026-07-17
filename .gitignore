@@ -13,6 +13,9 @@ src/clinical/field-bundle.json
 # by `npx cap add android`; keep it out of the repo — regenerate from web build)
 android/
 
+# stray derived extract (source of truth is clinical/sources/antibiotocs-UA.pdf)
+antibiotics_uk.txt
+
 # OS / editor
 .DS_Store
 *.log
