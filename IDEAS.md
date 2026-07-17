@@ -37,9 +37,12 @@ value still enters via the pipeline, source-tagged and Owner-verified.
   antibiotic doses (cefazolin, metronidazole, clindamycin, ertapenem, ceftriaxone,
   vancomycin, ciprofloxacin). Deferred to avoid a half-built pediatric path; when
   built, add as a distinct, clearly-labeled mode with its own verification.
-- **Antibiotic "by injury type" browser** — surface `antibiotic_prophylaxis[]` as
-  a guided picker (extremity/thorax/abdomen/maxillofacial/CNS/eye/burns). Data is
-  already seeded; the UI/decision-tree needs Owner confirmation (open question C.1).
+- **Antibiotic "by injury type" browser** — ~~surface `antibiotic_prophylaxis[]`
+  as a guided picker~~ **in progress on `feature/antibiotics-reference`**, see
+  Spec 004 / ADR-0007 / Sprint 4. Built as a read-only reference (TCCC 2026 +
+  MOZ 2023, source-separated) in the existing "Препарати" tab, not a guided
+  decision-tree picker — the CNS branching-logic decision tree itself
+  (open question C.1) is still open and out of scope for that pass.
 - **Parkland burn formula** — only if a current MOZ/registered protocol prescribing
   it is added to the Source Registry (ADR-0003). Not otherwise.
 - **Lund–Browder TBSA chart** — more accurate than Rule of Nines; MVP uses Rule of

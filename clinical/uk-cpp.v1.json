@@ -310,7 +310,7 @@
     },
     {
       "id": "moz_cefazolin",
-      "drug": "Cefazolin",
+      "drug": "Цефазолін",
       "indication": "Combat-wound antibiotic prophylaxis — drug of choice (most injury types)",
       "route": "IV",
       "fixed_dose": "2 g",
@@ -323,7 +323,7 @@
     },
     {
       "id": "moz_clindamycin_iv",
-      "drug": "Clindamycin",
+      "drug": "Кліндаміцин",
       "indication": "Prophylaxis alternative (documented beta-lactam allergy)",
       "route": "IV",
       "fixed_dose": "900 mg",
@@ -335,7 +335,7 @@
     },
     {
       "id": "moz_clindamycin_po",
-      "drug": "Clindamycin",
+      "drug": "Кліндаміцин",
       "indication": "Prophylaxis alternative (documented beta-lactam allergy)",
       "route": "PO",
       "fixed_dose": "450 mg",
@@ -347,7 +347,7 @@
     },
     {
       "id": "moz_ertapenem",
-      "drug": "Ertapenem",
+      "drug": "Ертапенем",
       "indication": "Prophylaxis alternative (thoracic w/ esophageal, abdominal hollow-organ, delayed evac w/ abdominal/shock/NPO)",
       "route": "IV",
       "fixed_dose": "1 g",
@@ -359,7 +359,7 @@
     },
     {
       "id": "moz_metronidazole",
-      "drug": "Metronidazole",
+      "drug": "Метронідазол",
       "indication": "Adjunct for GI perforation / heavy organic CNS contamination",
       "route": "IV",
       "fixed_dose": "500 mg",
@@ -371,7 +371,7 @@
     },
     {
       "id": "moz_moxifloxacin",
-      "drug": "Moxifloxacin",
+      "drug": "Моксифлоксацин",
       "indication": "Prophylaxis alternative / delayed-evacuation single PO dose",
       "route": "IV/PO",
       "fixed_dose": "400 mg",
@@ -383,7 +383,7 @@
     },
     {
       "id": "moz_levofloxacin_po_once",
-      "drug": "Levofloxacin",
+      "drug": "Левофлоксацин",
       "indication": "General prehospital PO prophylaxis / delayed-evacuation single dose",
       "route": "PO",
       "fixed_dose": "500 mg",
@@ -395,7 +395,7 @@
     },
     {
       "id": "moz_levofloxacin_eye",
-      "drug": "Levofloxacin",
+      "drug": "Левофлоксацин",
       "indication": "Penetrating eye injury",
       "route": "IV/PO",
       "fixed_dose": "500 mg IV or 750 mg PO",
@@ -407,7 +407,7 @@
     },
     {
       "id": "moz_vancomycin",
-      "drug": "Vancomycin",
+      "drug": "Ванкоміцин",
       "indication": "CNS / eye prophylaxis (cephalosporin allergy/anaphylaxis, or added to eye regimen)",
       "route": "IV",
       "dose_per_kg": "15-20 mg/kg",
@@ -419,7 +419,7 @@
     },
     {
       "id": "moz_ciprofloxacin",
-      "drug": "Ciprofloxacin",
+      "drug": "Ципрофлоксацин",
       "indication": "CNS prophylaxis alternative (with vancomycin, cephalosporin allergy)",
       "route": "IV",
       "fixed_dose": "400 mg",
@@ -431,7 +431,7 @@
     },
     {
       "id": "moz_ceftriaxone",
-      "drug": "Ceftriaxone",
+      "drug": "Цефтріаксон",
       "indication": "CNS penetrating injury — alternative to cefazolin",
       "route": "IV",
       "fixed_dose": "2 g",
@@ -443,7 +443,7 @@
     },
     {
       "id": "moz_fluoroquinolone_eyedrops",
-      "drug": "Fluoroquinolone ophthalmic drops",
+      "drug": "Фторхінолон (очні краплі)",
       "indication": "Eye wound, burn or abrasion — topical",
       "route": "topical (ophthalmic)",
       "fixed_dose": "1 drop",
@@ -455,7 +455,7 @@
     },
     {
       "id": "moz_silver_sulfadiazine_topical",
-      "drug": "Silver sulfadiazine / topical antibacterial",
+      "drug": "Срібла сульфодіазин / місцевий антибактеріальний засіб",
       "indication": "Burns (superficial to deep) — topical only",
       "route": "topical",
       "fixed_dose": "topical application with daily dressing change",

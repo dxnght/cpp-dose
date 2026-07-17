@@ -51,7 +51,11 @@ modules, themes, both native shells scaffolded, CI, repo prepared for GitHub.
 ### M3 — Post-MVP growth  *(from `IDEAS.md`, each source-gated & opt-in)*
 - More drip drugs/fluids via the pipeline; **esketamine** once sourced; Appendix B
   numeric tables in-app.
-- Pediatric mode; antibiotic-by-injury browser (data already seeded).
+- Pediatric mode; antibiotic-by-injury browser — **in progress** on
+  `feature/antibiotics-reference` (Spec 004 / ADR-0007 / Sprint 4): read-only,
+  source-separated TCCC 2026 + MOZ 2023 reference in "Препарати". Content still
+  needs Owner verification (`OPEN-CLINICAL-QUESTIONS.md` §C) before it shows
+  anything in a field build — expected, fail-closed.
 - TQ-timer + PFC care-timer modules (reminders only, never clinical decisions).
 - Night-vision red theme toggle; auto-dim in focus (Capacitor Brightness); drip
   start-time + handover notes.

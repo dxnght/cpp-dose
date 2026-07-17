@@ -80,6 +80,23 @@ Owner verification when its milestone comes.
    when reviewing the branch, not decided here. Still to close:
    `tccc_cephalexin_po` verification, and Open Question C.2 (CNS combination
    branching) before that logic is presented as anything beyond a transcribed list.
+
+   **Update 2026-07-17 (later same day):** the 13 MOZ drug records' `drug` name
+   field was translated from an English gloss (e.g. "Cefazolin") to the exact
+   Ukrainian INN as it appears in the archived source (e.g. "Цефазолін") — the
+   medicine/dose/route are unchanged, only the display language. Editing a
+   `VERIFIED` record's content post-hoc invalidates the Owner's attestation of
+   that exact content (same discipline as the earlier `burn_rule_of_ten`/
+   analgesia-citation reverts this session), so **all 13 were reverted to
+   `UNVERIFIED`** — and because the 12 `antibiotic_prophylaxis` groups each
+   reference these drug ids, they were excluded from the compiled bundle too
+   (fail-closed dependency: a prophylaxis card is only shippable if the drug
+   record it points to is). Re-verify with the same loop as before (§D) — same
+   13 ids, same source, only the name changed:
+   `moz_cefazolin moz_clindamycin_iv moz_clindamycin_po moz_ertapenem
+   moz_metronidazole moz_moxifloxacin moz_levofloxacin_po_once
+   moz_levofloxacin_eye moz_vancomycin moz_ciprofloxacin moz_ceftriaxone
+   moz_fluoroquinolone_eyedrops moz_silver_sulfadiazine_topical`.
 2. **`[post-v1.0]` CNS antibiotic combination tree (brain & spinal).** The MOZ table
    nests "and / or (for cephalosporin allergy)" branches; confirm the exact decision
    tree before any UI renders it. *(records `moz_prophylaxis_cns_brain`,
