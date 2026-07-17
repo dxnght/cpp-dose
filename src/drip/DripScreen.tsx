@@ -11,6 +11,7 @@ import { assertRenderable } from "../clinical/guard";
 import { SourceBadge } from "../components/SourceBadge";
 import type { Drug } from "../clinical/types";
 import { Metronome } from "./metronome";
+import { tapHaptic, warnHaptic, emptyHaptic } from "./haptics";
 import {
   clamp,
   DOSE,
@@ -109,9 +110,8 @@ function alarm(kind: "warn" | "empty"): void {
   } catch {
     /* audio unavailable */
   }
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(kind === "warn" ? [80, 60, 80] : [220, 90, 220, 90, 220]);
-  }
+  if (kind === "warn") warnHaptic();
+  else emptyHaptic();
 }
 
 function Stepper(props: {
@@ -237,6 +237,7 @@ export function DripScreen() {
 
   useEffect(() => {
     const m = new Metronome();
+    m.setHapticHandler(() => tapHaptic());
     m.setTickHandler(() => {
       if (!wantFlashRef.current) return;
       const el = flashElRef.current;

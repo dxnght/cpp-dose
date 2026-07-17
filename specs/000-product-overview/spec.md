@@ -69,13 +69,14 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
 4. **Clinical content pipeline** — versioned, source-tagged, Owner-verified data;
    the safety substrate for 1–3. → `specs/005-clinical-content-pipeline`.
 5. **Field platform** — offline-first PWA, red/dark night theme, ≥48 px targets,
-   Ukrainian UI, persistent disclaimer, Android APK. → `plan/architecture.md`,
+   Ukrainian UI, persistent disclaimer, Android APK **and native iOS app** (both
+   offline, no server; vibration via Capacitor Haptics). → `plan/architecture.md`,
    Sprint 3.
 
 ## 5. Non-Goals (explicitly NOT in the MVP)
 
 Accounts, sync, cloud, analytics/telemetry, patient records, **any** data
-transmission, AI features, English UI, iOS build, pediatric dosing, Parkland burn
+transmission, AI features, English UI, pediatric dosing, Parkland burn
 formula, TQ-timer module, PFC care-timer module. **Newly deferred by this
 amendment** (→ `IDEAS.md`): Rule-of-Nines **body diagram**; antibiotic
 prophylaxis **by injury type**; a full weight×mg/kg dose calculator beyond the

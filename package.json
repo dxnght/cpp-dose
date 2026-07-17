@@ -1,9 +1,9 @@
 {
   "name": "cpp-dose",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
-  "description": "CPP-DOSE — offline field dosing/drip tool (Sprint 0 foundation)",
+  "description": "CPP-DOSE — offline IV drip-rate & dosing support for Prolonged Casualty Care (CPP). Android / iOS / PWA, fully offline, fail-closed clinical content.",
   "scripts": {
     "predev": "npm run compile:field",
     "dev": "vite",
@@ -19,7 +19,9 @@
     "prebuild": "npm run validate && npm run compile:field",
     "pretest": "npm run compile:field",
     "test": "vitest run",
-    "cap:sync": "cap sync android"
+    "cap:sync": "cap sync android",
+    "ios:sync": "cap sync ios",
+    "ios:open": "npm run build && cap sync ios && cap open ios"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@capacitor/android": "^6.1.2",
     "@capacitor/cli": "^6.1.2",
+    "@capacitor/ios": "^6.1.2",
     "@eslint/js": "^9.9.1",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^16.0.0",

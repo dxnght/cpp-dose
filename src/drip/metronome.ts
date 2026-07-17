@@ -29,9 +29,15 @@ export class Metronome {
   private gttPerMin = 0;
   private channels: MetronomeChannels = { audio: true, haptic: true, animation: true };
   private onTick: TickHandler | null = null;
+  private onHaptic: (() => void) | null = null;
 
   setTickHandler(cb: TickHandler | null): void {
     this.onTick = cb;
+  }
+
+  // Platform-agnostic: the app injects the haptic (Capacitor Haptics on native).
+  setHapticHandler(cb: (() => void) | null): void {
+    this.onHaptic = cb;
   }
 
   setChannels(c: MetronomeChannels): void {
@@ -93,9 +99,7 @@ export class Metronome {
       if (this.channels.audio) this.click(tickTime);
       const delayMs = Math.max(0, (tickTime - this.ctx.currentTime) * 1000);
       window.setTimeout(() => {
-        if (this.channels.haptic && typeof navigator !== "undefined" && "vibrate" in navigator) {
-          navigator.vibrate(25);
-        }
+        if (this.channels.haptic) this.onHaptic?.();
         if (this.channels.animation) this.onTick?.();
       }, delayMs);
       this.nextTickTime += this.intervalSec();

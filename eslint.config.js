@@ -37,7 +37,7 @@ const noNetwork = {
 };
 
 export default tseslint.config(
-  { ignores: ["dist", "dev-dist", "android", "node_modules", "clinical", "coverage"] },
+  { ignores: ["dist", "dev-dist", "android", "ios", "node_modules", "clinical", "coverage", "**/*.timestamp-*.mjs"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

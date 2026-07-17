@@ -31,3 +31,12 @@ non-goal for the MVP.
   no reuse of the Goterum-style web UX pattern; rejected for MVP speed.
 - **Flutter / React Native:** viable, but adds toolchain weight without a clear win
   over PWA+Capacitor for this feature set; rejected.
+
+## Update 2026-07-15 — iOS added
+
+iOS is no longer a non-goal (the Owner has a Mac). Added a native **Capacitor iOS**
+target alongside the Android APK — same offline/no-server model. Vibration moved from
+`navigator.vibrate` to the **Capacitor Haptics** plugin (with the plugin's web
+fallback), because the iOS WebView has no Vibration API. The PWA (Add to Home Screen)
+remains the no-Mac fallback, with documented iOS limits (no vibration, cache eviction
+after disuse). Build steps: `reports/BUILD-IOS.md`.
