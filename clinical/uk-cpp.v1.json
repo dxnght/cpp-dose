@@ -528,11 +528,11 @@
         "duration": "continuous (titrated)",
         "target_rate": "0.1-0.2 mg/kg/h (after a 0.2-0.3 mg/kg priming bolus)"
       },
-      "notes": "Owner recipe — ANALGESIA (distinct from the 3 mg/ml SEDATION drip). ENDPOINT = pain relief; NYSTAGMUS = sedation overshoot, AVOID it. Owner refinement 2026-07-13: priming bolus 0.2-0.3 mg/kg, then drip 0.1-0.2 mg/kg/h (a prior note listed 0.2-0.3 mg/kg/h for the drip itself — SUPERSEDED; confirm at verification). Always: check expiry + allergies; start lowest effective dose; titrate; KNOW the concentration (esketamine/Ketanest is double-concentrated); have a plan B. Run-time example: 100 mg/100 ml, 5 gtt/min on a 20 gtt/ml set = 300 gtt/h /20 = 15 ml/h -> ~6.6 h. CROSS-CHECK 2026-07-13: CPG-61 English original describes the ketamine drip as SEDATION (1 mg/kg/h); this low-dose ANALGESIC infusion is NOT in CPG-61 — provenance is Owner practice, true source to confirm. OWNER DECISION 2026-07-13: standardize analgesic-drip concentration to 1 mg/ml (1 ml = 1 mg) so ml/h = mg/h — simplest drop-count math.",
-      "review_status": "VERIFIED:Ihor:2026-07-13",
-      "source_document": "JTS-CPG-91",
-      "source_version": "Owner practice; candidate source JTS CPG 91 (21 Dec 2021) — confirm exact location",
-      "source_citation": "Owner-provided analgesia drip (100 mg/100 ml NS = 1 mg/ml; priming 0.2-0.3 mg/kg then 0.1-0.2 mg/kg/h). NOT in CPG-61 (which frames the ketamine drip as SEDATION). Confirm exact source (CPG-91 / JTS Pain-Anxiety-Delirium CPG ID 29) before verifying."
+      "notes": "ANALGESIA drip. Dose range 0.1-0.2 mg/kg from CPG-61 Appendix C; the Owner runs it as a continuous 1 mg/ml infusion at 0.1-0.2 mg/kg/h after a 0.2-0.3 mg/kg priming bolus. Distinct from the CPG-61 Appendix B ketamine SEDATION drip (3 mg/ml, 1 mg/kg/h). Endpoint = pain relief; NYSTAGMUS = sedation overshoot, avoid. Run-time example: 100 mg/100 ml, 5 gtt/min on 20 gtt/ml = 15 ml/h -> ~6.6 h.",
+      "review_status": "VERIFIED:Ihor:2026-07-17",
+      "source_document": "JTS-CPG-61",
+      "source_version": "JTS CPG ID 61 (11 May 2017)",
+      "source_citation": "JTS CPG-61, Appendix C (Common IV Meds Cheat Sheet): Ketamine analgesia pain dose range 0.1-0.2 mg/kg IV (moderate pain 20 mg IV; sedation 1 mg/kg IV); START LOW, GO SLOW. Owner drip prep: 100 mg in 100 ml NS (1 mg/ml), priming 0.2-0.3 mg/kg then continuous 0.1-0.2 mg/kg/h."
     },
     {
       "id": "pcc_burn_fluid",
