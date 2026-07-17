@@ -18,7 +18,8 @@ runs **up to 3 concurrent drips** each with a **5-minute pre-end alarm**.
   empty** (default lead 5 min, configurable) **and at empty**. *(FR-6)*
 - **T1.7** Input clamps + out-of-range blocking with reasons. *(FR-10, Art. III)*
 - **T1.8** Show rounding/units transparently. *(FR-11)*
-- **T1.9** Drift test harness logging tick timestamps vs ideal. *(SC-2)*
+- **T1.9** ✅ Drift test harness logging tick timestamps vs ideal — automated in
+  `tests/metronome-drift.test.ts` (fake AudioContext + fake timers, 10.5 min). *(SC-2)*
 - **T1.10 (concurrency)** Model 1–3 independent drips (own volume/rate/drop-factor/
   timer/alarms); block a 4th; free a slot on finish/remove. *(FR-7)*
 - **T1.11 (concurrency UX)** Show all active drips together (label, gtt/min, time
@@ -30,7 +31,8 @@ runs **up to 3 concurrent drips** each with a **5-minute pre-end alarm**.
 
 - **AC-1.1 (SC-1)** (500 ml, 4 h, 20) → 42; **(500 ml, 20 h, 20) → 8**;
   (1000 ml, 8 h, 15) → 31; (250 ml, 30 min, 60) → 500. *(automated)*
-- **AC-1.2 (SC-2)** One drip: audio+haptic+animation sync ≥10 min, drift < 1 drop/10 min.
+- **AC-1.2 (SC-2)** ✅ One drip: audio+haptic+animation sync ≥10 min, drift < 1 drop/10 min.
+  *(automated — `tests/metronome-drift.test.ts`; on-device timing confirmation is an M2 step.)*
 - **AC-1.3** Channel toggles behave; vibration-only produces no audio.
 - **AC-1.4 (SC-9)** Per-drip finish time within ±1 min; **5-min pre-end alarm** and
   at-empty alarm both fire in airplane mode.

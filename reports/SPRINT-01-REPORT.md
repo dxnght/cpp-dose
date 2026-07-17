@@ -40,9 +40,12 @@
 - **AC-1.1 (SC-1)** ✅ automated. **AC-1.3 / AC-1.4** ✅ channel toggles + vibration-only.
 - **AC-1.5 (SC-9)** ✅ 3 concurrent drips, 4th blocked; each own countdown + alarms.
 - **AC-1.7 (SC-3)** ✅ offline.
-- **AC-1.2 (SC-2)** ⚠ metronome uses correct AudioContext scheduling, but the automated
-  **drift test (≥10 min, <1 drop/10 min)** is not yet written — needs a timing harness
-  or on-device run. Deferred.
+- **AC-1.2 (SC-2)** ✅ *(closed 2026-07-17)* — automated drift harness
+  `tests/metronome-drift.test.ts` drives the real scheduler with a fake AudioContext +
+  fake timers over a simulated 10.5 min run at 20 & 42 gtt/min, logs every audio tick vs
+  the ideal grid, and asserts drift < 1 drop / 10 min (in fact sub-ms) with audio,
+  haptic and animation firing the same tick count. On-device confirmation stays an M2
+  step (real hardware clock), but the scheduling logic is now regression-guarded in CI.
 
 ## Notes / follow-ups
 
