@@ -22,14 +22,14 @@ is held out of the field bundle by the release gate — it does **not** block v1
 All six focused records are `VERIFIED` and their sources are archived; `npm run
 gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
 
-| Record | Status | Source |
-|---|---|---|
+| Record                            | Status                   | Source           |
+| --------------------------------- | ------------------------ | ---------------- |
 | `pcc_ketamine_analgesia_infusion` | VERIFIED:Ihor:2026-07-17 | JTS CPG-61 App C |
-| `pcc_ketamine_analgesia_priming` | VERIFIED:Ihor:2026-07-14 | JTS CPG-61 |
-| `pcc_ketamine_sedation_loading` | VERIFIED:Ihor:2026-07-14 | JTS CPG-61 |
-| `pcc_ketamine_sedation_infusion` | VERIFIED:Ihor:2026-07-13 | JTS CPG-61 |
-| `pcc_burn_fluid` | VERIFIED:Ihor:2026-07-13 | PCC-BURN |
-| `burn_rule_of_ten` | VERIFIED:Ihor:2026-07-14 | TCCC-2026 |
+| `pcc_ketamine_analgesia_priming`  | VERIFIED:Ihor:2026-07-14 | JTS CPG-61       |
+| `pcc_ketamine_sedation_loading`   | VERIFIED:Ihor:2026-07-14 | JTS CPG-61       |
+| `pcc_ketamine_sedation_infusion`  | VERIFIED:Ihor:2026-07-13 | JTS CPG-61       |
+| `pcc_burn_fluid`                  | VERIFIED:Ihor:2026-07-13 | PCC-BURN         |
+| `burn_rule_of_ten`                | VERIFIED:Ihor:2026-07-14 | TCCC-2026        |
 
 ### `[v1.0]` Remaining confirmations before the field build (low-risk, Owner sign-off)
 
@@ -66,20 +66,20 @@ Owner verification when its milestone comes.
 
 1. **`[post-v1.0 scope, content now complete]` Antibiotics-by-injury (MOZ + TCCC).**
    **Update 2026-07-17:** the Owner verified all 25 MOZ-ATB-2023 records (13 drugs
-   + 12 by-injury prophylaxis groups) and 3 of 4 TCCC-2026 general antibiotics
-   (`tccc_cefadroxil_po`, `tccc_ceftriaxone_unable_po`, `tccc_ceftriaxone_eye`;
-   `tccc_cephalexin_po` still `UNVERIFIED`). `gate:release` now exposes 38
-   clinical records total. **UI built** on `feature/antibiotics-reference`
-   (Spec 004 / ADR-0007 / Sprint 4) — a read-only, source-separated reference in
-   "Препарати"; with this much verified it now renders real content, not an
-   empty state. Also corrected the 12 `antibiotic_prophylaxis[].injury_type`
-   labels from an English paraphrase to the exact Ukrainian wording in the
-   archived MOZ source (label fix only, no dose/drug value changed).
-   **Open for the Owner:** the module is content-complete enough that it could
-   fold into v1.0 rather than wait for M3 — that's a scope call for the Owner
-   when reviewing the branch, not decided here. Still to close:
-   `tccc_cephalexin_po` verification, and Open Question C.2 (CNS combination
-   branching) before that logic is presented as anything beyond a transcribed list.
+   - 12 by-injury prophylaxis groups) and 3 of 4 TCCC-2026 general antibiotics
+     (`tccc_cefadroxil_po`, `tccc_ceftriaxone_unable_po`, `tccc_ceftriaxone_eye`;
+     `tccc_cephalexin_po` still `UNVERIFIED`). `gate:release` now exposes 38
+     clinical records total. **UI built** on `feature/antibiotics-reference`
+     (Spec 004 / ADR-0007 / Sprint 4) — a read-only, source-separated reference in
+     "Препарати"; with this much verified it now renders real content, not an
+     empty state. Also corrected the 12 `antibiotic_prophylaxis[].injury_type`
+     labels from an English paraphrase to the exact Ukrainian wording in the
+     archived MOZ source (label fix only, no dose/drug value changed).
+     **Open for the Owner:** the module is content-complete enough that it could
+     fold into v1.0 rather than wait for M3 — that's a scope call for the Owner
+     when reviewing the branch, not decided here. Still to close:
+     `tccc_cephalexin_po` verification, and Open Question C.2 (CNS combination
+     branching) before that logic is presented as anything beyond a transcribed list.
 
    **Update 2026-07-17 (later same day):** the 13 MOZ drug records' `drug` name
    field was translated from an English gloss (e.g. "Cefazolin") to the exact
@@ -94,13 +94,31 @@ Owner verification when its milestone comes.
    record it points to is). Re-verify with the same loop as before (§D) — same
    13 ids, same source, only the name changed:
    `moz_cefazolin moz_clindamycin_iv moz_clindamycin_po moz_ertapenem
-   moz_metronidazole moz_moxifloxacin moz_levofloxacin_po_once
-   moz_levofloxacin_eye moz_vancomycin moz_ciprofloxacin moz_ceftriaxone
-   moz_fluoroquinolone_eyedrops moz_silver_sulfadiazine_topical`.
+moz_metronidazole moz_moxifloxacin moz_levofloxacin_po_once
+moz_levofloxacin_eye moz_vancomycin moz_ciprofloxacin moz_ceftriaxone
+moz_fluoroquinolone_eyedrops moz_silver_sulfadiazine_topical`.
+   **Re-verified same day** — all 13 back to `VERIFIED:Ihor:2026-07-17`.
+
+   **Update 2026-07-17 (again):** `antibiotic_prophylaxis[].duration` was also
+   translated from an English gloss to the exact wording in the archived
+   source's table (e.g. "24 h" -> "24 год.", "At least 5 days or until CSF
+   leak is surgically resolved" -> "Не менше 5 діб або доки витік
+   спинномозкової рідини не буде хірургічно усунено"). Same discipline: all 12
+   prophylaxis records reverted to `UNVERIFIED` (drug/dose/route/duration
+   values unchanged, only display language). Re-verify with:
+   `moz_prophylaxis_extremity_soft_tissue moz_prophylaxis_extremity_open_fracture
+moz_prophylaxis_thorax_no_esophageal moz_prophylaxis_thorax_esophageal
+moz_prophylaxis_abdomen_hollow_organ moz_prophylaxis_maxillofacial
+moz_prophylaxis_cns_brain moz_prophylaxis_cns_spinal
+moz_prophylaxis_eye_penetrating moz_prophylaxis_eye_topical
+moz_prophylaxis_delayed_evac moz_prophylaxis_burns_topical`.
+
+   Verified VERIFIED:Ihor:2026-07-18 at 17:35 by Owner (Ihor).
+
 2. **`[post-v1.0]` CNS antibiotic combination tree (brain & spinal).** The MOZ table
    nests "and / or (for cephalosporin allergy)" branches; confirm the exact decision
-   tree before any UI renders it. *(records `moz_prophylaxis_cns_brain`,
-   `moz_prophylaxis_cns_spinal`)*
+   tree before any UI renders it. _(records `moz_prophylaxis_cns_brain`,
+   `moz_prophylaxis_cns_spinal`)_
 3. **`[post-v1.0]` IM ketamine doses.** `pcc_ketamine_analgesia_iv` holds the push/IM
    notes (CPG-61 footnote 1: 80 mg / 0.4–0.8 mg/kg IM when no IV/IO; Appendix D:
    40–60 mg / 0.5–0.75 mg/kg IM/IN breakthrough). Owner: "IM not used in prolonged
