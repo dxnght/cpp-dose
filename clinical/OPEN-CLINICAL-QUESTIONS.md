@@ -33,16 +33,42 @@ gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
 
 ### `[v1.0]` Remaining confirmations before the field build (low-risk, Owner sign-off)
 
-1. **TCCC-2026 edition.** Archived `clinical/sources/tccc-guidelines-2026-en.pdf`
-   (SHA-256 `340a17a0…`) is 17 pages / 314 KB. Confirm it is the complete/correct
-   edition — `burn_rule_of_ten` cites it.
-2. **PCC-BURN exact provenance.** `pcc_burn_fluid` cites the **UA translation** of the
-   JTS Burn Wound Management under PFC guide (archived, SHA-256 `873e2351…`). Confirm
-   the exact **JTS CPG ID/date** of the EN original and whether to cite EN, UA, or both.
-3. **JTS-CPG-61 translation provenance.** The ketamine drips were transcribed from the
-   guide (EN original archived, SHA-256 `e0fd67fb…`; UA translation also archived).
-   Owner may wish to spot-check the critical doses against the EN original — already the
-   citation of record, so this is a confidence check, not a blocker.
+1. **TCCC-2026 edition — corroborated, not byte-verified.** Archived
+   `clinical/sources/tccc-guidelines-2026-en.pdf` (SHA-256 `340a17a0…`) is 17
+   pages / 314 KB, titled "Tactical Combat Casualty Care (TCCC) Guidelines 01 May
+   2026". Web search (2026-07-18) confirms this exact title/date is the current
+   official CoTCCC/JTS release (jts.health.mil, deployedmedicine.com), 2026 focus
+   areas = airway management + TBI. Agents can't download/diff the official PDF
+   byte-for-byte from here — if the Owner wants full certainty, open the archived
+   copy once and sanity-check it reads as a complete, uncorrupted 17-page
+   document. Low residual risk; not a blocker.
+2. **PCC-BURN exact provenance — RESOLVED.** Confirmed via jts.health.mil
+   (2026-07-18): **JTS CPG ID 57**, dated **13 Jan 2017**
+   ("Burn Wound Management in Prolonged Field Care"). Source registry `version`
+   field updated accordingly. The archived file is still the **UA translation**
+   only (SHA-256 `873e2351…`); per ADR-0006's recommendation, archiving the EN
+   original too (`jts.health.mil/assets/docs/cpgs/Burn_Management_PFC_13_Jan_2017_ID57.pdf`)
+   would complete the audit trail, but isn't a blocker — `pcc_burn_fluid` stays
+   correctly cited either way.
+3. **JTS-CPG-61 translation provenance — RESOLVED, clean cross-check.**
+   Extracted and compared the archived EN original directly against all 4
+   verified ketamine drip records (2026-07-18):
+   - Sedation loading: EN "1mg/kg IV push over 60 seconds" — matches
+     `pcc_ketamine_sedation_loading` exactly.
+   - Sedation infusion: EN "MIX: 750mg (1.5 vials of 500mg/5mL) in 250mL of
+     normal saline (3mg/mL solution)... Nonintubated: 1mg/kg/h; Intubated
+     1–2mg/kg/h... initial drip rate in mL/h equals weight in kg divided by
+     2... Increase or decrease drip by 0.25mg/kg/h" — matches
+     `pcc_ketamine_sedation_infusion` exactly, including the ml/h-from-weight
+     shortcut and the titration step.
+   - Analgesia (Appendix C, Common IV Meds Cheat Sheet): EN "Ketamine — Moderate
+     Pain 20mg IV | Pain Dose Range 0.1–0.2mg/kg IV | Sedation 1mg/kg IV" —
+     matches the bolus/push values cited in `pcc_ketamine_analgesia_infusion`/
+     `_priming` exactly. **Note (already disclosed in the citation):** Appendix
+     C gives push doses only, no mg/kg/h continuous rate for analgesia — the
+     "0.1-0.2 mg/kg/h continuous drip" and the "100 mg/100 ml NS" prep are the
+     **Owner's own drip translation** of that push range, not a literal
+     Appendix C quote. No discrepancy found; nothing to change.
 4. **`tccc_cephalexin_po` — last unverified TCCC general antibiotic.** The other 3
    (cefadroxil, ceftriaxone unable-PO, ceftriaxone eye) are `VERIFIED`; this one alone
    is still open. Source line is already transcribed (TCCC-2026 §12.b: "Cephalexin
@@ -50,11 +76,11 @@ gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
    `npm run verify:record -- tccc_cephalexin_po "Ihor"` then
    `npm run compile:field && npm run gate:release`.
 
-**Note:** items 1–3 above aren't one-command closes (they're PDF-edition/provenance
-confirmations, not record verifications) — they don't block `gate:release` today
-(nothing currently cites an un-archived source), they're a confidence/audit pass
-before the first real field release. Item 4 is a one-command close, same as any
-other record.
+**Note (updated 2026-07-18):** items 2 and 3 are now resolved (see above). Item 1
+is corroborated but not byte-verified — low residual risk, optional final
+sanity-check, not a blocker. None of 1–3 ever blocked `gate:release` (nothing
+currently cites an un-archived source) — they were a confidence/audit pass, now
+mostly done. Item 4 is the only remaining one-command close.
 
 ---
 
