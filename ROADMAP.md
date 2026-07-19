@@ -12,13 +12,18 @@ with the Owner. Nothing here changes the constitution or the fail-closed model.
 - **Isn't:** a full drug database / formulary, an EHR, or a protocol reader. Content
   grows slowly and deliberately, always source-tagged and Owner-verified.
 
-## Current state
+## Current state (updated 2026-07-18)
 
 MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 3
 concurrent drips + 5-min alarm), by-drug mode, "Час мішка", burn (Rule of Ten), focus
 mode, tap-calibrator, light/dark themes, wake-lock, Capacitor Haptics. Governance +
-CI + GitHub-ready. Android APK builds; iOS scaffold in place. **6 clinical records
-verified** (currently re-verifying the analgesia drip after a citation fix).
+CI + GitHub-ready (`github.com/dxnght/cpp-dose`, `master` branch). **Android APK
+field-tested by the Owner on a real device — no issues reported.** iOS scaffold in
+place, currently blocked on a device/OS mismatch (not a v1.0 blocker, Android-first
+per Owner decision). **43 clinical records + 2 engineering formulas verified**: the
+full v1.0 focused drip set, all 25 MOZ-ATB-2023 antibiotic records, and 3/4 of the
+TCCC-2026 general antibiotics (`feature/antibiotics-reference` merged to `master`,
+Spec 004 / ADR-0007 / Sprint 4).
 
 ---
 
@@ -51,14 +56,53 @@ modules, themes, both native shells scaffolded, CI, repo prepared for GitHub.
 ### M3 — Post-MVP growth  *(from `IDEAS.md`, each source-gated & opt-in)*
 - More drip drugs/fluids via the pipeline; **esketamine** once sourced; Appendix B
   numeric tables in-app.
-- Pediatric mode; antibiotic-by-injury browser — **in progress** on
-  `feature/antibiotics-reference` (Spec 004 / ADR-0007 / Sprint 4): read-only,
-  source-separated TCCC 2026 + MOZ 2023 reference in "Препарати". Content still
-  needs Owner verification (`OPEN-CLINICAL-QUESTIONS.md` §C) before it shows
-  anything in a field build — expected, fail-closed.
-- TQ-timer + PFC care-timer modules (reminders only, never clinical decisions).
+- Pediatric mode; antibiotic-by-injury browser — **DONE and merged to `master`**
+  (Spec 004 / ADR-0007 / Sprint 4): read-only, source-separated TCCC 2026 + MOZ 2023
+  reference in "Препарати". Content-complete (25/25 MOZ + 3/4 TCCC verified); the
+  duration-escalation logic originally imagined for this feature (in
+  `TACMED-POC-MASTER-BRIEF.md` §5.2 item 8) was **not found in the archived source**
+  and was **not built** — flagged for the Owner, not guessed at (Art. I).
+- TQ-timer + PFC care-timer modules (reminders only, never clinical decisions) —
+  **in spec** (Spec 006 / Spec 007 / Sprint 5), see "Development vectors" below.
 - Night-vision red theme toggle; auto-dim in focus (Capacitor Brightness); drip
   start-time + handover notes.
+
+---
+
+## Development vectors (Owner review, 2026-07-18)
+
+Four directions were proposed for what comes next, all constrained to the existing
+**source lock** (TCCC-2026, MOZ-ATB-2023, JTS-CPG-61/91, PCC-BURN — no new source
+without Owner approval) and the project's minimalist stance: grow *verified content
+and precision*, not app surface area. Owner picked **(B) v1.0 tails** and **(C)
+timer modules** to work first; (A) and (D) stay queued.
+
+**(A) Fixed-dose reference screen** — `TACMED-POC-MASTER-BRIEF.md` §5.2 item 1
+(TXA, esketamine, ondansetron, calcium, hypertonic saline, meloxicam/paracetamol,
+midazolam). Cheapest of the four: all ~14 records are **already transcribed and
+seeded** in `uk-cpp.v1.json` as `UNVERIFIED` TCCC-2026 drugs — needs a small
+read-only screen (same shape as the antibiotics reference) + Owner verification,
+no new sourcing. Queued.
+
+**(B) Close the [v1.0] tails** — ✅ in progress. Precise checklist in
+`clinical/OPEN-CLINICAL-QUESTIONS.md` §A: verify `tccc_cephalexin_po` (one
+command, last unverified general antibiotic); confirm the TCCC-2026 PDF edition;
+confirm PCC-BURN's exact JTS CPG ID; optionally cross-check JTS-CPG-61 against the
+English original. Administrative/confidence work, not new features.
+
+**(C) Timer modules (TQ + PFC nursing)** — ✅ in progress. `specs/006-tq-timer`,
+`specs/007-pfc-nursing-timer`, `sprints/sprint-05-timer-modules.md`. Deliberately
+minimal: TQ-timer implements exactly the TCCC-2026 §6.a.3 2 h/6 h thresholds;
+PFC nursing-timer implements exactly the q2h subset of JTS-CPG-91 Table 17
+(repositioning + splint/pulse check), with the rest of that table logged as a
+ready-to-go, already-sourced backlog in `IDEAS.md` — not built now. Reminders and
+checklists only, **never a clinical decision** (Constitution Art. I).
+
+**(D) Field-hardening (M2 close-out)** — `CHANGELOG.md` (missing, flagged),
+Lighthouse PWA-installability pass, on-device airplane-mode soak log, signed
+release APK, and a decision on whether the red night theme is still wanted (the
+app currently has light/dark Apple-style themes instead). No new clinical content.
+Queued.
 
 ---
 
