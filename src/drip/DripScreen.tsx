@@ -1,6 +1,7 @@
 // Drip engine screen (Spec 001 + Spec 003 burn mode). Drop-factor selector +
 // steppers + gtt/min hero, up to 3 concurrent drips each with its own timer +
-// 5-min pre-end alarm; one audible metronome at a time (FR-9). Focus mode with
+// 10-min pre-end alarm (changed from 5 min, Owner decision 2026-07-18); one
+// audible metronome at a time (FR-9). Focus mode with
 // live retitration, a phase-synced drip-chamber animation shared with a silent
 // screen-flash and the audio metronome, confirm-to-remove, tap-to-calibrate, and
 // remembered last drop-factor/drug. All math is engineering; drug concentrations
@@ -43,11 +44,15 @@ interface ActiveDrip {
   bagMl: number | null;
   startedAt: number;
   animStart: number; // performance.now() ms — shared phase anchor
-  warned5: boolean;
+  warnedPreEnd: boolean;
   warnedEmpty: boolean;
 }
 
 type Mode = "dose" | "bagtime" | "burn";
+
+// Spec 001 FR-6: pre-end alarm lead time. Changed from 5 to 10 min (Owner
+// decision 2026-07-18) — more warning before a bag actually runs dry.
+const PRE_END_ALARM_MS = 10 * 60_000;
 
 const LS = {
   get(key: string): string | null {
@@ -87,7 +92,7 @@ function dur(gtt: number): string {
   return `${(60 / Math.max(1, gtt)).toFixed(2)}s`;
 }
 
-// Distinct alarm feel: a short double for the 5-min warning, a long triple at empty.
+// Distinct alarm feel: a short double for the pre-end warning, a long triple at empty.
 function alarm(kind: "warn" | "empty"): void {
   try {
     const Ctor = (window as unknown as { AudioContext?: typeof AudioContext })
@@ -354,10 +359,10 @@ export function DripScreen() {
         if (d.bagMl == null || d.mlPerH <= 0) return d;
         const remMs =
           d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
-        if (!d.warned5 && remMs <= 5 * 60_000 && remMs > 0) {
+        if (!d.warnedPreEnd && remMs <= PRE_END_ALARM_MS && remMs > 0) {
           alarm("warn");
           changed = true;
-          return { ...d, warned5: true };
+          return { ...d, warnedPreEnd: true };
         }
         if (!d.warnedEmpty && remMs <= 0) {
           alarm("empty");
@@ -390,7 +395,7 @@ export function DripScreen() {
         bagMl,
         startedAt: Date.now(),
         animStart: nowMs(),
-        warned5: false,
+        warnedPreEnd: false,
         warnedEmpty: false,
       },
     ]);

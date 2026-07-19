@@ -18,7 +18,7 @@ Ukrainian UI · offline (zero network at runtime) · light + dark themes · Andr
 
 - **Drip engine** — drop-factor selector (10 / 15 / 20 gtt/ml), weight + dose
   steppers, live gtt/min hero, up to **3 concurrent drips** each with an end-of-bag
-  timer and a 5-minute pre-end alarm.
+  timer and a 10-minute pre-end alarm.
 - **By drug** — a curated list of verified drip medications/fluids (ketamine analgesia
   1 mg/ml, sedation 3 mg/ml, burn fluid) with the recommended dose + a priming/loading
   bolus computed for the patient.

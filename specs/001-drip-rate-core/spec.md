@@ -89,8 +89,9 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-5** Audio/haptics scheduled on a monotonic audio clock (ADR-0005), NOT
   `setInterval`.
 - **FR-6** End-of-bag timer per drip: from start + volume + rate, show finish
-  wall-clock time; fire a local alarm **5 min before empty** (lead time
-  configurable, default 5) and **at empty**. No network.
+  wall-clock time; fire a local alarm **10 min before empty** (lead time
+  configurable, default 10 — changed from 5, Owner decision 2026-07-18) and
+  **at empty**. No network.
 - **FR-7 (concurrency)** Support **1–3 concurrent drips**. Each drip is an
   independent unit (its own volume, rate, drop factor, timer, alarms). Adding a 4th
   is blocked with a message. Removing/finishing one frees a slot.
@@ -114,7 +115,7 @@ unambiguous, usable one-handed with gloves at night.
 - **AC-3** Toggling a metronome channel affects only that channel.
 - **AC-4** Vibration-only mode produces no audio (silence discipline).
 - **AC-5 (SC-9)** Each drip's finish time = start + volume/rate within ±1 min; the
-  **5-min pre-end alarm** and the **at-empty alarm** both fire, in airplane mode.
+  **10-min pre-end alarm** and the **at-empty alarm** both fire, in airplane mode.
 - **AC-6 (SC-9)** With **3 concurrent drips** at different rates, each keeps its own
   correct countdown and fires its own alarms independently; a 4th is blocked.
 - **AC-7** Out-of-range input → blocking message, no computed number.

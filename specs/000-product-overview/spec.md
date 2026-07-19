@@ -47,7 +47,8 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
    **recommended dose** (from a registered source), then let the medic enter the
    **actual dose / diluent volume / target time** and get the drip rate.
 3. Run **up to 3 concurrent drips**, each with its own rate, running total, and an
-   **alarm 5 minutes before the bag empties** (and at empty).
+   **alarm 10 minutes before the bag empties** (and at empty; changed from 5 min,
+   Owner decision 2026-07-18 — more warning before a bag runs dry).
 4. Work **100% offline**, be legible at night, be operable with gloves.
 5. Make it structurally impossible to display an unverified or invented clinical
    number (Constitution Art. I–III).
@@ -56,7 +57,7 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
 
 1. **Drip engine** — volume↔time↔rate calculator, IV-set drop-factor selection,
    metronome (audio + haptic + animation, independently mutable), end-of-bag timer
-   with a **5-minute pre-end alarm**, and **up to 3 concurrent drips**.
+   with a **10-minute pre-end alarm**, and **up to 3 concurrent drips**.
    → `specs/001-drip-rate-core`.
 2. **Drip drug list & infusion recipe** — a curated list of drip-able
    medications/fluids from the versioned protocol file; each shows its recommended
@@ -96,7 +97,7 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 | SC-6 | All interactive targets ≥ 48 px; passes Lighthouse PWA installability. | Automated audit (Sprint 3). |
 | SC-7 | Every displayed clinical number shows its `source_version` + verification state. | UI test. |
 | SC-8 | APK installs and runs on the Owner's Android device. | Manual acceptance. |
-| **SC-9** | **Up to 3 concurrent drips** each keep an independent rate + running timer + fire a **5-min pre-end alarm** and an at-empty alarm, offline. | Automated + manual test (Spec 001). |
+| **SC-9** | **Up to 3 concurrent drips** each keep an independent rate + running timer + fire a **10-min pre-end alarm** and an at-empty alarm, offline. | Automated + manual test (Spec 001). |
 
 ## 7. Assumptions
 
