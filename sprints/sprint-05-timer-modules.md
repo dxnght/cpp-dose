@@ -1,13 +1,22 @@
 # Sprint 5 — Timer Modules (TQ-timer + PFC nursing-care timer)
 
-**Goal:** two small, tightly source-locked reminder modules — never clinical
-decisions, always sourced to an already-registered CPG. Reuses the drip screen's
-alarm/local-notification/two-tap-confirm patterns rather than inventing new
-mechanics.
+> **Status update (2026-07-18, same day this sprint was drafted):** Spec 006
+> (TQ-timer) is **withdrawn** — the Owner decided a separate tourniquet-timer
+> subsystem isn't wanted; superseded by a much smaller change already shipped
+> (drip pre-end alarm 5 → 10 min, see `CHANGELOG.md`). Spec 007 (PFC
+> nursing-timer) is **on hold** — Owner still deciding if it's needed at all.
+> **No work has started on either.** This sprint doc is kept for reference
+> (backlog below is still accurate *if* Spec 007 is ever greenlit) but has
+> **no currently-approved work** — do not pick up T5.x tasks without an
+> explicit go-ahead.
 
-**Primary specs:** 006-tq-timer (v1.0), 007-pfc-nursing-timer (v1.0).
-**Branch:** `feature/timer-modules` (isolated, same discipline as
-`feat-antibiotics`).
+**Goal (original):** two small, tightly source-locked reminder modules — never
+clinical decisions, always sourced to an already-registered CPG. Reuses the drip
+screen's alarm/local-notification/two-tap-confirm patterns rather than inventing
+new mechanics.
+
+**Primary specs:** ~~006-tq-timer~~ (withdrawn), 007-pfc-nursing-timer (on hold).
+**Branch:** `feature/timer-modules` — **not created**, nothing to branch yet.
 
 ## Backlog
 

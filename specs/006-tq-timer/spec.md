@@ -1,8 +1,13 @@
 # Spec 006 — TQ-Timer (per-limb tourniquet application timer)
 
 - **Feature ID:** 006-tq-timer
-- **Status:** Draft → pending Owner approval
-- **Priority:** P2 (M3 growth vector, Owner-prioritized 2026-07-18)
+- **Status:** ❌ **Withdrawn (Owner, 2026-07-18)** — a separate tourniquet-timer
+  subsystem is not wanted. Superseded by a much smaller change: the existing
+  drip end-of-bag pre-end alarm lead time was changed from 5 → 10 min
+  (`src/drip/DripScreen.tsx`, `PRE_END_ALARM_MS`; see `CHANGELOG.md`). Kept here
+  for the record, per project practice of not deleting specs when a decision
+  changes (cf. Spec 003 superseding Parkland via ADR-0003) — **do not implement.**
+- **Priority:** — (withdrawn)
 - **Version:** 1.0
 - **Depends on:** 005-clinical-content-pipeline (fail-closed gate, source-badge pattern),
   001-drip-rate-core (reuses the alarm/local-notification pattern — `alarm()` in

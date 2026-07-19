@@ -23,15 +23,17 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 
 ## Deferred from the original plan
 
-- **TQ-timer module** — ~~independent tourniquet timers per limb~~ **in spec, not
-  yet built**: see `specs/006-tq-timer/spec.md` / `sprints/sprint-05-timer-modules.md`
-  (Owner-prioritized 2026-07-18). Confirmed exact source: TCCC-2026 §6.a.3 —
-  "Every effort should be made to convert tourniquets in less than 2 hours...
-  Do not remove a tourniquet that has been in place more than 6 hours unless
-  close monitoring and lab capability are available." Reminders and checklists
-  only — **never a clinical decision.**
-- **PFC / PCC care-timer module** — ~~turn/reassess reminders for prolonged
-  care~~ **in spec, not yet built**: see `specs/007-pfc-nursing-timer/spec.md`.
+- **TQ-timer module** — ❌ **withdrawn (Owner, 2026-07-18)**. Considered as
+  `specs/006-tq-timer/spec.md` (independent tourniquet timers per limb, TCCC-2026
+  §6.a.3's 2 h/6 h conversion thresholds — exact quote: "Every effort should be
+  made to convert tourniquets in less than 2 hours... Do not remove a tourniquet
+  that has been in place more than 6 hours unless close monitoring and lab
+  capability are available.") but the Owner decided a separate tourniquet-timer
+  subsystem isn't needed. **Superseded by**: the existing drip end-of-bag pre-end
+  alarm lead time changed 5 → 10 min instead (`PRE_END_ALARM_MS` in
+  `src/drip/DripScreen.tsx`) — that's the entire "timer module" ask, done.
+- **PFC / PCC care-timer module** — ⏸ **on hold, Owner still deciding necessity**
+  (2026-07-18). Spec drafted: see `specs/007-pfc-nursing-timer/spec.md`.
   MVP scope is deliberately minimal — just the **q2h repositioning + splint/pulse
   check** (JTS-CPG-91 Table 17, both rows say "Every 2 hours"). The rest of
   Table 17 is a ready-to-go, already-sourced backlog if the minimal version

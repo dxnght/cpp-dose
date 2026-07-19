@@ -1,8 +1,11 @@
 # Spec 007 — PFC Nursing-Care Timer (minimal, q2h subset)
 
 - **Feature ID:** 007-pfc-nursing-timer
-- **Status:** Draft → pending Owner approval
-- **Priority:** P2 (M3 growth vector, Owner-prioritized 2026-07-18)
+- **Status:** ⏸ Draft, **on hold** — Owner still deciding whether this module is
+  needed in the project at all (2026-07-18); not approved for implementation.
+  Its sibling, Spec 006 (TQ-timer), was withdrawn the same day. Do not start
+  building until the Owner explicitly greenlights it.
+- **Priority:** — (on hold)
 - **Version:** 1.0
 - **Depends on:** 005-clinical-content-pipeline, 001-drip-rate-core (reused alarm
   pattern), 006-tq-timer (shares the "recurring reminder timer" building block).
