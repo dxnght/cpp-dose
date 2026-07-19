@@ -43,6 +43,18 @@ gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
    guide (EN original archived, SHA-256 `e0fd67fb…`; UA translation also archived).
    Owner may wish to spot-check the critical doses against the EN original — already the
    citation of record, so this is a confidence check, not a blocker.
+4. **`tccc_cephalexin_po` — last unverified TCCC general antibiotic.** The other 3
+   (cefadroxil, ceftriaxone unable-PO, ceftriaxone eye) are `VERIFIED`; this one alone
+   is still open. Source line is already transcribed (TCCC-2026 §12.b: "Cephalexin
+   500mg PO every 6 hours (Alternative)"). Close with:
+   `npm run verify:record -- tccc_cephalexin_po "Ihor"` then
+   `npm run compile:field && npm run gate:release`.
+
+**Note:** items 1–3 above aren't one-command closes (they're PDF-edition/provenance
+confirmations, not record verifications) — they don't block `gate:release` today
+(nothing currently cites an un-archived source), they're a confidence/audit pass
+before the first real field release. Item 4 is a one-command close, same as any
+other record.
 
 ---
 
