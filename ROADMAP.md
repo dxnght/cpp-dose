@@ -15,7 +15,7 @@ with the Owner. Nothing here changes the constitution or the fail-closed model.
 ## Current state (updated 2026-07-18)
 
 MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 3
-concurrent drips + 5-min alarm), by-drug mode, "Час мішка", burn (Rule of Ten), focus
+concurrent drips + 10-min pre-end alarm), by-drug mode, "Час мішка", burn (Rule of Ten), focus
 mode, tap-calibrator, light/dark themes, wake-lock, Capacitor Haptics. Governance +
 CI + GitHub-ready (`github.com/dxnght/cpp-dose`, `master` branch). **Android APK
 field-tested by the Owner on a real device — no issues reported.** iOS scaffold in
@@ -84,19 +84,23 @@ seeded** in `uk-cpp.v1.json` as `UNVERIFIED` TCCC-2026 drugs — needs a small
 read-only screen (same shape as the antibiotics reference) + Owner verification,
 no new sourcing. Queued.
 
-**(B) Close the [v1.0] tails** — ✅ in progress. Precise checklist in
-`clinical/OPEN-CLINICAL-QUESTIONS.md` §A: verify `tccc_cephalexin_po` (one
-command, last unverified general antibiotic); confirm the TCCC-2026 PDF edition;
-confirm PCC-BURN's exact JTS CPG ID; optionally cross-check JTS-CPG-61 against the
-English original. Administrative/confidence work, not new features.
+**(B) Close the [v1.0] tails** — ✅ mostly done. Checklist in
+`clinical/OPEN-CLINICAL-QUESTIONS.md` §A: PCC-BURN's exact JTS CPG ID **resolved**
+(CPG ID 57, 13 Jan 2017, confirmed against jts.health.mil); JTS-CPG-61 cross-check
+against the English original **resolved** — all 4 verified ketamine drip records
+match the EN source exactly, no discrepancies. TCCC-2026 edition is corroborated
+(low residual risk, optional). The one remaining item is Owner-only:
+`tccc_cephalexin_po` verification (one command, in the checklist).
 
-**(C) Timer modules (TQ + PFC nursing)** — ✅ in progress. `specs/006-tq-timer`,
-`specs/007-pfc-nursing-timer`, `sprints/sprint-05-timer-modules.md`. Deliberately
-minimal: TQ-timer implements exactly the TCCC-2026 §6.a.3 2 h/6 h thresholds;
-PFC nursing-timer implements exactly the q2h subset of JTS-CPG-91 Table 17
-(repositioning + splint/pulse check), with the rest of that table logged as a
-ready-to-go, already-sourced backlog in `IDEAS.md` — not built now. Reminders and
-checklists only, **never a clinical decision** (Constitution Art. I).
+**(C) Timer modules — resolved same day, smaller than proposed.** Owner reviewed
+`specs/006-tq-timer` / `specs/007-pfc-nursing-timer` and decided: **TQ-timer
+withdrawn** — no separate tourniquet-timer subsystem; the whole "timer module"
+ask turned out to be **the existing drip end-of-bag pre-end alarm, with its lead
+time changed from 5 → 10 min** (done — `PRE_END_ALARM_MS` in `DripScreen.tsx`,
+logged in `CHANGELOG.md`). **PFC nursing-timer stays on hold** — Owner still
+deciding whether it's needed at all; spec drafted (JTS-CPG-91 Table 17 q2h
+subset) but not approved for work. `sprints/sprint-05-timer-modules.md` has no
+active backlog right now.
 
 **(D) Field-hardening (M2 close-out)** — `CHANGELOG.md` (missing, flagged),
 Lighthouse PWA-installability pass, on-device airplane-mode soak log, signed

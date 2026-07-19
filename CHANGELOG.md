@@ -8,6 +8,19 @@ separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 ## 2026-07-18
 - Backfilled this file (flagged as missing against the project's own working
   agreements).
+- Drip end-of-bag pre-end alarm lead time changed **5 min → 10 min** (Owner
+  decision) — more warning before a bag runs dry. Live spec (000/001), README,
+  ROADMAP updated to match; historical sprint/report docs left as-is (accurate
+  record of what shipped at the time).
+- Spec 006 (TQ-timer) **withdrawn** — superseded by the alarm change above; a
+  separate tourniquet-timer subsystem isn't wanted. Spec 007 (PFC nursing-timer)
+  **on hold** — Owner still deciding necessity. `IDEAS.md`/`ROADMAP.md`/
+  `sprints/sprint-05-timer-modules.md` updated to reflect both.
+- Resolved 2 of 3 outstanding `[v1.0]` source-provenance questions: PCC-BURN's
+  exact JTS CPG ID (57, 13 Jan 2017, confirmed via jts.health.mil) and a direct
+  cross-check of all 4 verified ketamine drip records against the archived
+  JTS-CPG-61 English original — clean match, no discrepancies. TCCC-2026 edition
+  corroborated via web search (title/date match the official release).
 - Merged `feature/antibiotics-reference` → `master` (fast-forward): antibiotics
   reference section in "Препарати" (TCCC-2026 general + MOZ-ATB-2023 by-injury,
   source-separated, read-only); Bolus UI now shows the calculated dose alongside
