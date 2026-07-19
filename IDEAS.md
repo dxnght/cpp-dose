@@ -23,11 +23,29 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 
 ## Deferred from the original plan
 
-- **TQ-timer module** — independent tourniquet timers per limb, with application
-  timestamps and 2 h / 6 h thresholds. Reminders and checklists only — **never a
-  clinical decision.** (TCCC 2026 §6.a.3 supports the 2 h/6 h conversion logic as
-  reference.)
-- **PFC / PCC care-timer module** — turn/reassess reminders for prolonged care.
+- **TQ-timer module** — ~~independent tourniquet timers per limb~~ **in spec, not
+  yet built**: see `specs/006-tq-timer/spec.md` / `sprints/sprint-05-timer-modules.md`
+  (Owner-prioritized 2026-07-18). Confirmed exact source: TCCC-2026 §6.a.3 —
+  "Every effort should be made to convert tourniquets in less than 2 hours...
+  Do not remove a tourniquet that has been in place more than 6 hours unless
+  close monitoring and lab capability are available." Reminders and checklists
+  only — **never a clinical decision.**
+- **PFC / PCC care-timer module** — ~~turn/reassess reminders for prolonged
+  care~~ **in spec, not yet built**: see `specs/007-pfc-nursing-timer/spec.md`.
+  MVP scope is deliberately minimal — just the **q2h repositioning + splint/pulse
+  check** (JTS-CPG-91 Table 17, both rows say "Every 2 hours"). The rest of
+  Table 17 is a ready-to-go, already-sourced backlog if the minimal version
+  proves not enough in the field:
+  - Lip care — every hour (lip balm / lotion / petroleum jelly)
+  - Oral/Nasal care — every 24 h; Oral/Dental care — every 12 h
+  - Cough/deep breathing — every hour
+  - Hypothermia prevention — continuous (not interval-based, doesn't fit a timer)
+  - Head-injury positioning (elevate 30°) — continuous
+  - Nutrition — every 4–6 h; Hygiene — every 24 h
+  - IV/IO site care — flush catheter every 8–12 h, change tubing every 96 h
+  - Bowel management — as required
+  All rows are in the archived `clinical/sources/Prolonged_Casualty_Care_Guidelines_21_Dec_2021_ID91.pdf`,
+  Table 17 — no new source needed to pick any of these up later.
 - **iOS build** — MVP is Android-only.
 - **English (and other) UI** — MVP is Ukrainian-only.
 
