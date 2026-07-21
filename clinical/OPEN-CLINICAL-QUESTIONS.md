@@ -70,8 +70,7 @@ gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
      **Owner's own drip translation** of that push range, not a literal
      Appendix C quote. No discrepancy found; nothing to change.
 4. **`tccc_cephalexin_po` — RESOLVED (Owner, 2026-07-21).** `VERIFIED:Ihor:2026-07-21`
-   (TCCC-2026 §12.b: "Cephalexin 500mg PO every 6 hours (Alternative)"). All 4
-   TCCC-2026 general antibiotics are now verified, alongside all 25 MOZ-ATB-2023
+   (TCCC-2026 §12.b: "Cephalexin 500mg PO every 6 hours (Alternative)"). All 4 TCCC-2026 general antibiotics are now verified, alongside all 25 MOZ-ATB-2023
    records.
 
 **Note (updated 2026-07-21):** items 2, 3, and 4 are now resolved (see above). Item 1
