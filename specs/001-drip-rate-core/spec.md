@@ -3,7 +3,8 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.1 (added concurrent drips + explicit 5-min alarm)
+- **Version:** 1.2 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+  pre-end alarm, up from the single 10-min alarm — Owner decision 2026-07-21)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -31,9 +32,10 @@ unambiguous, usable one-handed with gloves at night.
 - **US-3** I start a **metronome** ticking at the drip interval and match the roller
   clamp to it; I can independently toggle sound, vibration, and the animated drop
   (silence discipline → vibration-only).
-- **US-4** I see the wall-clock time the bag empties, and get an **alarm 5 minutes
-  before empty** and again **at empty** ("prepare next bag / reassess").
-- **US-5** I can run **up to 3 drips at once**, each with its own rate, countdown,
+- **US-4** I see the wall-clock time the bag empties, and get **two explicit
+  alarms before it does — at 10 minutes and at 5 minutes remaining** — and again
+  **at empty** ("prepare next bag / reassess").
+- **US-5** I can run **up to 5 drips at once**, each with its own rate, countdown,
   and alarms, and see them together without confusion.
 
 ## 3. Functional requirements
@@ -71,7 +73,9 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-3g Tap calibrator.** Tapping in time with the real chamber (≥3 taps) measures
   the actual gtt/min being run + its bag run-time; applies to the "Час мішка" calc.
 - **FR-3h** Confirm-to-remove (two-tap) for a running drip; remembered last drop
-  factor + drug (local only); distinct alarm patterns for the 5-min warning vs empty.
+  factor + drug (local only); three distinct alarm patterns — 10-min warning
+  (single beep), 5-min warning (double beep), and empty (triple beep) — so the
+  medic can tell the stage apart without looking.
 - **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
   plugin + native build; deferred to the APK step.*
 - **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
@@ -89,12 +93,13 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-5** Audio/haptics scheduled on a monotonic audio clock (ADR-0005), NOT
   `setInterval`.
 - **FR-6** End-of-bag timer per drip: from start + volume + rate, show finish
-  wall-clock time; fire a local alarm **10 min before empty** (lead time
-  configurable, default 10 — changed from 5, Owner decision 2026-07-18) and
-  **at empty**. No network.
-- **FR-7 (concurrency)** Support **1–3 concurrent drips**. Each drip is an
-  independent unit (its own volume, rate, drop factor, timer, alarms). Adding a 4th
-  is blocked with a message. Removing/finishing one frees a slot.
+  wall-clock time; fire **two local pre-end alarms — at 10 min and at 5 min
+  before empty** (lead times, Owner decision 2026-07-21; supersedes the single
+  10-min-only alarm from 2026-07-18) and a third alarm **at empty**. No network.
+- **FR-7 (concurrency)** Support **1–5 concurrent drips** (raised from 3, Owner
+  decision 2026-07-21). Each drip is an independent unit (its own volume, rate,
+  drop factor, timer, alarms). Adding a 6th is blocked with a message.
+  Removing/finishing one frees a slot.
 - **FR-8 (concurrency UX)** All active drips are visible together (name/label,
   gtt/min, time remaining). The medic can tell them apart at a glance under stress.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
@@ -115,16 +120,17 @@ unambiguous, usable one-handed with gloves at night.
 - **AC-3** Toggling a metronome channel affects only that channel.
 - **AC-4** Vibration-only mode produces no audio (silence discipline).
 - **AC-5 (SC-9)** Each drip's finish time = start + volume/rate within ±1 min; the
-  **10-min pre-end alarm** and the **at-empty alarm** both fire, in airplane mode.
-- **AC-6 (SC-9)** With **3 concurrent drips** at different rates, each keeps its own
-  correct countdown and fires its own alarms independently; a 4th is blocked.
+  **10-min pre-end alarm**, the **5-min pre-end alarm**, and the **at-empty
+  alarm** all fire, in airplane mode, each with a distinguishable pattern.
+- **AC-6 (SC-9)** With **5 concurrent drips** at different rates, each keeps its own
+  correct countdown and fires its own alarms independently; a 6th is blocked.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 
 ## 5. Out of scope (this feature)
 
 Which drug/dose to run (Spec 002), burn-rate computation (Spec 003), infusion-pump
-modes, >3 concurrent drips, cross-drip interaction logic.
+modes, >5 concurrent drips, cross-drip interaction logic.
 
 ## 6. Edge cases
 
@@ -140,7 +146,9 @@ modes, >3 concurrent drips, cross-drip interaction logic.
 
 - **FR-9 multi-drip metronome behavior** (one audible at a time vs distinct cues) →
   Owner preference.
-- Exact input clamps and default pre-end lead time (default 5 min) → confirm.
+- **Pre-end lead times — RESOLVED (Owner, 2026-07-21):** two-stage, 10 min and
+  5 min before empty (not configurable in the MVP). Exact input clamps →
+  confirm.
 - **Rounding policy — RESOLVED (Owner, 2026-07-13):** compute **exact**, round only
   the final displayed drops/min (option A). Keep full precision internally (e.g.
   ml/min = 0.267, not 0.26). Consequence accepted: two cells of the *sedation* table

@@ -5,6 +5,26 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-21
+- Owner verified `tccc_cephalexin_po` (TCCC-2026 §12.b) — the last of the 4
+  TCCC-2026 general antibiotics; all 25 MOZ-ATB-2023 records were already
+  verified. `clinical/OPEN-CLINICAL-QUESTIONS.md` §A item 4 closed.
+- Drip pre-end alarm is now **two-stage**: a distinct alarm at **10 min**
+  remaining (single beep) and a second, more urgent one at **5 min**
+  remaining (double beep), before the existing at-empty alarm (triple beep) —
+  Owner decision. `warnedPreEnd` renamed to `warned10` + new `warned5` flag
+  per drip (`src/drip/DripScreen.tsx`).
+- Concurrent-drip cap raised **3 → 5** (`MAX_DRIPS` in `DripScreen.tsx`) —
+  Owner decision. Specs 000 (SC-9), 001 (FR-6/FR-7/AC-5/AC-6/US-4/US-5), 002
+  (US-5), README, ROADMAP, IDEAS updated to match; historical sprint/report
+  docs and the withdrawn/on-hold timer specs left as-is (accurate record of
+  what shipped/was proposed at the time).
+- `npm run validate / lint / test (37/37) / gate:release` all green; `tsc -b`
+  clean. Production `vite build` blocked in this sandbox by a stale-artifact
+  permission error unrelated to the code change (same class of issue as the
+  recurring git-lock quirk) — re-run `npm run build` from a normal terminal
+  to confirm.
+
 ## 2026-07-18
 - Backfilled this file (flagged as missing against the project's own working
   agreements).

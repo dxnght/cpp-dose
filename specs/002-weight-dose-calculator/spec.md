@@ -37,7 +37,7 @@ weight×mg/kg calculator with a focused infusion recipe.
   arithmetic is shown transparently. For fixed doses, no weight is needed.
 - **US-4** I see the recommended-dose range and cautions exactly as written in the
   source (e.g. "analgesia, not sedation"); the app never collapses a range.
-- **US-5** I start the prepared drip as one of my (up to 3) concurrent drips.
+- **US-5** I start the prepared drip as one of my (up to 5) concurrent drips.
 
 ## 3. Functional requirements
 

@@ -12,10 +12,10 @@ with the Owner. Nothing here changes the constitution or the fail-closed model.
 - **Isn't:** a full drug database / formulary, an EHR, or a protocol reader. Content
   grows slowly and deliberately, always source-tagged and Owner-verified.
 
-## Current state (updated 2026-07-18)
+## Current state (updated 2026-07-21)
 
-MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 3
-concurrent drips + 10-min pre-end alarm), by-drug mode, "Час мішка", burn (Rule of Ten), focus
+MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 5
+concurrent drips + two-stage 10-min/5-min pre-end alarms), by-drug mode, "Час мішка", burn (Rule of Ten), focus
 mode, tap-calibrator, light/dark themes, wake-lock, Capacitor Haptics. Governance +
 CI + GitHub-ready (`github.com/dxnght/cpp-dose`, `master` branch). **Android APK
 field-tested by the Owner on a real device — no issues reported.** iOS scaffold in

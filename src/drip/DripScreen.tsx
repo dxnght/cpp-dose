@@ -1,6 +1,7 @@
 // Drip engine screen (Spec 001 + Spec 003 burn mode). Drop-factor selector +
-// steppers + gtt/min hero, up to 3 concurrent drips each with its own timer +
-// 10-min pre-end alarm (changed from 5 min, Owner decision 2026-07-18); one
+// steppers + gtt/min hero, up to 5 concurrent drips each with its own timer +
+// two-stage pre-end alarm — 10 min and 5 min remaining (Owner decision
+// 2026-07-21, expanding the single 5→10 min change from 2026-07-18); one
 // audible metronome at a time (FR-9). Focus mode with
 // live retitration, a phase-synced drip-chamber animation shared with a silent
 // screen-flash and the audio metronome, confirm-to-remove, tap-to-calibrate, and
@@ -44,15 +45,21 @@ interface ActiveDrip {
   bagMl: number | null;
   startedAt: number;
   animStart: number; // performance.now() ms — shared phase anchor
-  warnedPreEnd: boolean;
+  warned10: boolean;
+  warned5: boolean;
   warnedEmpty: boolean;
 }
 
 type Mode = "dose" | "bagtime" | "burn";
 
-// Spec 001 FR-6: pre-end alarm lead time. Changed from 5 to 10 min (Owner
-// decision 2026-07-18) — more warning before a bag actually runs dry.
-const PRE_END_ALARM_MS = 10 * 60_000;
+// Spec 001 FR-6: two-stage pre-end alarm lead times (Owner decision
+// 2026-07-21) — a heads-up at 10 min remaining, then a second, more urgent
+// alarm at 5 min, before the final at-empty alarm.
+const PRE_END_ALARM_MS_10 = 10 * 60_000;
+const PRE_END_ALARM_MS_5 = 5 * 60_000;
+
+// Spec 001 FR-7: concurrent-drip cap (Owner decision 2026-07-21, raised from 3).
+const MAX_DRIPS = 5;
 
 const LS = {
   get(key: string): string | null {
@@ -92,18 +99,20 @@ function dur(gtt: number): string {
   return `${(60 / Math.max(1, gtt)).toFixed(2)}s`;
 }
 
-// Distinct alarm feel: a short double for the pre-end warning, a long triple at empty.
-function alarm(kind: "warn" | "empty"): void {
+// Distinct, escalating alarm feel so a medic can tell the stage apart without
+// looking: a single beep at 10-min-out, a double at 5-min-out, a long triple
+// at empty.
+function alarm(kind: "warn10" | "warn5" | "empty"): void {
   try {
     const Ctor = (window as unknown as { AudioContext?: typeof AudioContext })
       .AudioContext;
     if (Ctor) {
       const ctx = new Ctor();
-      const beeps = kind === "warn" ? 2 : 3;
+      const beeps = kind === "empty" ? 3 : kind === "warn5" ? 2 : 1;
       for (let i = 0; i < beeps; i++) {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
-        o.frequency.value = kind === "warn" ? 660 : 520;
+        o.frequency.value = kind === "empty" ? 520 : 660;
         const t = ctx.currentTime + i * 0.22;
         g.gain.setValueAtTime(0.0001, t);
         g.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
@@ -117,8 +126,8 @@ function alarm(kind: "warn" | "empty"): void {
   } catch {
     /* audio unavailable */
   }
-  if (kind === "warn") warnHaptic();
-  else emptyHaptic();
+  if (kind === "empty") emptyHaptic();
+  else warnHaptic();
 }
 
 function Stepper(props: {
@@ -359,10 +368,15 @@ export function DripScreen() {
         if (d.bagMl == null || d.mlPerH <= 0) return d;
         const remMs =
           d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
-        if (!d.warnedPreEnd && remMs <= PRE_END_ALARM_MS && remMs > 0) {
-          alarm("warn");
+        if (!d.warned10 && remMs <= PRE_END_ALARM_MS_10 && remMs > 0) {
+          alarm("warn10");
           changed = true;
-          return { ...d, warnedPreEnd: true };
+          return { ...d, warned10: true };
+        }
+        if (!d.warned5 && remMs <= PRE_END_ALARM_MS_5 && remMs > 0) {
+          alarm("warn5");
+          changed = true;
+          return { ...d, warned5: true };
         }
         if (!d.warnedEmpty && remMs <= 0) {
           alarm("empty");
@@ -376,7 +390,7 @@ export function DripScreen() {
   }, [now]);
 
   function addDrip() {
-    if (drips.length >= 3 || live.gtt <= 0) return;
+    if (drips.length >= MAX_DRIPS || live.gtt <= 0) return;
     const id = `d${Date.now()}`;
     const label =
       mode === "dose"
@@ -395,7 +409,8 @@ export function DripScreen() {
         bagMl,
         startedAt: Date.now(),
         animStart: nowMs(),
-        warnedPreEnd: false,
+        warned10: false,
+        warned5: false,
         warnedEmpty: false,
       },
     ]);
@@ -788,15 +803,19 @@ export function DripScreen() {
 
       <button
         className="primary add-btn"
-        disabled={drips.length >= 3 || live.gtt <= 0}
+        disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
         onClick={addDrip}
       >
-        {drips.length >= 3 ? "Максимум 3 дріпи" : "＋ Додати дріп"}
+        {drips.length >= MAX_DRIPS
+          ? `Максимум ${MAX_DRIPS} дріпів`
+          : "＋ Додати дріп"}
       </button>
 
       {drips.length > 0 && (
         <>
-          <h2>Активні дріпи ({drips.length}/3)</h2>
+          <h2>
+            Активні дріпи ({drips.length}/{MAX_DRIPS})
+          </h2>
           {drips.map((d) => {
             const isActive = d.id === activeId;
             return (

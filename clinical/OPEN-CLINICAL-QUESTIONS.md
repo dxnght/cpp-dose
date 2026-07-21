@@ -69,14 +69,12 @@ gate:release` passes and exposes them (6 clinical + 2 engineering formulas).
      "0.1-0.2 mg/kg/h continuous drip" and the "100 mg/100 ml NS" prep are the
      **Owner's own drip translation** of that push range, not a literal
      Appendix C quote. No discrepancy found; nothing to change.
-4. **`tccc_cephalexin_po` — last unverified TCCC general antibiotic.** The other 3
-   (cefadroxil, ceftriaxone unable-PO, ceftriaxone eye) are `VERIFIED`; this one alone
-   is still open. Source line is already transcribed (TCCC-2026 §12.b: "Cephalexin
-   500mg PO every 6 hours (Alternative)"). Close with:
-   `npm run verify:record -- tccc_cephalexin_po "Ihor"` then
-   `npm run compile:field && npm run gate:release`.
+4. **`tccc_cephalexin_po` — RESOLVED (Owner, 2026-07-21).** `VERIFIED:Ihor:2026-07-21`
+   (TCCC-2026 §12.b: "Cephalexin 500mg PO every 6 hours (Alternative)"). All 4
+   TCCC-2026 general antibiotics are now verified, alongside all 25 MOZ-ATB-2023
+   records.
 
-**Note (updated 2026-07-18):** items 2 and 3 are now resolved (see above). Item 1
+**Note (updated 2026-07-21):** items 2, 3, and 4 are now resolved (see above). Item 1
 is corroborated but not byte-verified — low residual risk, optional final
 sanity-check, not a blocker. None of 1–3 ever blocked `gate:release` (nothing
 currently cites an un-archived source) — they were a confidence/audit pass, now
@@ -106,7 +104,8 @@ Owner verification when its milestone comes.
    **Update 2026-07-17:** the Owner verified all 25 MOZ-ATB-2023 records (13 drugs
    - 12 by-injury prophylaxis groups) and 3 of 4 TCCC-2026 general antibiotics
      (`tccc_cefadroxil_po`, `tccc_ceftriaxone_unable_po`, `tccc_ceftriaxone_eye`;
-     `tccc_cephalexin_po` still `UNVERIFIED`). `gate:release` now exposes 38
+     `tccc_cephalexin_po` since verified too, 2026-07-21 — see §A item 4).
+     `gate:release` now exposes 38
      clinical records total. **UI built** on `feature/antibiotics-reference`
      (Spec 004 / ADR-0007 / Sprint 4) — a read-only, source-separated reference in
      "Препарати"; with this much verified it now renders real content, not an
@@ -115,9 +114,10 @@ Owner verification when its milestone comes.
      archived MOZ source (label fix only, no dose/drug value changed).
      **Open for the Owner:** the module is content-complete enough that it could
      fold into v1.0 rather than wait for M3 — that's a scope call for the Owner
-     when reviewing the branch, not decided here. Still to close:
-     `tccc_cephalexin_po` verification, and Open Question C.2 (CNS combination
-     branching) before that logic is presented as anything beyond a transcribed list.
+     when reviewing the branch, not decided here. `tccc_cephalexin_po`
+     verification closed 2026-07-21 (§A item 4). Still to close: Open Question
+     C.2 (CNS combination branching) before that logic is presented as
+     anything beyond a transcribed list.
 
    **Update 2026-07-17 (later same day):** the 13 MOZ drug records' `drug` name
    field was translated from an English gloss (e.g. "Cefazolin") to the exact

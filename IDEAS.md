@@ -15,7 +15,8 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 - **Full weight×mg/kg dose calculator** for all drugs — MVP has only the simple
   infusion recipe (optional weight for mg/kg drip doses). A general dosing
   calculator (bolus/push drugs, all routes) comes later.
-- **More than 3 concurrent drips**, and **non-drip (bolus/push) drug references**.
+- **More than 5 concurrent drips** (raised from 3 → 5, Owner decision
+  2026-07-21), and **non-drip (bolus/push) drug references**.
 - **PCC source registration** — register the JTS PCC guidelines (analgesia/sedation,
   burns) as sources so continuous-infusion drip doses can be transcribed + verified.
   Needs a source-hierarchy ADR (future ADR-0006). *(This is the near-term unlock for

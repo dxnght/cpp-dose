@@ -48,3 +48,4 @@ One row per record promoted to `VERIFIED`. Agents MUST NOT write to this file.
 | 2026-07-17 | moz_ceftriaxone | VERIFIED:Ihor:2026-07-17 | MOZ-ATB-2023 (2023) | Додаток, Ураження ЦНС (Цефтріаксон 2 г в/в кожні 24 год) | Ihor |
 | 2026-07-17 | moz_fluoroquinolone_eyedrops | VERIFIED:Ihor:2026-07-17 | MOZ-ATB-2023 (2023) | Додаток, Ураження очей (очні краплі з фторхінолоном по 1 краплі кожні 6 год) | Ihor |
 | 2026-07-17 | moz_silver_sulfadiazine_topical | VERIFIED:Ihor:2026-07-17 | MOZ-ATB-2023 (2023) | Додаток, Опіки; Примітка 3 (при опіках використовувати виключно місцеві АЛЗ) | Ihor |
+| 2026-07-21 | tccc_cephalexin_po | VERIFIED:Ihor:2026-07-21 | TCCC-2026 (01 May 2026) | TFC §12 Antibiotics, b (Cephalexin 500 mg PO q6h, Alternative) | Ihor |

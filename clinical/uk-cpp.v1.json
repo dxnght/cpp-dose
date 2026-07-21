@@ -192,7 +192,7 @@
       "route": "PO",
       "fixed_dose": "500 mg",
       "rate": "every 6 hours",
-      "review_status": "UNVERIFIED",
+      "review_status": "VERIFIED:Ihor:2026-07-21",
       "source_document": "TCCC-2026",
       "source_version": "01 May 2026",
       "source_citation": "TFC §12 Antibiotics, b (Cephalexin 500 mg PO q6h, Alternative)"
@@ -573,8 +573,13 @@
     {
       "id": "moz_prophylaxis_extremity_soft_tissue",
       "injury_type": "Кінцівки — шкіра/м’які тканини, без відкритого перелому",
-      "drug_of_choice": ["moz_cefazolin"],
-      "alternative": ["moz_clindamycin_po", "moz_clindamycin_iv"],
+      "drug_of_choice": [
+        "moz_cefazolin"
+      ],
+      "alternative": [
+        "moz_clindamycin_po",
+        "moz_clindamycin_iv"
+      ],
       "duration": "24 год.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -584,8 +589,12 @@
     {
       "id": "moz_prophylaxis_extremity_open_fracture",
       "injury_type": "Кінцівки — шкіра/м’які тканини з відкритим переломом, оголенням кісток/суглобів",
-      "drug_of_choice": ["moz_cefazolin"],
-      "alternative": ["moz_clindamycin_iv"],
+      "drug_of_choice": [
+        "moz_cefazolin"
+      ],
+      "alternative": [
+        "moz_clindamycin_iv"
+      ],
       "duration": "Первинно протягом 24 год. і повторно після кожної хірургічної обробки рани і промивання до закриття дефекту м’яких тканин",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -595,8 +604,13 @@
     {
       "id": "moz_prophylaxis_thorax_no_esophageal",
       "injury_type": "Грудна клітка — проникаюча травма без порушення цілісності стравоходу",
-      "drug_of_choice": ["moz_cefazolin"],
-      "alternative": ["moz_clindamycin_po", "moz_clindamycin_iv"],
+      "drug_of_choice": [
+        "moz_cefazolin"
+      ],
+      "alternative": [
+        "moz_clindamycin_po",
+        "moz_clindamycin_iv"
+      ],
       "duration": "24 год.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -606,8 +620,14 @@
     {
       "id": "moz_prophylaxis_thorax_esophageal",
       "injury_type": "Грудна клітка — проникаюча травма з порушенням цілісності стравоходу",
-      "drug_of_choice": ["moz_cefazolin", "moz_metronidazole"],
-      "alternative": ["moz_ertapenem", "moz_moxifloxacin"],
+      "drug_of_choice": [
+        "moz_cefazolin",
+        "moz_metronidazole"
+      ],
+      "alternative": [
+        "moz_ertapenem",
+        "moz_moxifloxacin"
+      ],
       "duration": "Припинити через 24 год. після остаточного хірургічного закриття",
       "notes": "Alternative is ertapenem 1 g IV once OR moxifloxacin 400 mg IV once.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
@@ -618,8 +638,14 @@
     {
       "id": "moz_prophylaxis_abdomen_hollow_organ",
       "injury_type": "Черевна порожнина — проникаюче поранення з підозрою/пораненням порожнистого органу (включно з прямою кишкою/промежиною)",
-      "drug_of_choice": ["moz_cefazolin", "moz_metronidazole"],
-      "alternative": ["moz_ertapenem", "moz_moxifloxacin"],
+      "drug_of_choice": [
+        "moz_cefazolin",
+        "moz_metronidazole"
+      ],
+      "alternative": [
+        "moz_ertapenem",
+        "moz_moxifloxacin"
+      ],
       "duration": "Припинити через 24 год. після хірургічного усунення дефекту порожнистого органу та/або прямої кишки",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -629,8 +655,12 @@
     {
       "id": "moz_prophylaxis_maxillofacial",
       "injury_type": "Щелепно-лицеві ураження та шиї — відкриті переломи / зі стороннім тілом чи фіксатором",
-      "drug_of_choice": ["moz_cefazolin"],
-      "alternative": ["moz_clindamycin_iv"],
+      "drug_of_choice": [
+        "moz_cefazolin"
+      ],
+      "alternative": [
+        "moz_clindamycin_iv"
+      ],
       "duration": "24 год.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -640,7 +670,10 @@
     {
       "id": "moz_prophylaxis_cns_brain",
       "injury_type": "ЦНС — проникаюче поранення головного мозку",
-      "drug_of_choice": ["moz_cefazolin", "moz_metronidazole"],
+      "drug_of_choice": [
+        "moz_cefazolin",
+        "moz_metronidazole"
+      ],
       "alternative": [
         "moz_ceftriaxone",
         "moz_metronidazole",
@@ -657,7 +690,10 @@
     {
       "id": "moz_prophylaxis_cns_spinal",
       "injury_type": "ЦНС — проникаюче поранення спинного мозку",
-      "drug_of_choice": ["moz_cefazolin", "moz_metronidazole"],
+      "drug_of_choice": [
+        "moz_cefazolin",
+        "moz_metronidazole"
+      ],
       "alternative": [
         "moz_ceftriaxone",
         "moz_metronidazole",
@@ -674,8 +710,13 @@
     {
       "id": "moz_prophylaxis_eye_penetrating",
       "injury_type": "Очі — проникаюче поранення",
-      "drug_of_choice": ["moz_levofloxacin_eye", "moz_vancomycin"],
-      "alternative": ["moz_moxifloxacin"],
+      "drug_of_choice": [
+        "moz_levofloxacin_eye",
+        "moz_vancomycin"
+      ],
+      "alternative": [
+        "moz_moxifloxacin"
+      ],
       "duration": "7 діб або до огляду офтальмолога",
       "notes": "No topical agents before primary repair unless ordered by an ophthalmologist.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
@@ -686,7 +727,9 @@
     {
       "id": "moz_prophylaxis_eye_topical",
       "injury_type": "Очі — поранення, опік або садно (непроникаюче)",
-      "drug_of_choice": ["moz_fluoroquinolone_eyedrops"],
+      "drug_of_choice": [
+        "moz_fluoroquinolone_eyedrops"
+      ],
       "duration": "До загоєння епітелію (без фарбування флюоресцеїном)",
       "review_status": "VERIFIED:Ihor:2026-07-18",
       "source_document": "MOZ-ATB-2023",
@@ -696,8 +739,13 @@
     {
       "id": "moz_prophylaxis_delayed_evac",
       "injury_type": "Особливі умови — очікувана затримка хірургічної допомоги понад 3 год.",
-      "drug_of_choice": ["moz_moxifloxacin"],
-      "alternative": ["moz_levofloxacin_po_once", "moz_ertapenem"],
+      "drug_of_choice": [
+        "moz_moxifloxacin"
+      ],
+      "alternative": [
+        "moz_levofloxacin_po_once",
+        "moz_ertapenem"
+      ],
       "duration": "Одноразово",
       "notes": "Moxifloxacin 400 mg PO once (choice) or levofloxacin 500 mg PO once (alt). Ertapenem 1 g IV once if penetrating abdominal injury, shock, or unable to take PO.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
@@ -708,7 +756,9 @@
     {
       "id": "moz_prophylaxis_burns_topical",
       "injury_type": "Опіки — поверхневі (I–IIа), дермальні (IIb), глибокі (III ступінь)",
-      "drug_of_choice": ["moz_silver_sulfadiazine_topical"],
+      "drug_of_choice": [
+        "moz_silver_sulfadiazine_topical"
+      ],
       "duration": "До загоєння або пересадки",
       "notes": "Topical antibacterials ONLY for burns (Примітка 3). Systemic antibiotics only if a penetrating wound is also present.",
       "review_status": "VERIFIED:Ihor:2026-07-18",
@@ -723,7 +773,11 @@
       "name": "Gravity IV drip rate",
       "kind": "engineering",
       "expression": "gtt_per_min = round( volume_ml / time_min * drop_factor )",
-      "inputs": ["volume_ml", "time_min", "drop_factor"],
+      "inputs": [
+        "volume_ml",
+        "time_min",
+        "drop_factor"
+      ],
       "applicability": "Gravity infusion set. drop_factor in {10,15,20,60,custom} gtt/ml. Output rounded to whole drops.",
       "notes": "Deterministic arithmetic identity, not a clinical recommendation; exempt from Owner clinical verification but shown with source tag. Example: 500 ml / 240 min * 20 = 41.67 -> 42 gtt/min.",
       "review_status": "UNVERIFIED",
@@ -736,7 +790,10 @@
       "name": "Burn initial fluid rate — USAISR Rule of Ten (TCCC)",
       "kind": "clinical",
       "expression": "initial_rate_ml_per_hr = TBSA_percent * 10 ; if weight_kg > 80 then add 100 ml/hr for each full 10 kg above 80",
-      "inputs": ["TBSA_percent", "weight_kg"],
+      "inputs": [
+        "TBSA_percent",
+        "weight_kg"
+      ],
       "applicability": "Adults 40-80 kg base; TBSA > 20%. Initiate as soon as IV/IO access established. If hemorrhagic shock also present, shock resuscitation takes precedence. Consider oral fluids for burns up to 30% TBSA if conscious.",
       "notes": "Resuscitation fluid: Lactated Ringer's, normal saline, or Hextend (Hextend max 1000 ml, then LR/NS). Estimate TBSA to nearest 10% by Rule of Nines.",
       "review_status": "VERIFIED:Ihor:2026-07-14",

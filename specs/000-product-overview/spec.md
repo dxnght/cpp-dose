@@ -46,9 +46,11 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
 2. Offer a **small curated list of drip medications/fluids**, each showing its
    **recommended dose** (from a registered source), then let the medic enter the
    **actual dose / diluent volume / target time** and get the drip rate.
-3. Run **up to 3 concurrent drips**, each with its own rate, running total, and an
-   **alarm 10 minutes before the bag empties** (and at empty; changed from 5 min,
-   Owner decision 2026-07-18 — more warning before a bag runs dry).
+3. Run **up to 5 concurrent drips** (raised from 3, Owner decision 2026-07-21),
+   each with its own rate, running total, and **two pre-end alarms — at 10
+   minutes and at 5 minutes before the bag empties** (plus a third alarm at
+   empty; the single 10-min alarm was itself a change from 5 min, Owner
+   decision 2026-07-18).
 4. Work **100% offline**, be legible at night, be operable with gloves.
 5. Make it structurally impossible to display an unverified or invented clinical
    number (Constitution Art. I–III).
@@ -57,7 +59,7 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
 
 1. **Drip engine** — volume↔time↔rate calculator, IV-set drop-factor selection,
    metronome (audio + haptic + animation, independently mutable), end-of-bag timer
-   with a **10-minute pre-end alarm**, and **up to 3 concurrent drips**.
+   with **10-min and 5-min pre-end alarms**, and **up to 5 concurrent drips**.
    → `specs/001-drip-rate-core`.
 2. **Drip drug list & infusion recipe** — a curated list of drip-able
    medications/fluids from the versioned protocol file; each shows its recommended
@@ -81,7 +83,7 @@ transmission, AI features, English UI, pediatric dosing, Parkland burn
 formula, TQ-timer module, PFC care-timer module. **Newly deferred by this
 amendment** (→ `IDEAS.md`): Rule-of-Nines **body diagram**; antibiotic
 prophylaxis **by injury type**; a full weight×mg/kg dose calculator beyond the
-simple infusion recipe; more than 3 concurrent drips; non-drip (bolus/push) drug
+simple infusion recipe; more than 5 concurrent drips; non-drip (bolus/push) drug
 references. The antibiotic-prophylaxis data stays in the protocol file (all
 `UNVERIFIED`) but is **not surfaced** in the MVP UI.
 
@@ -97,7 +99,7 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 | SC-6 | All interactive targets ≥ 48 px; passes Lighthouse PWA installability. | Automated audit (Sprint 3). |
 | SC-7 | Every displayed clinical number shows its `source_version` + verification state. | UI test. |
 | SC-8 | APK installs and runs on the Owner's Android device. | Manual acceptance. |
-| **SC-9** | **Up to 3 concurrent drips** each keep an independent rate + running timer + fire a **10-min pre-end alarm** and an at-empty alarm, offline. | Automated + manual test (Spec 001). |
+| **SC-9** | **Up to 5 concurrent drips** each keep an independent rate + running timer + fire a **10-min and a 5-min pre-end alarm** plus an at-empty alarm, offline. | Automated + manual test (Spec 001). |
 
 ## 7. Assumptions
 
@@ -144,3 +146,4 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 |---|---|---|
 | 1.0 | 2026-07-12 | Initial overview. |
 | 1.1 | 2026-07-12 | Narrowed to drip-first MVP: curated infusion list, up to 3 concurrent drips (SC-9), explicit 5-min pre-end alarm. Deferred to IDEAS: Rule-of-Nines body diagram, antibiotic-by-injury, full weight×mg/kg calculator. Burn kept but simplified (manual %TBSA, no diagram). |
+| 1.2 | 2026-07-21 | Pre-end alarm is now **two-stage** (10 min + 5 min remaining, up from the single 5-min alarm — the 10-min-only interim step from 2026-07-18 was never logged here). Concurrent-drip cap raised **3 → 5**. Owner decision. |
