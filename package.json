@@ -8,7 +8,7 @@
     "predev": "npm run compile:field",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "apk:debug": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
+    "apk:debug": "npm run build && cap sync android && npm run android:patch && cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
     "lint": "eslint .",
     "validate": "node scripts/validate.mjs",
@@ -19,13 +19,15 @@
     "prebuild": "npm run validate && npm run compile:field",
     "pretest": "npm run compile:field",
     "test": "vitest run",
-    "cap:sync": "cap sync android",
+    "cap:sync": "cap sync android && npm run android:patch",
+    "android:patch": "node scripts/patch-android-manifest.mjs",
     "ios:sync": "cap sync ios",
     "ios:open": "npm run build && cap sync ios && cap open ios"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
     "@capacitor/haptics": "^6.0.2",
+    "@capacitor/local-notifications": "^6.1.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

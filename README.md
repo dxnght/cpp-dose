@@ -18,7 +18,10 @@ Ukrainian UI · offline (zero network at runtime) · light + dark themes · Andr
 
 - **Drip engine** — drop-factor selector (10 / 15 / 20 gtt/ml), weight + dose
   steppers, live gtt/min hero, up to **5 concurrent drips** each with an end-of-bag
-  timer and two-stage pre-end alarms at **10 and 5 minutes** remaining.
+  timer and two-stage pre-end alarms at **10 and 5 minutes** remaining (loud,
+  distinct beep patterns per stage; an optional per-drip mute checkbox, off by
+  default). Alarms fire via OS-level local notifications too, so they still
+  work with the **screen locked**.
 - **By drug** — a curated list of verified drip medications/fluids (ketamine analgesia
   1 mg/ml, sedation 3 mg/ml, burn fluid) with the recommended dose + a priming/loading
   bolus computed for the patient.

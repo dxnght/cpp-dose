@@ -15,6 +15,12 @@ import type { Drug } from "../clinical/types";
 import { Metronome } from "./metronome";
 import { tapHaptic, warnHaptic, emptyHaptic } from "./haptics";
 import {
+  ensureNotificationPermission,
+  rescheduleDripAlarms,
+  cancelDripAlarms,
+  forgetStaleDrips,
+} from "./notifications";
+import {
   clamp,
   DOSE,
   WEIGHT,
@@ -48,6 +54,7 @@ interface ActiveDrip {
   warned10: boolean;
   warned5: boolean;
   warnedEmpty: boolean;
+  silenced: boolean; // Owner opt-out (2026-07-21): mutes all 3 alarms for this drip only.
 }
 
 type Mode = "dose" | "bagtime" | "burn";
@@ -109,18 +116,25 @@ function alarm(kind: "warn10" | "warn5" | "empty"): void {
     if (Ctor) {
       const ctx = new Ctor();
       const beeps = kind === "empty" ? 3 : kind === "warn5" ? 2 : 1;
+      // Louder + longer (Owner, 2026-07-21 — the old 0.3-gain/0.2s sine beeps
+      // were too quiet/soft to trust in the field). Square wave cuts through
+      // better than sine; near-max gain sustained for most of the beep.
+      const beepLen = 0.45;
+      const gap = 0.55;
       for (let i = 0; i < beeps; i++) {
         const o = ctx.createOscillator();
         const g = ctx.createGain();
+        o.type = "square";
         o.frequency.value = kind === "empty" ? 520 : 660;
-        const t = ctx.currentTime + i * 0.22;
+        const t = ctx.currentTime + i * gap;
         g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.3, t + 0.01);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+        g.gain.exponentialRampToValueAtTime(0.9, t + 0.015);
+        g.gain.setValueAtTime(0.9, t + beepLen - 0.05);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + beepLen);
         o.connect(g);
         g.connect(ctx.destination);
         o.start(t);
-        o.stop(t + 0.2);
+        o.stop(t + beepLen);
       }
     }
   } catch {
@@ -240,6 +254,7 @@ export function DripScreen() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
+  const [notifDenied, setNotifDenied] = useState(false);
   const [audio, setAudio] = useState(true);
   const [haptic, setHaptic] = useState(true);
   const [flashOn, setFlashOn] = useState(false);
@@ -331,6 +346,40 @@ export function DripScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Ask once per session (Spec 001 FR-12, 2026-07-21) — the in-app alarm alone
+  // is not reliable once the screen locks; OS-level notifications are the
+  // backstop, and they need this permission. If denied, warn the medic rather
+  // than silently pretending the alarm will still fire in the background.
+  useEffect(() => {
+    ensureNotificationPermission()
+      .then((ok) => setNotifDenied(!ok))
+      .catch(() => setNotifDenied(true));
+  }, []);
+
+  // (Re)schedule each drip's OS-level backstop notifications whenever its
+  // alarm-relevant state changes (added, removed, retitrated, silenced
+  // toggled, or a stage just fired in-app). Only fires on real structural
+  // changes to `drips`, not every `now` tick. Best-effort — see notifications.ts.
+  useEffect(() => {
+    drips.forEach((d) => {
+      if (d.bagMl == null || d.mlPerH <= 0) {
+        void cancelDripAlarms(d.id);
+        return;
+      }
+      const endAt =
+        d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+      void rescheduleDripAlarms({
+        id: d.id,
+        label: d.label,
+        silenced: d.silenced,
+        fireAt10: d.warned10 ? null : endAt - PRE_END_ALARM_MS_10,
+        fireAt5: d.warned5 ? null : endAt - PRE_END_ALARM_MS_5,
+        fireAtEmpty: d.warnedEmpty ? null : endAt,
+      });
+    });
+    void forgetStaleDrips(new Set(drips.map((d) => d.id)));
+  }, [drips]);
+
   useEffect(() => {
     if (drips.length === 0) return;
     const nav = navigator as unknown as {
@@ -369,17 +418,17 @@ export function DripScreen() {
         const remMs =
           d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
         if (!d.warned10 && remMs <= PRE_END_ALARM_MS_10 && remMs > 0) {
-          alarm("warn10");
+          if (!d.silenced) alarm("warn10");
           changed = true;
           return { ...d, warned10: true };
         }
         if (!d.warned5 && remMs <= PRE_END_ALARM_MS_5 && remMs > 0) {
-          alarm("warn5");
+          if (!d.silenced) alarm("warn5");
           changed = true;
           return { ...d, warned5: true };
         }
         if (!d.warnedEmpty && remMs <= 0) {
-          alarm("empty");
+          if (!d.silenced) alarm("empty");
           changed = true;
           return { ...d, warnedEmpty: true };
         }
@@ -412,6 +461,7 @@ export function DripScreen() {
         warned10: false,
         warned5: false,
         warnedEmpty: false,
+        silenced: false,
       },
     ]);
     if (!activeId) setActiveId(id);
@@ -456,6 +506,14 @@ export function DripScreen() {
     setActiveId((cur) => (cur === id ? null : id));
   }
 
+  // Owner opt-out (2026-07-21): explicit per-drip alarm mute. Scoped to one
+  // drip only — never a global setting, never on by default.
+  function setSilenced(id: string, val: boolean) {
+    setDrips((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, silenced: val } : x)),
+    );
+  }
+
   function applyCalib() {
     if (calRate) setBagGtt(Math.max(1, Math.min(600, calRate)));
     setCalib(false);
@@ -469,6 +527,20 @@ export function DripScreen() {
     return min >= 60
       ? `${Math.floor(min / 60)} год ${min % 60} хв`
       : `${min} хв`;
+  }
+
+  // Informational only (Owner, 2026-07-21) — tells the medic how much of the
+  // drip's remaining run time is still ahead of the 10-min alarm window, i.e.
+  // how long "Без будильника" will actually stay quiet. Never drives logic.
+  function quietHint(d: ActiveDrip): string | null {
+    if (d.bagMl == null || d.mlPerH <= 0) return null;
+    const remMs = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+    const quietMs = remMs - PRE_END_ALARM_MS_10;
+    if (quietMs <= 0) return null;
+    const min = Math.floor(quietMs / 60_000);
+    return min >= 60
+      ? `тихо ще ${Math.floor(min / 60)} год ${min % 60} хв`
+      : `тихо ще ${min} хв`;
   }
 
   const spd = live.gtt > 0 ? Math.round(secPerDrop(live.gtt)) : 0;
@@ -816,6 +888,13 @@ export function DripScreen() {
           <h2>
             Активні дріпи ({drips.length}/{MAX_DRIPS})
           </h2>
+          {notifDenied && drips.some((d) => d.bagMl != null) && (
+            <div className="notif-warning" role="alert">
+              ⚠ Сповіщення вимкнено — будильник може не спрацювати при
+              заблокованому екрані. Дозволь сповіщення в налаштуваннях
+              телефону.
+            </div>
+          )}
           {drips.map((d) => {
             const isActive = d.id === activeId;
             return (
@@ -859,6 +938,19 @@ export function DripScreen() {
                     {confirmId === d.id ? "Точно прибрати?" : "Прибрати"}
                   </button>
                 </div>
+                {d.bagMl != null && (
+                  <label className="drip-silence">
+                    <input
+                      type="checkbox"
+                      checked={d.silenced}
+                      onChange={(e) => setSilenced(d.id, e.target.checked)}
+                    />{" "}
+                    Без будильника
+                    {quietHint(d) && (
+                      <span className="hint"> ({quietHint(d)})</span>
+                    )}
+                  </label>
+                )}
               </article>
             );
           })}

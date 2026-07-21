@@ -15,7 +15,9 @@ with the Owner. Nothing here changes the constitution or the fail-closed model.
 ## Current state (updated 2026-07-21)
 
 MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 5
-concurrent drips + two-stage 10-min/5-min pre-end alarms), by-drug mode, "Час мішка", burn (Rule of Ten), focus
+concurrent drips + two-stage 10-min/5-min pre-end alarms, louder square-wave tone,
+per-drip mute opt-out, locked-screen delivery via OS-level local notifications),
+by-drug mode, "Час мішка", burn (Rule of Ten), focus
 mode, tap-calibrator, light/dark themes, wake-lock, Capacitor Haptics. Governance +
 CI + GitHub-ready (`github.com/dxnght/cpp-dose`, `master` branch). **Android APK
 field-tested by the Owner on a real device — no issues reported.** iOS scaffold in

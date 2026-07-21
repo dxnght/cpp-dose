@@ -303,7 +303,8 @@ h2 {
   color: var(--fg-dim);
   margin-top: 6px;
 }
-.caution {
+.caution,
+.notif-warning {
   margin-top: 9px;
   background: var(--warn-bg);
   border: 1px solid var(--warn);
@@ -472,6 +473,23 @@ h2 {
   height: 20px;
   vertical-align: middle;
   accent-color: var(--accent);
+}
+.drip-silence {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 13px;
+  color: var(--fg-dim);
+}
+.drip-silence input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+}
+.drip-silence .hint {
+  font-size: 12px;
+  opacity: 0.75;
 }
 .drip-tap {
   cursor: pointer;

@@ -12,7 +12,11 @@ export interface Clamp {
 export const WEIGHT: Clamp = { min: 30, max: 150 }; // kg
 export const DOSE: Clamp = { min: 0.1, max: 2 }; // mg/kg/h
 export const DROP_FACTOR: Clamp = { min: 1, max: 100 }; // gtt/ml
-export const VOLUME: Clamp = { min: 1, max: 1000 }; // ml
+// min=50 (not 1) so the ±50 ml stepper always lands on round multiples of 50
+// (50, 100, 150…1000). A min of 1 let the stepper's floor clamp to 1, then
+// climbing back up produced off-grid values (51, 101, 151…) — Owner-reported
+// 2026-07-21. 50 ml also matches the smallest real IV mini-bag size.
+export const VOLUME: Clamp = { min: 50, max: 1000 }; // ml
 export const TIME_MIN: Clamp = { min: 1, max: 24 * 60 }; // minutes
 
 export function clamp(v: number, c: Clamp): number {

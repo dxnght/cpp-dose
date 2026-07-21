@@ -3,8 +3,10 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.2 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
-  pre-end alarm, up from the single 10-min alarm — Owner decision 2026-07-21)
+- **Version:** 1.4 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+  pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
+  opt-out; louder/longer alarm tone; OS-level local-notification backstop so
+  alarms fire with the screen locked — Owner decisions 2026-07-21)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -37,6 +39,9 @@ unambiguous, usable one-handed with gloves at night.
   **at empty** ("prepare next bag / reassess").
 - **US-5** I can run **up to 5 drips at once**, each with its own rate, countdown,
   and alarms, and see them together without confusion.
+- **US-6** I can explicitly mute all alarms for **one specific drip** (checkbox,
+  off by default) if I judge it unnecessary for that line — this never affects
+  any other concurrent drip's alarms.
 
 ## 3. Functional requirements
 
@@ -75,7 +80,10 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-3h** Confirm-to-remove (two-tap) for a running drip; remembered last drop
   factor + drug (local only); three distinct alarm patterns — 10-min warning
   (single beep), 5-min warning (double beep), and empty (triple beep) — so the
-  medic can tell the stage apart without looking.
+  medic can tell the stage apart without looking. Beeps are a **square-wave
+  tone at near-max gain, ~0.45 s each** (louder/longer than the original soft
+  sine beeps — Owner decision 2026-07-21, field feedback that the original was
+  too quiet to trust).
 - **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
   plugin + native build; deferred to the APK step.*
 - **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
@@ -100,6 +108,13 @@ unambiguous, usable one-handed with gloves at night.
   decision 2026-07-21). Each drip is an independent unit (its own volume, rate,
   drop factor, timer, alarms). Adding a 6th is blocked with a message.
   Removing/finishing one frees a slot.
+- **FR-7a (alarm opt-out)** Each drip with an end-of-bag timer configured shows
+  a **"Без будильника"** checkbox, **off by default**. When checked, all three
+  of that drip's alarms (10-min, 5-min, at-empty) are muted; every other
+  concurrent drip's alarms are unaffected. Scoped to one drip only — never a
+  global setting, never on by default. A live, informational-only hint next to
+  the checkbox shows how much of the remaining run time is still ahead of the
+  10-min alarm window (does not drive any logic). (Owner decision 2026-07-21.)
 - **FR-8 (concurrency UX)** All active drips are visible together (name/label,
   gtt/min, time remaining). The medic can tell them apart at a glance under stress.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
@@ -110,6 +125,16 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-10** Input bounds/clamps; out-of-range → blocked with a reason (Art. III).
   Exact bounds in `plan/architecture.md`.
 - **FR-11** Rounding/units shown explicitly (e.g. "8 gtt/min ≈ 1 drop every 7.5 s").
+- **FR-12 (locked-screen alarm delivery)** The 10-min, 5-min, and at-empty
+  alarms must still fire while the screen is locked. The in-app AudioContext
+  alarm alone is not sufficient (Owner-reported 2026-07-21: fired 7 min late
+  after screen-off, since the WebView's timers are suspended on lock). Each
+  drip with a bag timer schedules matching OS-level local notifications
+  (`@capacitor/local-notifications`, on-device only — no network, Art. V
+  unaffected) as a backstop; muted via "Без будильника" (FR-7a) exactly like
+  the in-app alarm. Notification permission is requested once per session; if
+  denied, a visible warning tells the medic rather than failing silently.
+  (Owner decision 2026-07-21; see `plan/architecture.md` §4a.)
 
 ## 4. Acceptance criteria
 
@@ -124,8 +149,18 @@ unambiguous, usable one-handed with gloves at night.
   alarm** all fire, in airplane mode, each with a distinguishable pattern.
 - **AC-6 (SC-9)** With **5 concurrent drips** at different rates, each keeps its own
   correct countdown and fires its own alarms independently; a 6th is blocked.
+- **AC-6a** With **"Без будильника" checked** on one drip, none of its three alarms
+  (10-min, 5-min, at-empty) fire; other concurrent drips' alarms are unaffected
+  and fire normally. Unchecking it re-enables future alarms for that drip
+  (already-passed thresholds do not fire retroactively).
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
+- **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a
+  drip's 10-min mark, the medic still receives the 10-min, 5-min, and
+  at-empty alerts (as OS notifications) without unlocking the phone. If
+  notification permission is denied, the app shows a visible warning instead
+  of silently doing nothing. **Needs on-device confirmation** — cannot be
+  verified from a build sandbox without a real Android device.
 
 ## 5. Out of scope (this feature)
 
@@ -136,9 +171,9 @@ modes, >5 concurrent drips, cross-drip interaction logic.
 
 - gtt/min rounds to 0 → "< 1 gtt/min; check parameters", no metronome.
 - Very fast rate (>600 gtt/min) → warn gravity set/metronome may be impractical.
-- Screen sleep / app backgrounded → timers/alarms must still fire (local
-  notifications); audio metronome may be suspended and re-anchors on resume
-  (documented in architecture).
+- Screen sleep / app backgrounded → alarms must still fire — **implemented
+  2026-07-21 via local notifications (FR-12)**; audio metronome may still be
+  suspended and re-anchors on resume (documented in architecture, §4a).
 - App killed → on relaunch, warn that running drips/timers were lost (no false
   sense of a still-running countdown). MVP does not persist live drips.
 

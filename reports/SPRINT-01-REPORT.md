@@ -53,7 +53,8 @@
   audio+haptic drives the **active** drip. Deriving the active card's animation from
   the audio clock is a refinement.
 - Background alarms are in-app (beep + vibrate); OS-level local notifications when the
-  app is backgrounded → Capacitor LocalNotifications (follow-up).
+  app is backgrounded → Capacitor LocalNotifications (follow-up). **Shipped
+  2026-07-21** — see Spec 001 FR-12 / `plan/architecture.md` §4a.
 - Custom drop-factor entry not added (10/15/20 per Owner; 60 removed).
 - Some drip-UI strings are inline Ukrainian rather than in `uk.json` (functional;
   externalize later).

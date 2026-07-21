@@ -10,6 +10,7 @@ import {
   doseRangeMg,
   clamp,
   WEIGHT,
+  VOLUME,
 } from "../src/drip/calc";
 
 describe("burn Rule of Ten", () => {
@@ -29,6 +30,14 @@ describe("bolus mg from mg/kg string", () => {
   it("range and single", () => {
     expect(doseRangeMg("0.2-0.3 mg/kg", 80)).toBe("16–24 мг");
     expect(doseRangeMg("1 mg/kg", 80)).toBe("80 мг");
+  });
+});
+
+describe("bag-volume stepper stays on the 50 ml grid (Owner-reported regression, 2026-07-21)", () => {
+  it("VOLUME.min is a multiple of the 50 ml stepper step", () => {
+    // A min not aligned to the step let the DripScreen stepper clamp to the
+    // floor, then climb off-grid (51, 101, 151 ml…) instead of round values.
+    expect(VOLUME.min % 50).toBe(0);
   });
 });
 

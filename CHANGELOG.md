@@ -5,6 +5,40 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-21 (later)
+- **Alarms now fire with the screen locked.** Owner reported the in-app alarm
+  fired 7 min late after locking the phone — Android suspends the WebView's
+  JS timers on lock, so `setInterval`-driven alarm logic can't be trusted in
+  the background. Added `@capacitor/local-notifications` (v6.1.3, matching
+  the existing Capacitor 6.x line) as an OS-level backstop: each drip with a
+  bag timer schedules matching 10-min/5-min/at-empty notifications through
+  Android's AlarmManager, which keeps working screen-locked. Still 100%
+  on-device, no network (Art. V unaffected). New `src/drip/notifications.ts`;
+  wired into `DripScreen.tsx` (schedule/cancel on add/remove/retitrate/
+  silence-toggle); `USE_EXACT_ALARM` added to `AndroidManifest.xml` for
+  precise timing under Doze (auto-granted, sideloaded app); notification
+  permission requested once per session with a visible warning if denied.
+  Spec 001 FR-12/AC-9, `plan/architecture.md` §4a. **Needs on-device
+  confirmation** (screen-off/Doze/permission-prompt behavior) — can't be
+  verified from the build sandbox.
+- `android/` is gitignored (regenerated, not version-controlled — see
+  `.gitignore`), so the `USE_EXACT_ALARM` manifest permission above isn't
+  captured by committing code. Added `scripts/patch-android-manifest.mjs`
+  (`npm run android:patch`) to re-apply it idempotently; chained into
+  `npm run cap:sync` and `npm run apk:debug` so it's never a forgettable
+  manual step.
+- Fixed a **stepper bug**: bag-volume min was 1 ml with a 50 ml step, so the
+  stepper could clamp to 1 and then climb off-grid (51, 101, 151 ml…) —
+  Owner-reported. Root cause fixed at the source: `VOLUME.min` raised 1 → 50
+  ml in `src/drip/calc.ts` (also a more realistic minimum IV bag size).
+- `npm run validate/lint/test (38/38)/gate:release/tsc` all green (added a
+  regression test asserting `VOLUME.min` stays step-aligned). `npm run
+  build` blocked again by the same sandbox dist-cleanup EPERM (unrelated to
+  the code); `npx cap sync android` partially failed on the same class of
+  issue (couldn't overwrite generated Gradle files) — manually applied the
+  equivalent `capacitor.settings.gradle`/`capacitor.build.gradle` edits that
+  `cap sync` would have produced; `capacitor.plugins.json` updated cleanly.
+
 ## 2026-07-21
 - Owner verified `tccc_cephalexin_po` (TCCC-2026 §12.b) — the last of the 4
   TCCC-2026 general antibiotics; all 25 MOZ-ATB-2023 records were already
@@ -24,6 +58,17 @@ separately, per-record, in `clinical/VERIFICATION-LOG.md`.
   permission error unrelated to the code change (same class of issue as the
   recurring git-lock quirk) — re-run `npm run build` from a normal terminal
   to confirm.
+- Confirmed (code review, not a code change): the alarm was already
+  independent of the "Звук"/"Вібрація" metronome-channel checkboxes — those
+  only gate the pacing tick, never the pre-end/at-empty `alarm()` calls.
+- Added a **per-drip alarm mute opt-out**: a "Без будильника" checkbox (off by
+  default) on each drip with an end-of-bag timer, scoped to that drip only —
+  never global, never on by default. A live informational hint next to it
+  shows how much of the remaining time is still ahead of the 10-min alarm
+  window; purely informational, doesn't drive any logic (Owner decision).
+- Alarm tone made **louder and longer** — square wave instead of sine,
+  near-max gain, ~0.45 s per beep (was a soft 0.3-gain, 0.2 s sine beep) —
+  after field feedback that the original was too quiet to trust.
 
 ## 2026-07-18
 - Backfilled this file (flagged as missing against the project's own working

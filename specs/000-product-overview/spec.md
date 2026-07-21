@@ -59,8 +59,8 @@ fluids. The drug stack grows slowly and deliberately after the MVP.
 
 1. **Drip engine** — volume↔time↔rate calculator, IV-set drop-factor selection,
    metronome (audio + haptic + animation, independently mutable), end-of-bag timer
-   with **10-min and 5-min pre-end alarms**, and **up to 5 concurrent drips**.
-   → `specs/001-drip-rate-core`.
+   with **10-min and 5-min pre-end alarms** (per-drip mute opt-out available,
+   off by default), and **up to 5 concurrent drips**. → `specs/001-drip-rate-core`.
 2. **Drip drug list & infusion recipe** — a curated list of drip-able
    medications/fluids from the versioned protocol file; each shows its recommended
    dose; the medic enters actual dose / diluent volume / target time; output rate
@@ -99,7 +99,7 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 | SC-6 | All interactive targets ≥ 48 px; passes Lighthouse PWA installability. | Automated audit (Sprint 3). |
 | SC-7 | Every displayed clinical number shows its `source_version` + verification state. | UI test. |
 | SC-8 | APK installs and runs on the Owner's Android device. | Manual acceptance. |
-| **SC-9** | **Up to 5 concurrent drips** each keep an independent rate + running timer + fire a **10-min and a 5-min pre-end alarm** plus an at-empty alarm, offline. | Automated + manual test (Spec 001). |
+| **SC-9** | **Up to 5 concurrent drips** each keep an independent rate + running timer + fire a **10-min and a 5-min pre-end alarm** plus an at-empty alarm, offline and **even with the screen locked** (unless explicitly muted per-drip). | Automated + manual test (Spec 001); locked-screen behavior needs on-device confirmation. |
 
 ## 7. Assumptions
 
@@ -147,3 +147,5 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 | 1.0 | 2026-07-12 | Initial overview. |
 | 1.1 | 2026-07-12 | Narrowed to drip-first MVP: curated infusion list, up to 3 concurrent drips (SC-9), explicit 5-min pre-end alarm. Deferred to IDEAS: Rule-of-Nines body diagram, antibiotic-by-injury, full weight×mg/kg calculator. Burn kept but simplified (manual %TBSA, no diagram). |
 | 1.2 | 2026-07-21 | Pre-end alarm is now **two-stage** (10 min + 5 min remaining, up from the single 5-min alarm — the 10-min-only interim step from 2026-07-18 was never logged here). Concurrent-drip cap raised **3 → 5**. Owner decision. |
+| 1.3 | 2026-07-21 | Added a **per-drip alarm mute opt-out** ("Без будильника" checkbox, off by default, scoped to one drip). Alarm tone made **louder and longer** (square wave, near-max gain, ~0.45 s/beep) after field feedback that the original was too quiet. Owner decision. |
+| 1.4 | 2026-07-21 | Alarms now fire via **OS-level local notifications** as a backstop so they still work with the screen locked (the in-app alarm alone fired 7 min late — Owner-reported). Also fixed a stepper bug where the bag-volume min (1 ml) was off the 50 ml step grid, producing 51/101/151 ml instead of round values (min raised to 50 ml). Owner decisions. |
