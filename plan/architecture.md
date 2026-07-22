@@ -119,6 +119,54 @@ behind a loud watermark and is never shippable.
   verified from the build sandbox; same division of labor as the existing
   APK field-test.
 
+### 4a.1 v2 fix: notification channel (2026-07-21, same day)
+
+- **Problem:** v1 above scheduled onto the `@capacitor/local-notifications`
+  plugin's implicit "Default" channel (`IMPORTANCE_DEFAULT`). Owner confirmed
+  the notification *posted* on time and with the right text, but with **no
+  audible/vibration signal** noticeable on a locked screen — the actual
+  point of the feature. Android notification channels are immutable after
+  first creation (importance/sound/vibration can only change via the user
+  going into system settings), so patching the old channel isn't possible
+  from app code.
+- **Fix:** a new, dedicated channel `drip-alarms-v2` (`ensureChannel()` in
+  `notifications.ts`) created with `importance: 5` (HIGH — heads-up popup +
+  sound even over other apps), `visibility: 1` (PUBLIC — full text on the
+  lock screen, not redacted), and vibration on. Each scheduled notification
+  now sets `channelId` to this channel, plus `ongoing: true` (can't be
+  swiped away by accident) and `autoCancel: true` (tapping it both opens the
+  app and clears it).
+- **Owner's "stopwatch" idea — evaluated.** Ask: a persistent, interactive,
+  always-on-top notification-shade item showing a live-updating remaining
+  time on the lock screen, like a timer app. Assessment:
+  - The "pinned, high-priority, visible-on-lock-screen" part is exactly what
+    `ongoing` + the new channel now does.
+  - A true **live-updating countdown text** (like Android's stopwatch/timer
+    chronometer, ticking every second without the app needing to be alive)
+    is **not exposed by `@capacitor/local-notifications`** — no
+    `chronometer`/`countDown` field on `LocalNotificationSchema` (checked
+    the plugin's TypeScript defs and Android source directly). Android's own
+    `NotificationCompat.Builder.setUsesChronometer()` API can do this
+    natively, but this plugin doesn't wrap it.
+  - Getting real chronometer behavior would need either (a) a small custom
+    native Android addition — either forking this plugin's Java source
+    (fragile: a plugin update would silently drop the patch) or writing a
+    tiny local Capacitor plugin that lives outside the gitignored `android/`
+    folder so it survives regeneration, or (b) faking a countdown by
+    scheduling many periodic notification updates in advance (e.g. one per
+    minute for the whole drip duration) — wasteful, hits Doze's "once per
+    ~9 min per app" non-exact-alarm cap well before granularity would look
+    smooth, and multiplies scheduled alarms 5× with up to 5 concurrent drips.
+  - "Always on top of every other app's notifications" isn't something
+    Android lets any app guarantee outside a small set of system categories
+    (calls, media playback) — `importance: 5` + recency gets it *near* the
+    top in practice, which is as far as this can honestly go.
+  - **Recommendation:** ship this channel fix now (directly fixes the
+    reported defect, low risk, no native code); treat a true chronometer
+    countdown as a separate, bigger R&D item — needs real native Android
+    work and on-device testing this environment can't do, so it shouldn't be
+    attempted opportunistically inside the same change.
+
 ## 5. Offline & zero-exfiltration (Art. V)
 
 - Service worker precaches the whole app shell + `field-bundle.json`. No runtime

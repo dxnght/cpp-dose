@@ -3,10 +3,11 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.4 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.5 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
-  alarms fire with the screen locked — Owner decisions 2026-07-21)
+  alarms fire with the screen locked, on a dedicated HIGH-importance channel
+  after the first version posted silently — Owner decisions 2026-07-21)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -134,7 +135,12 @@ unambiguous, usable one-handed with gloves at night.
   unaffected) as a backstop; muted via "Без будильника" (FR-7a) exactly like
   the in-app alarm. Notification permission is requested once per session; if
   denied, a visible warning tells the medic rather than failing silently.
-  (Owner decision 2026-07-21; see `plan/architecture.md` §4a.)
+  Notifications post to a dedicated HIGH-importance, public-visibility,
+  vibrating channel (not the plugin's implicit default) — the first version
+  posted the text on time but with no audible/vibration signal, which
+  defeats the purpose (Owner-reported same day). `ongoing: true` +
+  `autoCancel: true` so it can't be swiped away by accident but clears on
+  tap. (Owner decision 2026-07-21; see `plan/architecture.md` §4a/§4a.1.)
 
 ## 4. Acceptance criteria
 

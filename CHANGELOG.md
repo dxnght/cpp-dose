@@ -5,6 +5,38 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-21 (branch `feature/notification-channel-fix`, not master — per Owner)
+- **Fixed: locked-screen notifications posted silently.** The same-day local-
+  notifications backstop (below) posted its text on time but with no
+  audible/vibration signal on a locked screen — Owner reconfirmed the bug
+  persisted. Root cause: notifications were on the plugin's implicit
+  "Default" channel (`IMPORTANCE_DEFAULT`), and Android channels can't be
+  reconfigured after creation. Fix: a new dedicated channel
+  (`drip-alarms-v2`, `IMPORTANCE_HIGH`, public lock-screen visibility,
+  vibration on) in `src/drip/notifications.ts`; each notification also now
+  sets `ongoing: true` (can't be swiped away by accident) + `autoCancel:
+  true` (tap dismisses + opens the app).
+- **Evaluated the Owner's "stopwatch" idea** (persistent, interactive,
+  always-on-top notification with a live-updating remaining-time countdown
+  on the lock screen). The "pinned + high-priority + lock-screen-visible"
+  part is now covered by the channel fix above. A true, smoothly-ticking
+  countdown text (Android's native chronometer, as used by timer/stopwatch
+  apps) is **not exposed by `@capacitor/local-notifications`** — confirmed
+  by reading its TypeScript defs and Android source; no `chronometer` field
+  exists. Getting real chronometer behavior needs either a small custom
+  native Android plugin (kept outside the gitignored `android/` folder so
+  it survives regeneration) or an unattractive fallback (scheduling dozens
+  of periodic notification updates per drip, which collides with Android's
+  Doze throttling and multiplies badly across up to 5 concurrent drips).
+  Documented in `plan/architecture.md` §4a.1 as a separate, bigger follow-up
+  — not attempted opportunistically in this change, since it needs real
+  native Android work and on-device testing this environment can't do.
+- Per Owner instruction, this round's work (plus the prior two still-
+  uncommitted rounds — mute opt-out/louder tone, and the first
+  locked-screen-notifications pass) is on branch
+  `feature/notification-channel-fix`, not pushed to `master` directly.
+  `validate/lint/test (38/38)/gate:release/tsc` all green.
+
 ## 2026-07-21 (later)
 - **Alarms now fire with the screen locked.** Owner reported the in-app alarm
   fired 7 min late after locking the phone — Android suspends the WebView's

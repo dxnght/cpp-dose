@@ -7,6 +7,15 @@
 // Capacitor plugin), which keeps working with the screen locked. Runs
 // entirely on-device — no network call, consistent with Art. V.
 //
+// v2 (2026-07-21, same day): the first version scheduled onto the plugin's
+// implicit "Default" channel (IMPORTANCE_DEFAULT), which posted the
+// notification but produced no audible/vibration signal reliably enough to
+// notice on a locked screen — Owner-reported. Android notification channels
+// are immutable after first creation (importance/sound/vibration can't be
+// changed later, only by the user in system settings), so this uses a new,
+// dedicated, explicitly HIGH-importance channel instead of trying to alter
+// the old one. See `ensureChannel()`.
+//
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
 // passes a plain plan object) so it stays easy to reason about / test in
 // isolation. All calls are best-effort: any failure (unsupported browser in
@@ -14,6 +23,32 @@
 // this is a reliability *enhancement*, it must never crash or block the
 // in-app alarm path, which remains the fail-closed baseline.
 import { LocalNotifications } from "@capacitor/local-notifications";
+
+/** Dedicated alarm channel — deliberately not the plugin's implicit "Default"
+ * one (see note above). IMPORTANCE_HIGH (5) = heads-up popup + sound even
+ * over other apps; visibility PUBLIC (1) = full text shown on the lock
+ * screen (not redacted); vibration on. This is the actual fix for "no
+ * signal" — channel settings, not the alarm-scheduling logic, were the bug. */
+const CHANNEL_ID = "drip-alarms-v2";
+let channelReady = false;
+
+async function ensureChannel(): Promise<void> {
+  if (channelReady) return;
+  try {
+    await LocalNotifications.createChannel({
+      id: CHANNEL_ID,
+      name: "Будильники дріпів",
+      description: "10 хв / 5 хв / порожньо — сигнали про закінчення мішки.",
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+    });
+    channelReady = true;
+  } catch {
+    /* web/unsupported — fine, falls back to whatever default exists */
+  }
+}
 
 /** Per-drip notification id bookkeeping. Ephemeral by design — matches the
  * existing precedent that live drips are not persisted across app restarts
@@ -39,11 +74,15 @@ let permissionRequested = false;
 export async function ensureNotificationPermission(): Promise<boolean> {
   try {
     const cur = await LocalNotifications.checkPermissions();
-    if (cur.display === "granted") return true;
-    if (permissionRequested) return false;
-    permissionRequested = true;
-    const req = await LocalNotifications.requestPermissions();
-    return req.display === "granted";
+    if (cur.display !== "granted" && !permissionRequested) {
+      permissionRequested = true;
+      const req = await LocalNotifications.requestPermissions();
+      if (req.display !== "granted") return false;
+    } else if (cur.display !== "granted") {
+      return false;
+    }
+    await ensureChannel();
+    return true;
   } catch {
     return false; // unsupported (web/PWA fallback) — in-app alarm is still the baseline
   }
@@ -73,6 +112,7 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
     /* nothing pending, or unsupported — fine */
   }
   if (plan.silenced) return;
+  await ensureChannel();
   const now = Date.now();
   const notifications: Parameters<typeof LocalNotifications.schedule>[0]["notifications"] =
     [];
@@ -81,6 +121,9 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       id: ids.warn10,
       title: "CPP-DOSE — 10 хв до кінця",
       body: `${plan.label}: мішка закінчується приблизно через 10 хв.`,
+      channelId: CHANNEL_ID,
+      ongoing: true,
+      autoCancel: true,
       schedule: { at: new Date(plan.fireAt10), allowWhileIdle: true },
     });
   }
@@ -89,6 +132,9 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       id: ids.warn5,
       title: "CPP-DOSE — 5 хв до кінця",
       body: `${plan.label}: мішка закінчується приблизно через 5 хв.`,
+      channelId: CHANNEL_ID,
+      ongoing: true,
+      autoCancel: true,
       schedule: { at: new Date(plan.fireAt5), allowWhileIdle: true },
     });
   }
@@ -97,6 +143,9 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       id: ids.empty,
       title: "CPP-DOSE — мішка порожня",
       body: `${plan.label}: час готувати наступну мішку / переоцінити стан.`,
+      channelId: CHANNEL_ID,
+      ongoing: true,
+      autoCancel: true,
       schedule: { at: new Date(plan.fireAtEmpty), allowWhileIdle: true },
     });
   }
