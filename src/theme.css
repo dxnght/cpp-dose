@@ -593,6 +593,16 @@ h2 {
   color: var(--fg-dim);
   font-size: var(--fs-sm);
   text-align: left;
+  /* The hold-to-mute gesture is a ~600ms press on a text-bearing button —
+     long enough for mobile WebViews to read it as "select this text" and
+     raise native selection handles / the copy-lookup callout mid-hold
+     (field report 2026-07-23). None of that is wanted here: the press is
+     a control gesture, not text the medic would ever want to select. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .silence-btn .hint {
   font-size: var(--fs-2xs);

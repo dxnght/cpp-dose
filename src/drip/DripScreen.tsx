@@ -286,6 +286,12 @@ function SilenceToggle({
       onPointerLeave={clearHold}
       onPointerCancel={clearHold}
       onClick={onClick}
+      // A ~600ms hold on a text-bearing element is exactly the gesture
+      // mobile WebViews use to trigger native text selection / the
+      // copy-lookup callout. CSS (user-select/touch-callout, theme.css)
+      // stops the visual selection; this stops the callout/context-menu
+      // some Android WebViews still raise on top of that (2026-07-23).
+      onContextMenu={(e) => e.preventDefault()}
     >
       <span aria-hidden="true">{silenced ? "🔇" : "🔔"}</span>
       {silenced ? (

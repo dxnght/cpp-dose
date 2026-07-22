@@ -27,7 +27,6 @@ export class ClinicalRecordBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: unknown): void {
-    // eslint-disable-next-line no-console
     console.error(
       "ClinicalRecordBoundary caught a render-time throw (fail-closed, Art. III):",
       error,
