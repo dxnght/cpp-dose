@@ -3,13 +3,15 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.6 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.7 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
   with a `patch-package` fix for a plugin bug that forced every notification
-  private regardless of channel config — Owner decisions 2026-07-21/22; see
-  `plan/architecture.md` §4a/§4a.1/§4a.2)
+  private regardless of channel config, a fixed out-of-range importance
+  value, a live permission/channel health check, and a battery-optimization
+  exemption tip — Owner decisions 2026-07-21/22; see `plan/architecture.md`
+  §4a/§4a.1/§4a.2/§4a.3)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -148,8 +150,19 @@ unambiguous, usable one-handed with gloves at night.
   lock-screen-visibility regression on some OEM skins). No `fullScreenIntent`
   support in this plugin — that's the real mechanism for "breaks through a
   fully locked screen" (alarm-clock/incoming-call style), a separate, bigger
-  native-plugin item if still needed after on-device testing. (Owner
-  decisions 2026-07-21/22; see `plan/architecture.md` §4a/§4a.1/§4a.2.)
+  native-plugin item if still needed after on-device testing. A subsequent
+  inconsistent field report (works fully screen-off, nothing at all
+  screen-on-but-locked) led to two more fixes: an out-of-range channel
+  `importance: 5` (Android's real max is `4`, HIGH — corrected) found by
+  re-checking against actual Android constants, and a live
+  `checkNotificationHealth()` re-check (permission + actual channel
+  importance) on every drip change instead of a one-time mount snapshot, so
+  the in-app warning reflects current state. The pattern is most likely
+  explained by Android's App Standby/battery-optimization bucketing (outside
+  any notification config this app controls) — a permanent, calm in-app tip
+  now recommends the medic exempt CPP-DOSE from battery optimization.
+  (Owner decisions 2026-07-21/22; see `plan/architecture.md`
+  §4a/§4a.1/§4a.2/§4a.3.)
 
 ## 4. Acceptance criteria
 

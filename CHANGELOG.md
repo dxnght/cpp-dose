@@ -5,6 +5,34 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-22 (later, same branch `feature/notification-channel-fix`)
+- **Field report came back inconsistent** across 3 tests: unlocked (fine, no
+  alarm tone as expected since the metronome sound toggle was off — that
+  toggle has no code path to the alarm system at all); locked-but-lit
+  (nothing — no notification, no sound); locked-and-asleep (worked fully,
+  both locked and after unlocking). Neither of the two tracked variables
+  actually explains the pattern; Doze theory doesn't fit either (Doze is
+  *more* restrictive screen-off, but that's the case that worked).
+- **Real bug found and fixed:** the notification channel requested
+  `importance: 5` — Android's actual scale is `0..4` (HIGH=4), there is no
+  5. The plugin's loose TypeScript type didn't catch this. Not confirmed as
+  *the* cause of the inconsistent report, but a genuine bug regardless.
+  Fixed to `4`; channel bumped to `drip-alarms-v4` (fresh id).
+- **Most likely real explanation: Android's battery-optimization/App
+  Standby bucketing** — outside anything this app's notification config
+  controls, and exactly why messaging apps (Telegram, the Owner's own
+  comparison) request exemption from it. Added a permanent, calm (non-alarm)
+  in-app tip recommending the medic exempt CPP-DOSE from battery
+  optimization via system settings. No new native plugin (per Owner
+  instruction) — Android has a plain intent for prompting this
+  (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) but invoking it needs a
+  native bridge; out of scope this pass, manual settings instruction only.
+- Added `checkNotificationHealth()` (permission + live channel-importance
+  check via `listChannels()`), re-run on every drip change instead of a
+  one-time mount snapshot — the warning banner no longer shows a stale
+  "fine" after the OS silently downgrades something mid-session.
+- `validate/lint/test (38/38)/gate:release/tsc` all green.
+
 ## 2026-07-22 (same branch `feature/notification-channel-fix`)
 - **Fixed a regression from the previous entry (2026-07-21):** the Owner
   reported the notification-channel fix made things *worse* — still no

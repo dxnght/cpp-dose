@@ -221,6 +221,55 @@ behind a loud watermark and is never shippable.
   section is source-verified (read the actual plugin code causing each
   symptom) but not device-verified.
 
+### 4a.3 v4 fix: invalid importance value + live health check + battery-optimization lead (2026-07-22, later)
+
+- **Field report came back inconsistent**, not a clean pass/fail: unlocked
+  worked (no alarm tone, as expected — the metronome "Звук" toggle
+  controlling *that* was off, unrelated in code to the alarm/notification
+  path at all); locked-but-screen-on produced nothing (no notification, no
+  sound); locked-and-asleep worked fully, both while locked and after
+  unlocking. Screen-on/off doesn't line up with a Doze explanation (Doze is
+  *more* restrictive screen-off, but that's the case that worked), and the
+  one tracked variable (the metronome toggle) has no code path to the alarm
+  system at all — so neither of the Owner's two candidate explanations
+  actually fits the pattern.
+- **Bug found while re-checking the channel config against real Android
+  constants:** `ensureChannel()` requested `importance: 5`. Android's actual
+  `NotificationManager` importance scale is `NONE=0, MIN=1, LOW=2,
+  DEFAULT=3, HIGH=4` — **there is no 5**. The plugin's TypeScript type
+  (`Importance = 1|2|3|4|5`) doesn't catch this at compile time, so it
+  silently passed an out-of-range value straight to Android's
+  `NotificationChannel` constructor. Not confirmed as *the* cause of the
+  inconsistent field report, but a definite, real bug on its own — fixed to
+  the correct constant, `4`. Channel bumped to `drip-alarms-v4` (fresh id,
+  since importance can't be changed on an already-created channel).
+- **Most likely actual explanation — Android's App Standby / battery
+  optimization bucket**, not anything in this app's code. Android throttles
+  background alarms/notifications more aggressively for apps it hasn't seen
+  recently used, independent of any toggle inside the app; this is exactly
+  why messaging apps (the Owner's own comparison — Telegram) request
+  battery-optimization exemption. This can't be fixed by any notification
+  config; it's a per-device, per-app OS setting. Added a permanent, low-key
+  (non-alarming) in-app tip recommending the medic exempt CPP-DOSE from
+  battery optimization (Settings → Apps → CPP-DOSE → Battery), shown
+  whenever a drip has a bag timer and no other known problem is detected.
+  Still no additional native plugin — Android does have a plain intent
+  (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) an app can launch to
+  prompt for this directly, but that needs *some* native bridge to invoke
+  from JS; out of scope for this pass per Owner instruction (no new Android
+  plugins this version) — manual settings instruction only.
+- **Live health check added** (`checkNotificationHealth()` in
+  `notifications.ts`): re-checks permission grant *and* the actual channel
+  importance (via `LocalNotifications.listChannels()`) every time the drips
+  effect runs, not just once at app launch. The old code snapshotted
+  permission status once at mount, so the in-app warning banner could show a
+  stale "fine" even after the OS silently downgraded something (e.g. the
+  user or system disabling the channel) mid-session. The red warning banner
+  now only shows for a *detected* problem (permission denied, or channel
+  importance reported below HIGH); the battery-optimization tip is separate
+  and always shown, since that specific restriction isn't queryable from
+  this plugin.
+
 ## 5. Offline & zero-exfiltration (Art. V)
 
 - Service worker precaches the whole app shell + `field-bundle.json`. No runtime

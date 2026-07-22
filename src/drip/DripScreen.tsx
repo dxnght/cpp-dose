@@ -16,6 +16,7 @@ import { Metronome } from "./metronome";
 import { tapHaptic, warnHaptic, emptyHaptic } from "./haptics";
 import {
   ensureNotificationPermission,
+  checkNotificationHealth,
   rescheduleDripAlarms,
   cancelDripAlarms,
   forgetStaleDrips,
@@ -351,15 +352,17 @@ export function DripScreen() {
   // backstop, and they need this permission. If denied, warn the medic rather
   // than silently pretending the alarm will still fire in the background.
   useEffect(() => {
-    ensureNotificationPermission()
-      .then((ok) => setNotifDenied(!ok))
-      .catch(() => setNotifDenied(true));
+    ensureNotificationPermission().catch(() => {});
   }, []);
 
   // (Re)schedule each drip's OS-level backstop notifications whenever its
   // alarm-relevant state changes (added, removed, retitrated, silenced
   // toggled, or a stage just fired in-app). Only fires on real structural
   // changes to `drips`, not every `now` tick. Best-effort — see notifications.ts.
+  // Also re-checks notification health *live* every time (2026-07-22 fix) —
+  // the old code only snapshotted permission status once at mount, so the
+  // banner could show stale "fine" even after the OS silently downgraded
+  // something (channel importance, permission) mid-session.
   useEffect(() => {
     drips.forEach((d) => {
       if (d.bagMl == null || d.mlPerH <= 0) {
@@ -378,6 +381,9 @@ export function DripScreen() {
       });
     });
     void forgetStaleDrips(new Set(drips.map((d) => d.id)));
+    checkNotificationHealth()
+      .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
+      .catch(() => setNotifDenied(true));
   }, [drips]);
 
   useEffect(() => {
@@ -890,9 +896,17 @@ export function DripScreen() {
           </h2>
           {notifDenied && drips.some((d) => d.bagMl != null) && (
             <div className="notif-warning" role="alert">
-              ⚠ Сповіщення вимкнено — будильник може не спрацювати при
-              заблокованому екрані. Дозволь сповіщення в налаштуваннях
-              телефону.
+              ⚠ Сповіщення вимкнено або обмежені — будильник може не
+              спрацювати при заблокованому екрані. Перевір дозволи сповіщень
+              для CPP-DOSE в налаштуваннях телефону.
+            </div>
+          )}
+          {!notifDenied && drips.some((d) => d.bagMl != null) && (
+            <div className="notif-hint">
+              Порада: додай CPP-DOSE у виключення з оптимізації батареї
+              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
+              телефон може відкладати будильник при заблокованому екрані,
+              навіть якщо сповіщення дозволені.
             </div>
           )}
           {drips.map((d) => {

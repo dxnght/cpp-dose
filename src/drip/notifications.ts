@@ -38,6 +38,26 @@
 // through a fully locked screen. Getting that would need a small custom
 // native Android plugin, a separate, bigger piece of work.
 //
+// v3 field report (2026-07-22, same day): three on-device tests came back
+// inconsistent — unlocked/no-alarm-sound "fine"; locked-but-lit "nothing at
+// all"; locked-and-asleep "everything worked, both locked and after
+// unlocking". The one variable the Owner tracked (the drip's own "Звук"
+// toggle — the *metronome tick*, unrelated in code to this module at all)
+// doesn't explain the pattern; screen-on-vs-off doesn't line up with Doze
+// theory either (Doze is *more* restrictive screen-off, but that's the
+// scenario that worked). The much more likely explanator: Android's App
+// Standby / battery-optimization bucket for this app, which depends on how
+// recently the app was actively used, not on any toggle inside it — exactly
+// why messaging apps like Telegram (which the Owner compared this to) ask
+// for battery-optimization exemption. This can't be fixed by any config in
+// this module; it needs the *user* to exempt the app once, or ideally the
+// app to prompt for it (still no custom native plugin needed — Android
+// exposes `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` as a plain intent).
+// Added `checkHealth()` below so the in-app warning banner reflects the
+// *current* permission/channel state on every drip change, not a one-time
+// snapshot from app launch — the old code could show a stale "fine" even
+// after the OS silently downgraded something mid-session.
+//
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
 // passes a plain plan object) so it stays easy to reason about / test in
 // isolation. All calls are best-effort: any failure (unsupported browser in
@@ -51,7 +71,13 @@ import { LocalNotifications } from "@capacitor/local-notifications";
  * over other apps; visibility PUBLIC (1) = full text shown on the lock
  * screen (not redacted); vibration on. Combined with the patch-package fix
  * (VISIBILITY_PUBLIC on the notification itself, not just the channel). */
-const CHANNEL_ID = "drip-alarms-v3";
+// IMPORTANCE_HIGH is 4 on Android (NONE=0, MIN=1, LOW=2, DEFAULT=3, HIGH=4 —
+// there is no 5). The v2/v3 code above requested `importance: 5`, an
+// out-of-range value the plugin's TS types (loosely `1|2|3|4|5`) don't catch
+// at compile time; found while re-checking this against Android's actual
+// NotificationManager constants. Not confirmed as the cause of the v3 field
+// report, but a real bug on its own — fixed to the correct constant.
+const CHANNEL_ID = "drip-alarms-v4";
 let channelReady = false;
 
 async function ensureChannel(): Promise<void> {
@@ -61,7 +87,7 @@ async function ensureChannel(): Promise<void> {
       id: CHANNEL_ID,
       name: "Будильники дріпів",
       description: "10 хв / 5 хв / порожньо — сигнали про закінчення мішки.",
-      importance: 5,
+      importance: 4,
       visibility: 1,
       vibration: true,
       lights: true,
@@ -70,6 +96,36 @@ async function ensureChannel(): Promise<void> {
   } catch {
     /* web/unsupported — fine, falls back to whatever default exists */
   }
+}
+
+/** Live health snapshot — re-checked on every call, not cached at mount.
+ * `channelImportance` is Android's actual reported value for our channel (4
+ * = HIGH is what we ask for); if it comes back lower, either the user or the
+ * system downgraded it after creation (channels are user-editable in
+ * Settings), which explains a "used to work, now silent" report better than
+ * anything this module can control. `null` = channel not created yet, or
+ * `listChannels` unsupported on this platform. */
+export interface NotificationHealth {
+  permissionGranted: boolean;
+  channelImportance: number | null;
+}
+
+export async function checkNotificationHealth(): Promise<NotificationHealth> {
+  let permissionGranted = false;
+  try {
+    permissionGranted = (await LocalNotifications.checkPermissions()).display === "granted";
+  } catch {
+    /* unsupported — stays false */
+  }
+  let channelImportance: number | null = null;
+  try {
+    const { channels } = await LocalNotifications.listChannels();
+    const ch = channels.find((c) => c.id === CHANNEL_ID);
+    channelImportance = ch?.importance ?? null;
+  } catch {
+    /* listChannels unsupported (iOS/web) — permission check above still stands */
+  }
+  return { permissionGranted, channelImportance };
 }
 
 /** Per-drip notification id bookkeeping. Ephemeral by design — matches the

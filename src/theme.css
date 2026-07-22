@@ -314,6 +314,15 @@ h2 {
   font-size: 13px;
   line-height: 1.35;
 }
+.notif-hint {
+  margin-top: 9px;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  border-radius: 10px;
+  padding: 9px 11px;
+  font-size: 12.5px;
+  line-height: 1.35;
+}
 .bolus {
   margin-top: 9px;
   background: var(--accent-tint);
