@@ -270,6 +270,74 @@ behind a loud watermark and is never shippable.
   and always shown, since that specific restriction isn't queryable from
   this plugin.
 
+### 4a.4 v5 fix: OS notification and in-app alarm were cancelling each other (2026-07-22, later still)
+
+- **Three more field reports, same day:** (1) the empty-bag notification's
+  text ("CPP-DOSE — мішка порожня", no lead-in) looked like a stray,
+  out-of-context glitch; (2) the notification consistently appeared on the
+  lock screen roughly a minute *before* the in-app alarm sounded; (3) with
+  the drip's own metronome "Звук" toggle off and the screen locked, no
+  notification arrived at all — yet with that same toggle on, the locked-
+  screen notification was "абсолютно вірна" (fully correct).
+- **Root cause, found in `DripScreen.tsx`'s reschedule effect, not in
+  `notifications.ts` itself:** the effect computed
+  `fireAt10: d.warned10 ? null : endAt - PRE_END_ALARM_MS_10` (and the same
+  for `warned5`/`warnedEmpty`) — i.e. it gated the *OS-level* notification
+  directly on the *in-app* alarm's one-shot-per-stage flags.
+  `rescheduleDripAlarms()` unconditionally cancels a drip's 3 notification
+  ids on every call, before rescheduling. So the instant the in-app tick
+  effect (its own independent 1-second poll of `Date.now()`) noticed the
+  same threshold crossing and flipped e.g. `warned10` to `true`, the
+  reschedule effect re-ran (since `drips` changed) and cancelled —
+  dismissed — notification id `warn10`, even when the OS had already
+  delivered and displayed it.
+- **Why this produced exactly this pattern:** the WebView's timers are
+  suspended while the screen is locked (§4a above) and only resume once the
+  screen is unlocked / the app is foregrounded again. So the in-app tick's
+  catch-up — and therefore the self-cancel it triggers — fires right as the
+  medic looks at the phone, which is also the worst possible moment for a
+  notification to vanish. This explains all three reports as one bug:
+  - The ~1-minute gap between "notification shows" and "alarm sounds" was
+    never two systems racing — it's the delay between the OS notification
+    firing on time and the medic unlocking the phone, which is exactly when
+    the in-app catch-up (and the resulting self-cancel) happens.
+  - The sound-toggle correlation was a confound of the same mechanism, not
+    a real code path (there is none — confirmed by reading the toggle's
+    only consumer, the metronome effect). A page actively playing audio is
+    exempt from Chromium's background-tab timer throttling, so with the
+    metronome's sound on, the in-app tick barely lags the OS notification —
+    too narrow a window to ever notice the self-cancel. With sound off, the
+    WebView freezes harder while locked, widening that window and making
+    the vanish reliably observable.
+  - The empty-alarm text looking like an isolated glitch was very likely a
+    side effect too: if the 10-min and 5-min notifications had already been
+    silently self-cancelled earlier in the same session, only the final
+    "мішка порожня" notification would ever be seen, with no lead-up context
+    to make sense of it.
+- **Fix:** the OS notification and the in-app alarm are now fully
+  independent channels, matching the original intent of adding OS
+  notifications in the first place (§4a) — `warned10/5/Empty` gate *only*
+  the in-app audio/haptic (the separate `now`-driven tick effect) and are no
+  longer read anywhere near the notification-scheduling call. A new pure
+  helper, `dripScheduleKey(bagMl, mlPerH, startedAt, silenced)` (exported
+  from `notifications.ts`, unit-tested in `tests/notifications.test.ts`),
+  lets the reschedule effect skip drips whose actual alarm timing hasn't
+  changed, so unrelated `drips` updates (e.g. a different drip's stage
+  flipping) no longer trigger a redundant cancel+reschedule round trip
+  either. Also fixed the empty-alarm text to mirror the 10/5-min
+  notifications' phrasing instead of a bare "мішка порожня" fragment. A
+  small additional robustness fix: a `visibilitychange`/`focus` listener now
+  forces an immediate `now` refresh the moment the screen unlocks, instead
+  of waiting up to 1s for the next interval tick — shaves a small, avoidable
+  extra delay off the in-app catch-up, though it does not (and cannot)
+  change when the screen itself unlocks.
+- **What's still unverified:** this fix is fully explained and reasoned from
+  the actual code (not a guess), and is covered by a unit test for the
+  now-independent scheduling key, but the original three-report pattern was
+  only ever observed on-device — on-device re-confirmation of all three
+  scenarios (sound on/off × screen locked, empty-bag wording) is the
+  remaining step, same as the rest of §4a.
+
 ## 5. Offline & zero-exfiltration (Art. V)
 
 - Service worker precaches the whole app shell + `field-bundle.json`. No runtime

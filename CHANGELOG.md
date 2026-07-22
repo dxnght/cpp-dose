@@ -5,6 +5,35 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-22 (even later, same branch `feature/notification-channel-fix`)
+- **Three more field reports, root-caused to one bug:** the empty-bag
+  notification's text looked like a context-free glitch; the notification
+  reliably showed ~1 min before the in-app alarm sounded; and with the
+  drip's metronome sound toggle off + screen locked, no notification arrived
+  at all (fully correct with sound on).
+- **Root cause:** the reschedule effect in `DripScreen.tsx` gated each
+  stage's *OS* notification on that stage's *in-app* `warned10/5/Empty`
+  flag, and `rescheduleDripAlarms()` unconditionally cancels a drip's
+  notification ids on every call. The moment the in-app tick (an
+  independent 1s poll) caught up and flipped a flag — which, since the
+  WebView freezes while locked, happens right as the medic unlocks the
+  phone — it silently dismissed a notification the OS had already
+  delivered. The sound-toggle correlation was a confound: active audio
+  exempts the page from background-tab timer throttling, narrowing the
+  window in which the self-cancel is visible; with sound off the window
+  widens. Full account in `plan/architecture.md` §4a.4.
+- **Fixed:** OS notification and in-app alarm are now fully independent
+  channels; a new pure `dripScheduleKey()` (unit-tested) means the
+  reschedule effect only touches a drip's notifications when its actual
+  timing changes, never on an unrelated `drips` update or a warned-flag
+  flip. Empty-alarm text now mirrors the 10/5-min notifications' phrasing.
+  Added a `visibilitychange`/`focus` listener to shave the small, avoidable
+  extra delay off the in-app catch-up on unlock.
+- `test` 43/43, `tsc -b` clean.
+- **Needs on-device confirmation** — same as the rest of this notification
+  saga; the reasoning is grounded in the actual code, not a guess, but the
+  original reports were only ever observed on a real device.
+
 ## 2026-07-22 (later, same branch `feature/notification-channel-fix`)
 - **Field report came back inconsistent** across 3 tests: unlocked (fine, no
   alarm tone as expected since the metronome sound toggle was off — that

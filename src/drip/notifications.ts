@@ -58,6 +58,27 @@
 // snapshot from app launch — the old code could show a stale "fine" even
 // after the OS silently downgraded something mid-session.
 //
+// v5 (2026-07-22, same day — three more Owner field reports): (1) the
+// "мішка порожня" notification looked like a stray, out-of-context glitch;
+// (2) the notification consistently appears ~1 min before the in-app alarm
+// sounds; (3) with the drip's own sound toggle off + screen locked, no
+// notification shows at all, but it's "абсолютно вірна" (fully correct) with
+// sound on. Root cause, found in DripScreen.tsx, not here: the reschedule
+// effect gated fireAt10/5/Empty on `d.warned10/5/Empty` (`d.warned10 ? null :
+// ...`), and rescheduleDripAlarms() below unconditionally *cancels* a drip's
+// 3 notification ids on every call. So the instant the in-app tick (its own
+// independent 1s poll) noticed the same threshold and flipped e.g.
+// `warned10`, this ran again and cancelled — i.e. dismissed — notification
+// id `warn10`, even if the OS had already shown it. On a locked screen the
+// WebView's timers are suspended and only catch up once the screen is
+// unlocked/the app reopened, so this self-cancel fired right as the medic
+// looked at the phone — explaining all three reports at once (see the full
+// account in DripScreen.tsx's reschedule-effect comment). Fixed there: the
+// two channels (OS notification, in-app alarm) are now fully independent;
+// `warned10/5/Empty` only ever gate the in-app alarm. Also fixed here: the
+// empty-alarm text below now mirrors the 10/5-min notifications' phrasing
+// instead of a bare, context-free "мішка порожня" fragment.
+//
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
 // passes a plain plan object) so it stays easy to reason about / test in
 // isolation. All calls are best-effort: any failure (unsupported browser in
@@ -166,6 +187,20 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   }
 }
 
+/** Pure key for "has this drip's actual alarm timing changed" — used by
+ * DripScreen.tsx to decide whether to call rescheduleDripAlarms() at all.
+ * Deliberately excludes warned10/warned5/warnedEmpty (see the v5 note above):
+ * those flags gate only the separate in-app alarm and must never trigger a
+ * re-cancel of the OS-level notification. */
+export function dripScheduleKey(
+  bagMl: number,
+  mlPerH: number,
+  startedAt: number,
+  silenced: boolean,
+): string {
+  return `${bagMl}:${mlPerH}:${startedAt}:${silenced}`;
+}
+
 export interface DripAlarmPlan {
   id: string;
   label: string;
@@ -217,8 +252,8 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
   if (plan.fireAtEmpty != null && plan.fireAtEmpty > now) {
     notifications.push({
       id: ids.empty,
-      title: "CPP-DOSE — мішка порожня",
-      body: `${plan.label}: час готувати наступну мішку / переоцінити стан.`,
+      title: "CPP-DOSE — мішка закінчилася",
+      body: `${plan.label}: мішка закінчилася — час готувати наступну мішку / переоцінити стан.`,
       channelId: CHANNEL_ID,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAtEmpty), allowWhileIdle: true },

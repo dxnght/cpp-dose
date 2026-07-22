@@ -20,6 +20,7 @@ import {
   rescheduleDripAlarms,
   cancelDripAlarms,
   forgetStaleDrips,
+  dripScheduleKey,
 } from "./notifications";
 import {
   clamp,
@@ -267,6 +268,11 @@ export function DripScreen() {
   const wantFlashRef = useRef(false);
   const confirmTimer = useRef<number | null>(null);
   const startedRef = useRef<string | null>(null);
+  // Per-drip "last scheduled" key (2026-07-22, v5 notification fix — see the
+  // reschedule effect below) — lets that effect skip drips whose alarm
+  // timing hasn't actually changed, instead of re-cancelling/rescheduling
+  // every drip on every unrelated `drips` change.
+  const scheduledKeyRef = useRef<Map<string, string>>(new Map());
 
   const preset = presets[presetIdx];
   const conc = preset?.conc ?? 1;
@@ -347,6 +353,24 @@ export function DripScreen() {
     return () => clearInterval(id);
   }, []);
 
+  // Force an immediate correction the moment the screen unlocks / the app is
+  // foregrounded again, instead of waiting up to 1s for the next interval
+  // tick (2026-07-22) — the WebView's timers are suspended while the screen
+  // is locked, so `now` can be stale by however long it was locked; this
+  // doesn't change when the in-app alarm catches up, just removes a small,
+  // avoidable extra delay on top of that.
+  useEffect(() => {
+    const onWake = () => {
+      if (document.visibilityState === "visible") setNow(Date.now());
+    };
+    document.addEventListener("visibilitychange", onWake);
+    window.addEventListener("focus", onWake);
+    return () => {
+      document.removeEventListener("visibilitychange", onWake);
+      window.removeEventListener("focus", onWake);
+    };
+  }, []);
+
   // Ask once per session (Spec 001 FR-12, 2026-07-21) — the in-app alarm alone
   // is not reliable once the screen locks; OS-level notifications are the
   // backstop, and they need this permission. If denied, warn the medic rather
@@ -355,32 +379,72 @@ export function DripScreen() {
     ensureNotificationPermission().catch(() => {});
   }, []);
 
-  // (Re)schedule each drip's OS-level backstop notifications whenever its
-  // alarm-relevant state changes (added, removed, retitrated, silenced
-  // toggled, or a stage just fired in-app). Only fires on real structural
-  // changes to `drips`, not every `now` tick. Best-effort — see notifications.ts.
-  // Also re-checks notification health *live* every time (2026-07-22 fix) —
-  // the old code only snapshotted permission status once at mount, so the
-  // banner could show stale "fine" even after the OS silently downgraded
-  // something (channel importance, permission) mid-session.
+  // (Re)schedule each drip's OS-level backstop notifications only when its
+  // *actual* alarm timing changes (added, removed, retitrated, or silenced
+  // toggled) — keyed via dripScheduleKey() on bagMl/mlPerH/startedAt/silenced,
+  // deliberately NOT on warned10/warned5/warnedEmpty. Also re-checks
+  // notification health *live* every time (2026-07-22 fix) — the old code
+  // only snapshotted permission status once at mount, so the banner could
+  // show stale "fine" even after the OS silently downgraded something
+  // (channel importance, permission) mid-session.
+  //
+  // v5 (2026-07-22, three Owner field reports): this effect used to gate
+  // fireAt10/5/Empty directly on d.warned10/5/Empty (`d.warned10 ? null :
+  // ...`), and rescheduleDripAlarms() unconditionally cancels a drip's 3
+  // notification ids on every call before rescheduling. That meant the
+  // instant the *in-app* tick effect below (its own independent 1s poll)
+  // noticed the same threshold and flipped e.g. warned10 to true, this
+  // effect re-ran and cancelled — i.e. dismissed — notification id `warn10`,
+  // even if the OS had already delivered and shown it. On a locked screen
+  // the WebView's timers are suspended and only catch up once the screen is
+  // unlocked/the app reopened (see the file-header note above and
+  // notifications.ts) — so this self-cancel fired right as the medic looked
+  // at the phone. That explains, in one root cause: (1) the notification
+  // appearing to vanish/never-show ~1 min before the in-app alarm sounds
+  // (the in-app alarm is the delayed catch-up, and its firing is what
+  // triggered the self-cancel); (2) "no notification" specifically with the
+  // drip's sound toggle off (an actively-playing AudioContext exempts the
+  // WebView from Chromium's background-tab timer throttling, so with sound
+  // on the in-app tick barely lags and the self-cancel window was too
+  // narrow to ever notice — with sound off the tick freezes harder while
+  // locked, widening the window); (3) it also explains why the empty-bag
+  // notification could show up alone, looking like a stray glitch — the
+  // 10/5-min ones had already been silently self-cancelled before the medic
+  // checked.
+  //
+  // Fix: the OS notification and the in-app alarm are two fully independent
+  // delivery channels for the same event — that was the entire point of
+  // adding OS notifications (see the file-header history). warned10/5/Empty
+  // must only ever gate the in-app audio/haptic (the separate `now`-effect
+  // below); they must never cause this effect to touch the OS notification
+  // for that stage. scheduledKeyRef additionally guards against redundant
+  // cancel+reschedule calls firing on every unrelated `drips` change (e.g.
+  // a different drip's stage flipping), not just the self-cancel case.
   useEffect(() => {
+    const liveIds = new Set(drips.map((d) => d.id));
     drips.forEach((d) => {
       if (d.bagMl == null || d.mlPerH <= 0) {
-        void cancelDripAlarms(d.id);
+        if (scheduledKeyRef.current.delete(d.id)) void cancelDripAlarms(d.id);
         return;
       }
+      const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced);
+      if (scheduledKeyRef.current.get(d.id) === key) return;
+      scheduledKeyRef.current.set(d.id, key);
       const endAt =
         d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
       void rescheduleDripAlarms({
         id: d.id,
         label: d.label,
         silenced: d.silenced,
-        fireAt10: d.warned10 ? null : endAt - PRE_END_ALARM_MS_10,
-        fireAt5: d.warned5 ? null : endAt - PRE_END_ALARM_MS_5,
-        fireAtEmpty: d.warnedEmpty ? null : endAt,
+        fireAt10: endAt - PRE_END_ALARM_MS_10,
+        fireAt5: endAt - PRE_END_ALARM_MS_5,
+        fireAtEmpty: endAt,
       });
     });
-    void forgetStaleDrips(new Set(drips.map((d) => d.id)));
+    for (const id of [...scheduledKeyRef.current.keys()]) {
+      if (!liveIds.has(id)) scheduledKeyRef.current.delete(id);
+    }
+    void forgetStaleDrips(liveIds);
     checkNotificationHealth()
       .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
       .catch(() => setNotifDenied(true));

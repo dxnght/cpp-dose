@@ -3,15 +3,17 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.7 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.8 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
   with a `patch-package` fix for a plugin bug that forced every notification
   private regardless of channel config, a fixed out-of-range importance
   value, a live permission/channel health check, and a battery-optimization
-  exemption tip — Owner decisions 2026-07-21/22; see `plan/architecture.md`
-  §4a/§4a.1/§4a.2/§4a.3)
+  exemption tip — Owner decisions 2026-07-21/22; plus a fix for the OS
+  notification and in-app alarm silently fighting each other (see FR-12) —
+  Owner-reported 2026-07-22; see `plan/architecture.md`
+  §4a/§4a.1/§4a.2/§4a.3/§4a.4)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -163,6 +165,26 @@ unambiguous, usable one-handed with gloves at night.
   now recommends the medic exempt CPP-DOSE from battery optimization.
   (Owner decisions 2026-07-21/22; see `plan/architecture.md`
   §4a/§4a.1/§4a.2/§4a.3.)
+
+  **v5 fix (2026-07-22, three more Owner field reports):** the empty-bag
+  notification's text ("мішка порожня" alone, no lead-in) read as a
+  context-free glitch; the notification consistently appeared ~1 min before
+  the in-app alarm sounded; and with the drip's sound toggle off + screen
+  locked, no notification arrived at all, though it was "fully correct" with
+  sound on. Root cause: the reschedule effect gated each stage's OS
+  notification on that stage's in-app `warned10/5/Empty` flag, and
+  rescheduling always *cancels* a drip's notification ids first — so the
+  moment the in-app tick (a separate, independent 1s poll) caught up and
+  flipped a flag, it silently dismissed a notification the OS had already
+  delivered. Because the WebView's timers suspend while the screen is
+  locked and only catch up on unlock, this self-cancel fired right as the
+  medic looked at the phone — explaining all three reports as one bug, not
+  three. Fixed: the OS notification and the in-app alarm are now fully
+  independent channels (`warned10/5/Empty` gate only the in-app alarm,
+  never the OS notification); rescheduling now happens only when a drip's
+  actual timing changes (`dripScheduleKey()`), not on every unrelated state
+  change; the empty-alarm text now mirrors the 10/5-min notifications'
+  phrasing. See `plan/architecture.md` §4a.4.
 
 ## 4. Acceptance criteria
 
