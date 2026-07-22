@@ -3,7 +3,8 @@
 - **Feature ID:** 000-product-overview
 - **Status:** Draft → pending Owner approval
 - **Owner:** Ihor
-- **Version:** 1.1 (amended 2026-07-12 — narrowed to a drip-first MVP; see Change Log)
+- **Version:** 1.6 (amended 2026-07-12 — narrowed to a drip-first MVP; see Change Log
+  for all subsequent amendments, most recently the 2026-07-22 UX-review batch)
 - **Constitution:** must comply with `memory/constitution.md` (all articles)
 
 ## Constitution Check
@@ -150,3 +151,4 @@ references. The antibiotic-prophylaxis data stays in the protocol file (all
 | 1.3 | 2026-07-21 | Added a **per-drip alarm mute opt-out** ("Без будильника" checkbox, off by default, scoped to one drip). Alarm tone made **louder and longer** (square wave, near-max gain, ~0.45 s/beep) after field feedback that the original was too quiet. Owner decision. |
 | 1.4 | 2026-07-21 | Alarms now fire via **OS-level local notifications** as a backstop so they still work with the screen locked (the in-app alarm alone fired 7 min late — Owner-reported). Also fixed a stepper bug where the bag-volume min (1 ml) was off the 50 ml step grid, producing 51/101/151 ml instead of round values (min raised to 50 ml). Owner decisions. |
 | 1.5 | 2026-07-21 | The 1.4 notifications posted on time but **with no audible/vibration signal** on a locked screen (Owner-reported, same day) — fixed with a dedicated HIGH-importance/public-visibility/vibrating notification channel, `ongoing`+`autoCancel`. Evaluated the Owner's "live countdown, always-on-top, stopwatch-style" idea — not achievable with the current notification plugin (no chronometer support); documented as a separate follow-up needing native code. Work done on branch `feature/notification-channel-fix`, not `master`, per Owner instruction. |
+| 1.6 | 2026-07-22 | UX-review batch (`reports/UX-REVIEW-2026-07-22.md`, 4 read-only expert passes; Owner picked which findings to act on) on branch `feature/ux-review-improvements`: SC-7 now holds for a drip's whole running lifetime, not just at setup (`SourceBadge` snapshotted onto the drip at add-time, shown on the card and in Focus mode); SC-9's per-drip identification strengthened with auto-numbering for same-category concurrent drips and drug names in labels; alarm escalation (10-min/5-min/empty) now has matching visual escalation on the card, not audio/haptic only; the alarm-mute control now requires a ~600 ms press-and-hold to *enable* (single tap still disables); a card-level `ErrorBoundary` contains a non-VERIFIED record's fail-closed throw to just that card (Art. III) instead of the whole screen; assorted terminology, contrast, and touch-target fixes. No clinical values changed. |

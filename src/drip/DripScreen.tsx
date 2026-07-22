@@ -9,9 +9,9 @@
 // and the burn Rule of Ten come from VERIFIED records only (fail-closed).
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fieldBundle } from "../clinical/loader";
-import { assertRenderable } from "../clinical/guard";
+import { isRenderable } from "../clinical/guard";
 import { SourceBadge } from "../components/SourceBadge";
-import type { Drug } from "../clinical/types";
+import type { Drug, Formula } from "../clinical/types";
 import { Metronome } from "./metronome";
 import { tapHaptic, warnHaptic, emptyHaptic } from "./haptics";
 import {
@@ -57,6 +57,14 @@ interface ActiveDrip {
   warned5: boolean;
   warnedEmpty: boolean;
   silenced: boolean; // Owner opt-out (2026-07-21): mutes all 3 alarms for this drip only.
+  // Snapshot of the clinical/engineering record this drip's numbers came
+  // from, taken once at addDrip() time (2026-07-22, UX review finding —
+  // SourceBadge used to only show at setup, so verification status
+  // disappeared the moment a drip started running, including in Focus mode,
+  // the view a medic watches for the drip's whole life). null for bagtime
+  // mode, which is plain arithmetic on user-entered numbers with no
+  // underlying record to cite.
+  sourceRecord: Drug | Formula | null;
 }
 
 type Mode = "dose" | "bagtime" | "burn";
@@ -210,11 +218,101 @@ function Chamber({
   );
 }
 
+// Press-and-hold mute control (2026-07-22 redesign, Owner decision). Enabling
+// "Без будильника" requires holding for HOLD_MS — silencing the drip's only
+// alarm should be *harder* than the accidental single tap the old checkbox
+// allowed. Disabling stays a single, instant tap: turning the alarm back on
+// is the safe direction and should have no friction, mirroring the asymmetry
+// already used for "Прибрати" (confirm only the destructive direction).
+// HOLD_MS must match the CSS transition duration on `.silence-btn.holding`
+// (--silence-hold-ms in theme.css) so the visual fill and the actual
+// activation land together.
+const SILENCE_HOLD_MS = 600;
+
+function SilenceToggle({
+  silenced,
+  hint,
+  onSetSilenced,
+}: {
+  silenced: boolean;
+  hint: string | null;
+  onSetSilenced: (v: boolean) => void;
+}) {
+  const [holding, setHolding] = useState(false);
+  const holdTimer = useRef<number | null>(null);
+  const justMutedRef = useRef(false);
+
+  function clearHold() {
+    if (holdTimer.current != null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+    setHolding(false);
+  }
+
+  function onPointerDown() {
+    if (silenced) return; // un-mute path is the plain onClick below
+    setHolding(true);
+    holdTimer.current = window.setTimeout(() => {
+      holdTimer.current = null;
+      setHolding(false);
+      justMutedRef.current = true; // swallow the click that follows this hold
+      onSetSilenced(true);
+    }, SILENCE_HOLD_MS);
+  }
+
+  function onClick() {
+    if (justMutedRef.current) {
+      justMutedRef.current = false;
+      return;
+    }
+    if (silenced) onSetSilenced(false);
+    // else: a quick tap/click with no completed hold does nothing — muting
+    // only ever happens via the timer above.
+  }
+
+  return (
+    <button
+      type="button"
+      className={`silence-btn${silenced ? " on" : ""}${holding ? " holding" : ""}`}
+      aria-pressed={silenced}
+      aria-label={
+        silenced
+          ? "Вимкнути «без будильника» для цього дріпу"
+          : `Утримайте ~${Math.round(SILENCE_HOLD_MS / 100) / 10}с, щоб увімкнути «без будильника» лише для цього дріпу`
+      }
+      onPointerDown={onPointerDown}
+      onPointerUp={clearHold}
+      onPointerLeave={clearHold}
+      onPointerCancel={clearHold}
+      onClick={onClick}
+    >
+      <span aria-hidden="true">{silenced ? "🔇" : "🔔"}</span>
+      {silenced ? (
+        <>Без будильника (лише цей дріп) — тап, щоб увімкнути</>
+      ) : (
+        <>
+          Утримай ~1с — без будильника (лише цей дріп)
+          {hint && <span className="hint"> · {hint}</span>}
+        </>
+      )}
+    </button>
+  );
+}
+
 export function DripScreen() {
   const presets: ConcPreset[] = useMemo(() => {
     const list = fieldBundle.drugs
+      // Fail-closed (Art. III), quietly excluding rather than throwing
+      // (2026-07-22 UX review): this feeds a bulk useMemo, not a per-card
+      // render, so a throw here (the old assertRenderable(d) call) would
+      // abort the *whole* list construction, not just one entry — an
+      // ErrorBoundary can't help since the throw happens inside this
+      // component's own render, not a child's. compile:field already
+      // guarantees only VERIFIED/engineering drugs reach the bundle; this is
+      // defense in depth with zero blast radius instead of a contained one.
+      .filter((d) => isRenderable(d))
       .map((d) => {
-        assertRenderable(d); // fail-closed
         const c = parseConcentrationMgPerMl(d.infusion?.concentration);
         if (!c) return null;
         const ind = d.indication.toLowerCase();
@@ -223,7 +321,11 @@ export function DripScreen() {
           : ind.includes("sedation")
             ? "Седація"
             : "Інфузія";
-        return { drug: d, conc: c, use, label: `${use} · ${c} мг/мл` };
+        // Drug name included (2026-07-22 UX review) — the selector and the
+        // running-drip card used to show only category+concentration
+        // ("Знеболення · 1 мг/мл"), never which drug, so a medic had to infer
+        // it from the concentration number alone.
+        return { drug: d, conc: c, use, label: `${d.drug} · ${use} · ${c} мг/мл` };
       })
       .filter((x): x is ConcPreset => x !== null);
     list.sort((a, b) => a.conc - b.conc); // analgesia (1 mg/ml) default / left
@@ -508,32 +610,64 @@ export function DripScreen() {
     });
   }, [now]);
 
+  // Auto-number a drip's label when it collides with an already-active
+  // drip's (2026-07-22 UX review — with up to 5 concurrent drips, two of the
+  // same category/mode were visually indistinguishable on the card besides
+  // a live rate number). Renumbers the first drip to "…  1" the moment a
+  // second one collides, rather than leaving it unnumbered and only the new
+  // one "2" (which wouldn't read as an obvious pair).
+  function withOrdinal(
+    base: string,
+    existing: ActiveDrip[],
+  ): { label: string; renumberId?: string } {
+    const exact = existing.find((d) => d.label === base);
+    const numbered = existing
+      .map((d) => /^(.*) (\d+)$/.exec(d.label))
+      .filter((m): m is RegExpExecArray => m !== null && m[1] === base)
+      .map((m) => Number(m[2]));
+    if (!exact && numbered.length === 0) return { label: base };
+    if (exact) return { label: `${base} 2`, renumberId: exact.id };
+    return { label: `${base} ${Math.max(...numbered) + 1}` };
+  }
+
   function addDrip() {
     if (drips.length >= MAX_DRIPS || live.gtt <= 0) return;
     const id = `d${Date.now()}`;
-    const label =
+    const base =
       mode === "dose"
-        ? (preset?.use ?? "Дріп")
+        ? preset
+          ? `${preset.drug.drug} · ${preset.use}`
+          : "Дріп"
         : mode === "burn"
           ? "Опікова рідина"
-          : "Крапельниця";
-    setDrips((p) => [
-      ...p,
-      {
-        id,
-        label,
-        gtt: live.gtt,
-        mlPerH: live.mlPerH,
-        dropFactor,
-        bagMl,
-        startedAt: Date.now(),
-        animStart: nowMs(),
-        warned10: false,
-        warned5: false,
-        warnedEmpty: false,
-        silenced: false,
-      },
-    ]);
+          : "Дріп"; // was "Крапельниця" — same word as the screen's own h1;
+          // standardized on "Дріп" to match dose mode's fallback (2026-07-22).
+    const sourceRecord: Drug | Formula | null =
+      mode === "dose" ? (preset?.drug ?? null) : mode === "burn" ? (burnFormula ?? null) : null;
+    const { label, renumberId } = withOrdinal(base, drips);
+    setDrips((p) => {
+      const renumbered = renumberId
+        ? p.map((d) => (d.id === renumberId ? { ...d, label: `${base} 1` } : d))
+        : p;
+      return [
+        ...renumbered,
+        {
+          id,
+          label,
+          gtt: live.gtt,
+          mlPerH: live.mlPerH,
+          dropFactor,
+          bagMl,
+          startedAt: Date.now(),
+          animStart: nowMs(),
+          warned10: false,
+          warned5: false,
+          warnedEmpty: false,
+          silenced: false,
+          sourceRecord,
+        },
+      ];
+    });
     if (!activeId) setActiveId(id);
   }
 
@@ -613,10 +747,20 @@ export function DripScreen() {
       : `тихо ще ${min} хв`;
   }
 
+  // Escalating visual stage to pair with the escalating audio (2026-07-22 UX
+  // review) — applied regardless of `silenced`, since a muted drip has no
+  // other signal left once its alarm stage passes.
+  function alarmStage(d: ActiveDrip): "" | "warn10" | "warn5" | "empty" {
+    if (d.warnedEmpty) return "empty";
+    if (d.warned5) return "warn5";
+    if (d.warned10) return "warn10";
+    return "";
+  }
+
   const spd = live.gtt > 0 ? Math.round(secPerDrop(live.gtt)) : 0;
 
   return (
-    <section>
+    <section className="drip-screen">
       <div ref={flashElRef} className="flash-layer" aria-hidden="true" />
 
       {focusDrip && (
@@ -652,7 +796,14 @@ export function DripScreen() {
               muted={focusDrip.id !== activeId}
             />
           </div>
-          <div className="focus-rem">Залишок: {remaining(focusDrip)}</div>
+          <div className={`focus-rem ${alarmStage(focusDrip)}`}>
+            Залишок: {remaining(focusDrip)}
+          </div>
+          {focusDrip.sourceRecord && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <SourceBadge record={focusDrip.sourceRecord} compact />
+            </div>
+          )}
           <button
             className={`focus-pace${focusDrip.id === activeId ? " on" : ""}`}
             onClick={(e) => {
@@ -729,13 +880,21 @@ export function DripScreen() {
 
       <h1>Крапельниця</h1>
 
-      <div className="seg" role="tablist" aria-label="режим">
+      {/* Active drips render above the calculator once any exist
+          (2026-07-22 UX review — checking/muting a running drip used to
+          require scrolling past the whole setup panel every time). Ordering
+          is done via CSS (.drip-screen/.active-section/.calc-section) rather
+          than relocating this JSX, so nothing about the calculator's own
+          logic below changes. */}
+      <div className="calc-section">
+        {drips.length > 0 && <h2>Новий дріп</h2>}
+        <div className="seg" role="tablist" aria-label="режим">
         {presets.length > 0 && (
           <button
             className={mode === "dose" ? "on" : ""}
             onClick={() => setMode("dose")}
           >
-            Препарат
+            За дозою
           </button>
         )}
         <button
@@ -781,7 +940,7 @@ export function DripScreen() {
             ))}
           </select>
           {preset.use === "Седація" && (
-            <div className="caution">
+            <div className="banner banner--warn">
               ⚠ Седація — складний процес. Без телемедичної консультації краще
               не застосовувати.
             </div>
@@ -805,7 +964,7 @@ export function DripScreen() {
             onChange={(v) => setDose(clamp(Math.round(v * 100) / 100, DOSE))}
           />
           {bolus?.dose_per_kg && (
-            <div className="bolus">
+            <div className="banner banner--info bolus">
               Болюс перед дріпом:{" "}
               <b>
                 {doseRangeMg(bolus.dose_per_kg, weight) ?? bolus.dose_per_kg}
@@ -873,7 +1032,7 @@ export function DripScreen() {
 
       {mode === "bagtime" && (
         <>
-          <p className="runtime" style={{ textAlign: "left" }}>
+          <p className="runtime left">
             Скільки ще протримається мішок при поточній швидкості.
           </p>
           <Stepper
@@ -895,7 +1054,7 @@ export function DripScreen() {
             onChange={setBagGtt}
           />
           <button
-            style={{ width: "100%", marginTop: 10 }}
+            className="add-btn"
             onClick={() => {
               setTaps([]);
               setCalib(true);
@@ -943,30 +1102,31 @@ export function DripScreen() {
       {mode === "dose" && preset && <SourceBadge record={preset.drug} />}
       {mode === "burn" && burnFormula && <SourceBadge record={burnFormula} />}
 
-      <button
-        className="primary add-btn"
-        disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
-        onClick={addDrip}
-      >
-        {drips.length >= MAX_DRIPS
-          ? `Максимум ${MAX_DRIPS} дріпів`
-          : "＋ Додати дріп"}
-      </button>
+        <button
+          className="primary add-btn"
+          disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
+          onClick={addDrip}
+        >
+          {drips.length >= MAX_DRIPS
+            ? `Максимум ${MAX_DRIPS} дріпів`
+            : "＋ Додати дріп"}
+        </button>
+      </div>
 
       {drips.length > 0 && (
-        <>
+        <div className="active-section">
           <h2>
             Активні дріпи ({drips.length}/{MAX_DRIPS})
           </h2>
           {notifDenied && drips.some((d) => d.bagMl != null) && (
-            <div className="notif-warning" role="alert">
+            <div className="banner banner--warn" role="alert">
               ⚠ Сповіщення вимкнено або обмежені — будильник може не
               спрацювати при заблокованому екрані. Перевір дозволи сповіщень
               для CPP-DOSE в налаштуваннях телефону.
             </div>
           )}
           {!notifDenied && drips.some((d) => d.bagMl != null) && (
-            <div className="notif-hint">
+            <div className="banner banner--hint">
               Порада: додай CPP-DOSE у виключення з оптимізації батареї
               (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
               телефон може відкладати будильник при заблокованому екрані,
@@ -975,10 +1135,11 @@ export function DripScreen() {
           )}
           {drips.map((d) => {
             const isActive = d.id === activeId;
+            const stage = alarmStage(d);
             return (
               <article
                 key={d.id}
-                className={`drip-card${isActive ? " active" : ""}`}
+                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}`}
               >
                 <div className="drip-tap" onClick={() => enterFocus(d.id)}>
                   <div className="drip-mini-top">
@@ -1001,6 +1162,9 @@ export function DripScreen() {
                     {remaining(d)}
                   </div>
                   <div className="tap-hint">Тап — на весь екран</div>
+                  {d.sourceRecord && (
+                    <SourceBadge record={d.sourceRecord} compact />
+                  )}
                 </div>
                 <div className="drip-actions">
                   <button
@@ -1017,17 +1181,11 @@ export function DripScreen() {
                   </button>
                 </div>
                 {d.bagMl != null && (
-                  <label className="drip-silence">
-                    <input
-                      type="checkbox"
-                      checked={d.silenced}
-                      onChange={(e) => setSilenced(d.id, e.target.checked)}
-                    />{" "}
-                    Без будильника
-                    {quietHint(d) && (
-                      <span className="hint"> ({quietHint(d)})</span>
-                    )}
-                  </label>
+                  <SilenceToggle
+                    silenced={d.silenced}
+                    hint={quietHint(d)}
+                    onSetSilenced={(v) => setSilenced(d.id, v)}
+                  />
                 )}
               </article>
             );
@@ -1060,12 +1218,12 @@ export function DripScreen() {
               </label>
             </div>
           )}
-          <p className="runtime" style={{ textAlign: "left" }}>
+          <p className="runtime left">
             {activeId != null
               ? "Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом."
               : "Тап по дріпу — фокус-режим. Запусти метроном (▶), щоб задати темп."}
           </p>
-        </>
+        </div>
       )}
     </section>
   );

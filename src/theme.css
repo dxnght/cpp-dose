@@ -1,6 +1,10 @@
 /* Modern dark theme (Owner request 2026-07-13 — replaces the red-on-black field
    theme; a dedicated night-vision red mode is deferred to IDEAS). Calm, Apple-style,
-   phone-first. All interactive targets >= 48 px. */
+   phone-first. All interactive targets >= 48 px.
+   Font-size scale added 2026-07-22 (UX review finding — the small-text
+   cluster below 14px had drifted to 4 near-duplicate values with no shared
+   token). Values are unchanged from before; this just names them so future
+   additions reuse a size instead of picking a new one. */
 :root {
   --bg: #f2f2f7;
   --surface: #ffffff;
@@ -16,11 +20,18 @@
   --warn: #8a5a00;
   --warn-bg: rgba(255, 159, 10, 0.18);
   --danger: #d70015;
+  --danger-tint: rgba(215, 0, 21, 0.1);
   --radius: 12px;
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 16px;
   --touch: 48px;
+  --nav-bg: rgba(242, 242, 247, 0.92);
+  --fs-badge: 11.5px;
+  --fs-2xs: 12px;
+  --fs-xs: 12.5px;
+  --fs-sm: 13px;
+  --fs-body: 14px;
   color-scheme: light dark;
 }
 :root[data-theme="dark"] {
@@ -38,6 +49,8 @@
   --warn: #ff9f0a;
   --warn-bg: rgba(255, 159, 10, 0.16);
   --danger: #ff453a;
+  --danger-tint: rgba(255, 69, 58, 0.16);
+  --nav-bg: rgba(11, 11, 13, 0.92);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -55,6 +68,8 @@
     --warn: #ff9f0a;
     --warn-bg: rgba(255, 159, 10, 0.16);
     --danger: #ff453a;
+    --danger-tint: rgba(255, 69, 58, 0.16);
+    --nav-bg: rgba(11, 11, 13, 0.92);
   }
 }
 
@@ -95,15 +110,16 @@ body {
   color: var(--warn);
   border-bottom: 1px solid var(--line);
   padding: 8px 12px;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   font-weight: 500;
 }
 .disclaimer-banner .banner-text {
   flex: 1;
 }
 .theme-toggle {
-  min-height: 44px;
-  min-width: 44px;
+  /* was 44px (2026-07-22 UX review: undershot this file's own >=48px rule) */
+  min-height: var(--touch);
+  min-width: var(--touch);
   padding: 4px 10px;
   font-size: 16px;
   border-radius: 8px;
@@ -124,7 +140,10 @@ body {
 .nav {
   display: flex;
   border-top: 1px solid var(--line);
-  background: rgba(11, 11, 13, 0.92);
+  /* was hardcoded to the dark rgba value regardless of theme (2026-07-22 UX
+     review: a real WCAG contrast failure in light mode — --fg-dim text at
+     ~2.5:1 against a near-black bar). --nav-bg now switches with the theme. */
+  background: var(--nav-bg);
   backdrop-filter: blur(12px);
   position: sticky;
   bottom: 0;
@@ -138,7 +157,7 @@ body {
   color: var(--fg-dim);
   border: none;
   border-top: 2px solid transparent;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 500;
   cursor: pointer;
 }
@@ -146,6 +165,15 @@ body {
 .nav button[aria-current="page"] {
   color: var(--accent);
   border-top-color: var(--accent);
+}
+
+/* The 4th nav button (reopen disclaimer) isn't a screen tab — it opens a
+   modal — so it gets a visually distinct, slightly quieter treatment instead
+   of looking identical to the 3 real tabs (2026-07-22 UX review). */
+.nav button.nav-aux {
+  flex: 0.8;
+  color: var(--fg-muted);
+  font-size: var(--fs-badge);
 }
 
 button {
@@ -190,12 +218,37 @@ h2 {
   margin-top: 12px;
 }
 
+/* These three had no rule at all before (2026-07-22 UX review) — .drugs-duration
+   and .drugref-pending rendered as plain inherited paragraph/list-item text,
+   and .record-pending is the new ErrorBoundary fallback (see
+   ClinicalRecordBoundary.tsx). A "pending review" item should read as
+   visually distinct from a fully-populated sibling, not identical weight. */
+.drugs-duration {
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  margin-top: 8px;
+}
+.drugref-pending {
+  color: var(--warn);
+  font-style: italic;
+  font-size: var(--fs-sm);
+}
+.record-pending {
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-top: 10px;
+  color: var(--fg-dim);
+  font-size: var(--fs-sm);
+  font-style: italic;
+}
+
 .source-badge {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
-  font-size: 11.5px;
+  font-size: var(--fs-badge);
   margin-top: 8px;
 }
 .source-badge .tag {
@@ -212,10 +265,32 @@ h2 {
   border-color: var(--warn);
   color: var(--warn);
 }
+.source-badge-compact {
+  margin-top: 6px;
+}
 
 /* ---- Drip engine (Spec 001) ---- */
+/* Active drips render above the "new drip" calculator once any exist
+   (2026-07-22 UX review) — reordering is done here via flex `order` rather
+   than moving the JSX in DripScreen.tsx, so the calculator's own logic
+   didn't need to move. h1 always first; .active-section (if present) second;
+   .calc-section always last. Focus/calibrator overlays are position:fixed
+   and unaffected by this. */
+.drip-screen {
+  display: flex;
+  flex-direction: column;
+}
+.drip-screen > h1 {
+  order: -2;
+}
+.active-section {
+  order: -1;
+}
+.calc-section {
+  order: 0;
+}
 .fieldlabel {
-  font-size: 12px;
+  font-size: var(--fs-2xs);
   color: var(--fg-dim);
   margin: 16px 0 7px;
   text-transform: none;
@@ -230,8 +305,9 @@ h2 {
 }
 .seg button {
   flex: 1;
-  min-height: 44px;
-  font-size: 14px;
+  /* was 44px (2026-07-22 UX review: undershot this file's own >=48px rule) */
+  min-height: var(--touch);
+  font-size: var(--fs-body);
   background: transparent;
   border: none;
   border-radius: 9px;
@@ -290,7 +366,7 @@ h2 {
   padding: 4px;
 }
 .stepper-label {
-  font-size: 11.5px;
+  font-size: var(--fs-badge);
   color: var(--fg-dim);
 }
 .stepper-num {
@@ -299,44 +375,46 @@ h2 {
 }
 .runtime {
   text-align: center;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--fg-dim);
   margin-top: 6px;
 }
-.caution,
-.notif-warning {
+.runtime.left {
+  text-align: left;
+}
+
+/* Shared banner geometry (2026-07-22 UX review — .caution, .notif-warning,
+   .notif-hint and .bolus used to each hardcode the same box shape with their
+   own one-off color pair; consolidated onto one base + modifiers so a future
+   alert type reuses this instead of copy-pasting a 5th variant). */
+.banner {
   margin-top: 9px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  line-height: 1.35;
+}
+.banner--warn {
   background: var(--warn-bg);
   border: 1px solid var(--warn);
   color: var(--warn);
-  border-radius: 10px;
-  padding: 9px 11px;
-  font-size: 13px;
-  line-height: 1.35;
+  font-size: var(--fs-sm);
 }
-.notif-hint {
-  margin-top: 9px;
+.banner--hint {
   border: 1px solid var(--line);
   color: var(--fg-dim);
-  border-radius: 10px;
-  padding: 9px 11px;
-  font-size: 12.5px;
-  line-height: 1.35;
+  font-size: var(--fs-xs);
 }
-.bolus {
-  margin-top: 9px;
+.banner--info {
   background: var(--accent-tint);
   border: 1px solid var(--accent);
-  border-radius: 10px;
-  padding: 9px 11px;
-  font-size: 14px;
+  font-size: var(--fs-body);
 }
 .bolus b {
   color: var(--accent);
 }
 .bolus-sub {
   color: var(--fg-dim);
-  font-size: 12px;
+  font-size: var(--fs-2xs);
 }
 .hero {
   margin: 16px 0 8px;
@@ -347,7 +425,7 @@ h2 {
   text-align: center;
 }
 .hero-label {
-  font-size: 12px;
+  font-size: var(--fs-2xs);
   color: var(--go);
 }
 .hero-num {
@@ -357,7 +435,7 @@ h2 {
   color: var(--go);
 }
 .hero-sub {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--fg-dim);
 }
 .add-btn {
@@ -379,24 +457,34 @@ h2 {
   border-color: var(--accent);
   background: var(--accent-tint);
 }
-.drip-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+/* Alarm-stage escalation (2026-07-22 UX review — three reviewers
+   independently flagged that warned10/warned5/warnedEmpty drove sound/haptic
+   only, with nothing visible on screen; a muted or missed beep left no way
+   to tell urgency by looking). Escalates regardless of the "Без будильника"
+   mute — if anything it matters *more* once a drip is silenced, since the
+   card becomes the only remaining signal. */
+.drip-card.warn10 {
+  border-color: var(--warn);
 }
-.drip-row.small {
-  font-size: 12.5px;
-  color: var(--fg-dim);
-  margin-top: 2px;
-}
-.drip-label {
-  font-size: 16px;
+.drip-card.warn10 .drip-mini-meta {
+  color: var(--warn);
   font-weight: 600;
 }
-.drip-gtt {
-  font-size: 19px;
+.drip-card.warn5 {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+.drip-card.warn5 .drip-mini-meta {
+  color: var(--warn);
   font-weight: 700;
-  color: var(--accent);
+}
+.drip-card.empty {
+  border-color: var(--danger);
+  background: var(--danger-tint);
+}
+.drip-card.empty .drip-mini-meta {
+  color: var(--danger);
+  font-weight: 700;
 }
 .chamber {
   position: relative;
@@ -483,22 +571,45 @@ h2 {
   vertical-align: middle;
   accent-color: var(--accent);
 }
-.drip-silence {
+/* Mute control (2026-07-22 redesign — was a 20px checkbox with no min-height,
+   undershooting this file's own >=48px rule, dim in both states, and a
+   single instant tap to silence the drip's only alarm). Now a full-width
+   button: enabling requires a ~600ms press-and-hold (see SilenceToggle in
+   DripScreen.tsx — HOLD_MS must match `--silence-hold-ms` below); disabling
+   stays a single tap, mirroring "hard to turn off the alarm, easy to turn it
+   back on." The enabled state is the visually loud one, not the dim one. */
+.silence-btn {
+  --silence-hold-ms: 600ms;
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  min-height: var(--touch);
   margin-top: 9px;
-  font-size: 13px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
   color: var(--fg-dim);
+  font-size: var(--fs-sm);
+  text-align: left;
 }
-.drip-silence input {
-  width: 20px;
-  height: 20px;
-  accent-color: var(--accent);
+.silence-btn .hint {
+  font-size: var(--fs-2xs);
+  opacity: 0.8;
 }
-.drip-silence .hint {
-  font-size: 12px;
-  opacity: 0.75;
+.silence-btn.holding {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+  transition:
+    background-color var(--silence-hold-ms) linear,
+    border-color var(--silence-hold-ms) linear;
+}
+.silence-btn.on {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-tint);
+  font-weight: 600;
 }
 .drip-tap {
   cursor: pointer;
@@ -552,10 +663,19 @@ button.danger {
   font-size: 18px;
   color: var(--fg-dim);
 }
+.focus-rem.warn10,
+.focus-rem.warn5 {
+  color: var(--warn);
+  font-weight: 600;
+}
+.focus-rem.empty {
+  color: var(--danger);
+  font-weight: 700;
+}
 .focus-hint {
   position: absolute;
   bottom: 34px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--fg-muted);
 }
 .drip-mini-top {
@@ -587,12 +707,12 @@ button.danger {
 }
 .drip-mini-meta {
   text-align: center;
-  font-size: 12.5px;
+  font-size: var(--fs-xs);
   color: var(--fg-dim);
 }
 .tap-hint {
   text-align: center;
-  font-size: 12px;
+  font-size: var(--fs-2xs);
   color: var(--accent);
   margin-top: 6px;
 }
@@ -631,8 +751,7 @@ button.danger {
 .hero-num,
 .stepper-num,
 .drip-mini-gtt,
-.focus-gtt,
-.drip-gtt {
+.focus-gtt {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }

@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.8 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.9 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -12,8 +12,11 @@
   value, a live permission/channel health check, and a battery-optimization
   exemption tip — Owner decisions 2026-07-21/22; plus a fix for the OS
   notification and in-app alarm silently fighting each other (see FR-12) —
-  Owner-reported 2026-07-22; see `plan/architecture.md`
-  §4a/§4a.1/§4a.2/§4a.3/§4a.4)
+  Owner-reported 2026-07-22; plus a 2026-07-22 UX-review batch: press-and-hold
+  to enable the alarm mute (FR-7a), visual alarm-stage escalation (AC-6b),
+  a persistent source/verification badge on running drips (AC-6c), drug names
+  in labels + auto-numbering for duplicate concurrent drips (FR-8) — see
+  `plan/architecture.md` §4a/§4a.1/§4a.2/§4a.3/§4a.4)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -116,14 +119,29 @@ unambiguous, usable one-handed with gloves at night.
   drop factor, timer, alarms). Adding a 6th is blocked with a message.
   Removing/finishing one frees a slot.
 - **FR-7a (alarm opt-out)** Each drip with an end-of-bag timer configured shows
-  a **"Без будильника"** checkbox, **off by default**. When checked, all three
+  a **"Без будильника"** control, **off by default**. When enabled, all three
   of that drip's alarms (10-min, 5-min, at-empty) are muted; every other
   concurrent drip's alarms are unaffected. Scoped to one drip only — never a
-  global setting, never on by default. A live, informational-only hint next to
-  the checkbox shows how much of the remaining run time is still ahead of the
-  10-min alarm window (does not drive any logic). (Owner decision 2026-07-21.)
+  global setting, never on by default. A live, informational-only hint (shown
+  only while not muted) shows how much of the remaining run time is still
+  ahead of the 10-min alarm window (does not drive any logic). (Owner decision
+  2026-07-21.) **Updated 2026-07-22 (UX review, Owner decision):** enabling
+  the mute now requires a **~600 ms press-and-hold**, not a single tap —
+  silencing the drip's only alarm should be harder than the accidental tap
+  the old checkbox allowed. Disabling stays a single, instant tap (turning
+  the alarm back on is the safe direction, mirroring the confirm-only-the-
+  destructive-direction pattern already used for removing a drip, FR-3h).
+  The enabled state is now the visually prominent one (a red-bordered pill),
+  not dim — a stressed medic scanning cards shouldn't be able to miss that
+  one is silenced.
 - **FR-8 (concurrency UX)** All active drips are visible together (name/label,
-  gtt/min, time remaining). The medic can tell them apart at a glance under stress.
+  gtt/min, time remaining). The medic can tell them apart at a glance under
+  stress. **Strengthened 2026-07-22 (UX review):** the drug's actual name is
+  now part of a dose-mode drip's label (previously only category +
+  concentration, e.g. "Знеболення · 1 мг/мл", with no way to tell *which*
+  drug from the card alone); when two concurrent drips would otherwise share
+  an identical label, both are auto-numbered ("Крапельниця 1"/"Крапельниця
+  2") so they're distinguishable without any patient data being entered.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
   the medic selects **one "active" drip** whose metronome sounds/vibrates at a time
   (others show visual countdown only), OR distinct cues per drip — **Owner to pick**
@@ -199,10 +217,23 @@ unambiguous, usable one-handed with gloves at night.
   alarm** all fire, in airplane mode, each with a distinguishable pattern.
 - **AC-6 (SC-9)** With **5 concurrent drips** at different rates, each keeps its own
   correct countdown and fires its own alarms independently; a 6th is blocked.
-- **AC-6a** With **"Без будильника" checked** on one drip, none of its three alarms
-  (10-min, 5-min, at-empty) fire; other concurrent drips' alarms are unaffected
-  and fire normally. Unchecking it re-enables future alarms for that drip
-  (already-passed thresholds do not fire retroactively).
+- **AC-6a** With **"Без будильника" enabled** (via a ~600 ms press-and-hold, not
+  a tap) on one drip, none of its three alarms (10-min, 5-min, at-empty) fire;
+  other concurrent drips' alarms are unaffected and fire normally. A quick
+  tap/release that doesn't complete the hold leaves the drip unmuted. Tapping
+  once on an already-muted drip disables the mute instantly and re-enables
+  future alarms for that drip (already-passed thresholds do not fire
+  retroactively).
+- **AC-6b (2026-07-22, UX review)** Regardless of `silenced`, once a drip
+  crosses the 10-min, 5-min, or empty threshold, its card (and Focus view)
+  shows a matching visual escalation (border/text color, increasing urgency)
+  that persists until the drip is removed — recoverable by sight alone, not
+  only audible at the instant it fires.
+- **AC-6c (2026-07-22, UX review; SC-7)** A running drip's card and its Focus
+  view show a compact source/verification badge for its whole lifetime (drug
+  or burn-formula record snapshotted at add-time), not only in the setup
+  selector before the drip is added. bagtime-mode drips (no underlying
+  record) show no badge.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 - **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a

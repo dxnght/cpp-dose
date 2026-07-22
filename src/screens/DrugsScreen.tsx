@@ -13,6 +13,7 @@
 import { fieldBundle, hasNoVerifiedClinicalContent } from "../clinical/loader";
 import { assertRenderable, isRenderable } from "../clinical/guard";
 import { SourceBadge } from "../components/SourceBadge";
+import { ClinicalRecordBoundary } from "../components/ClinicalRecordBoundary";
 import { t } from "../i18n";
 import type { Drug, Prophylaxis } from "../clinical/types";
 
@@ -120,7 +121,11 @@ export function DrugsScreen() {
           <p>{t("drugs.tccc.empty")}</p>
         </div>
       ) : (
-        tcccAntibiotics.map((d) => <DrugCard key={d.id} d={d} />)
+        tcccAntibiotics.map((d) => (
+          <ClinicalRecordBoundary key={d.id}>
+            <DrugCard d={d} />
+          </ClinicalRecordBoundary>
+        ))
       )}
 
       <h2>{t("drugs.moz.heading")}</h2>
@@ -129,7 +134,11 @@ export function DrugsScreen() {
           <p>{t("drugs.moz.empty")}</p>
         </div>
       ) : (
-        mozGroups.map((p) => <ProphylaxisCard key={p.id} p={p} />)
+        mozGroups.map((p) => (
+          <ClinicalRecordBoundary key={p.id}>
+            <ProphylaxisCard p={p} />
+          </ClinicalRecordBoundary>
+        ))
       )}
 
       <h2>{t("drugs.other.heading")}</h2>
@@ -138,7 +147,11 @@ export function DrugsScreen() {
           <p>{t("drugs.other.empty")}</p>
         </div>
       ) : (
-        otherDrugs.map((d) => <DrugCard key={d.id} d={d} />)
+        otherDrugs.map((d) => (
+          <ClinicalRecordBoundary key={d.id}>
+            <DrugCard d={d} />
+          </ClinicalRecordBoundary>
+        ))
       )}
     </section>
   );

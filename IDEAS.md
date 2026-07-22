@@ -87,6 +87,17 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 - **Auto-dim in night focus** — via the Capacitor screen-brightness plugin (native
   build); tracked as Spec 001 FR-3i.
 - Larger accessibility options (color-blind-safe night palette variants).
+- **Distinct badge color for engineering formulas vs. Owner-verified clinical
+  records** — `SourceBadge` currently renders both "МАТЕМАТИКА" (engineering,
+  exempt from verification) and "ПІДТВЕРДЖЕНО" (Owner-signed VERIFIED) in the
+  same green. Raised in the 2026-07-22 UX review; not picked for that pass —
+  revisit if it's ever found to cause real confusion, not just in theory.
+- **Patient-linked identifier on concurrent drips** — the 2026-07-22 UX review
+  flagged that same-category concurrent drips are hard to tell apart (now
+  mitigated with auto-numbering, e.g. "Крапельниця 1"/"Крапельниця 2", no
+  patient data involved). A *named* patient tag was explicitly not pursued —
+  conflicts with the no-patient-data-on-a-capturable-device posture; would
+  need a deliberate Owner call, not a UX-pass default.
 
 ## Explicitly excluded (MVP red lines — need a Constitution amendment, not just a
 ## scope amendment)

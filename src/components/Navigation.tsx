@@ -29,7 +29,19 @@ export function Navigation({
           {it.label}
         </button>
       ))}
-      <button onClick={onOpenDisclaimer}>{t("nav.disclaimer")}</button>
+      {/* Uses disclaimer.reopen ("Показати повне застереження"), not
+          nav.disclaimer — that string already existed but was unused; it's
+          clearer that this button opens a modal rather than switching
+          screens (2026-07-22 UX review). .nav-aux gives it a visually
+          distinct, quieter treatment from the 3 real tabs for the same
+          reason. */}
+      <button
+        className="nav-aux"
+        aria-label={t("nav.disclaimer")}
+        onClick={onOpenDisclaimer}
+      >
+        ⓘ {t("disclaimer.reopen")}
+      </button>
     </nav>
   );
 }

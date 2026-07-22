@@ -5,6 +5,60 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-22 (new branch `feature/ux-review-improvements`)
+- Implemented a batch of findings from `reports/UX-REVIEW-2026-07-22.md` (4
+  parallel read-only expert passes; Owner picked which of the more
+  consequential ones to act on, via AskUserQuestion).
+- **Alarm mute is now press-and-hold to enable** (~600 ms), single tap to
+  disable — silencing a drip's only alarm should be harder than turning it
+  back on. Bigger touch target (was a bare 20px checkbox), and the enabled
+  state is now the visually loud one (red pill), not dim.
+- **Alarm-stage visual escalation** — a drip's card (and Focus view) now
+  shows matching border/text-color escalation for the 10-min/5-min/empty
+  stages, independent of `silenced`, so urgency is recoverable by sight, not
+  only audible at the instant it fires.
+- **Source/verification badge now persists on a running drip** — snapshotted
+  onto the drip at add-time and shown (compact form) on the card and in
+  Focus mode for its whole lifetime; previously only shown in the setup
+  selector before the drip existed.
+- **Drug name added to labels** — dose-mode presets and running-drip cards
+  used to show only category+concentration ("Знеболення · 1 мг/мл"), never
+  which drug.
+- **Auto-numbering for duplicate concurrent drips** — two drips that would
+  otherwise share an identical label now read "… 1"/"… 2", no patient data
+  involved.
+- **Card-level `ErrorBoundary`** (`ClinicalRecordBoundary`) around
+  `DrugCard`/`ProphylaxisCard` — a non-VERIFIED record's fail-closed throw
+  (Art. III) now degrades just that card instead of unmounting the whole
+  app. The `presets` list in `DripScreen.tsx` switched from a throwing
+  `assertRenderable` to a silent `isRenderable` filter instead (a bulk
+  `useMemo`, not a per-card render — a boundary can't help there; excluding
+  achieves zero blast radius instead of a contained one).
+- **Mechanical fixes:** removed dead CSS (`.drip-label`/`.drip-row`/
+  `.drip-gtt`, unused since an earlier card layout); fixed a real light-theme
+  contrast failure on the bottom nav (was hardcoded to the dark rgba
+  regardless of theme); `.theme-toggle`/`.seg button` bumped from 44px to the
+  file's own documented 48px touch-target minimum; consolidated 4 near-
+  duplicate "banner" box implementations onto one `.banner` base + modifiers;
+  added a small font-size token scale for the 11.5/12/12.5/13px cluster;
+  styled `.drugs-duration`/`.drugref-pending` (previously no rule at all).
+- **Terminology:** renamed the dose-mode tab "Препарат" → "За дозою" (was
+  colliding with the "Препарати" nav tab); standardized the bagtime-mode
+  fallback drip label to "Дріп" (was "Крапельниця", the same word as the
+  screen's own title); nav's disclaimer button now uses the already-written
+  but previously-unused `disclaimer.reopen` string, with a visually distinct
+  (`.nav-aux`) treatment since it opens a modal rather than switching tabs.
+- **Setup-panel reordering** — active drips now render above the "add a new
+  drip" calculator once any exist (via CSS `order`, not by moving the
+  calculator's own JSX/logic), so checking or muting a running drip no longer
+  requires scrolling past the whole setup panel.
+- Deferred (not this pass, logged to `IDEAS.md`): a distinct badge color for
+  engineering formulas vs. Owner-verified records; any patient-linked
+  identifier (conflicts with the no-patient-data posture).
+- `test` 43/43, `tsc -b` clean, `validate`/`gate:release` OK. No clinical
+  values changed; no code-review of the review itself needed since nothing
+  here touches dose/rate formulas.
+
 ## 2026-07-22 (even later, same branch `feature/notification-channel-fix`)
 - **Three more field reports, root-caused to one bug:** the empty-bag
   notification's text looked like a context-free glitch; the notification
