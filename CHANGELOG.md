@@ -5,6 +5,35 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-22 (new branch `variant/play-store`, off `feature/ux-review-improvements`)
+- **Owner decision:** target Google Play for distribution (not just
+  sideload-APK-only, per the original ROADMAP.md plan). Per
+  `reports/PLAY-STORE-READINESS-2026-07-22.md`, the OS-level locked-screen
+  notification backstop (the whole v1–v5 `notifications.ts` saga) needs
+  `USE_EXACT_ALARM`, a Play-restricted permission reserved for apps whose
+  *core* function is precise timing (alarm/timer/calendar). CPP-DOSE's core
+  function is a dosing calculator — declaring it would be a real rejection
+  risk, not a hypothetical one.
+- **Removed on this branch** (kept in full on `feature/ux-review-
+  improvements` for direct-APK "for known medics" distribution):
+  `@capacitor/local-notifications` dependency + its `patch-package` patch,
+  `src/drip/notifications.ts`, `scripts/patch-android-manifest.mjs` (and the
+  `USE_EXACT_ALARM` permission it inserted), `tests/notifications.test.ts`,
+  and all the wiring for it in `DripScreen.tsx` (permission request,
+  reschedule effect, notification-health banner).
+- **Kept:** the in-app AudioContext alarm (10-min/5-min/empty, escalating
+  beep pattern) — reliable while the app is foregrounded and the screen is
+  on, same as it's always been; the drip screen now says so plainly instead
+  of the old permission/battery-optimization banners, which no longer apply
+  here.
+- `test` 43/43 (one fewer test file once `notifications.test.ts` is removed
+  from disk — see below), `tsc -b` clean.
+- **Note:** this session's sandbox can't physically delete files (a
+  recurring environment limitation, not a code issue) — the four files
+  above were logically removed from every place that references them, but
+  still need `git rm` from a real terminal to actually leave the tree. See
+  the handoff script.
+
 ## 2026-07-22 (new branch `feature/ux-review-improvements`)
 - Implemented a batch of findings from `reports/UX-REVIEW-2026-07-22.md` (4
   parallel read-only expert passes; Owner picked which of the more

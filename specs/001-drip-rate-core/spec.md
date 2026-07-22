@@ -150,7 +150,13 @@ unambiguous, usable one-handed with gloves at night.
 - **FR-10** Input bounds/clamps; out-of-range → blocked with a reason (Art. III).
   Exact bounds in `plan/architecture.md`.
 - **FR-11** Rounding/units shown explicitly (e.g. "8 gtt/min ≈ 1 drop every 7.5 s").
-- **FR-12 (locked-screen alarm delivery)** The 10-min, 5-min, and at-empty
+- **FR-12 (locked-screen alarm delivery)** *(N/A on `variant/play-store`,
+  2026-07-22 — see that branch's README/CHANGELOG. Google Play restricts
+  `USE_EXACT_ALARM`, which this FR needs, to apps whose core function is
+  precise timing; CPP-DOSE's core function is a dosing calculator, so
+  declaring it there is a real rejection risk. This FR stays fully in force
+  on `feature/ux-review-improvements`, the direct-APK "for known medics"
+  build that FR-12 was written for.)* The 10-min, 5-min, and at-empty
   alarms must still fire while the screen is locked. The in-app AudioContext
   alarm alone is not sufficient (Owner-reported 2026-07-21: fired 7 min late
   after screen-off, since the WebView's timers are suspended on lock). Each

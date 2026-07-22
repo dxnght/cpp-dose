@@ -7,6 +7,21 @@
 // screen-flash and the audio metronome, confirm-to-remove, tap-to-calibrate, and
 // remembered last drop-factor/drug. All math is engineering; drug concentrations
 // and the burn Rule of Ten come from VERIFIED records only (fail-closed).
+//
+// PLAY STORE VARIANT (branch `variant/play-store`, 2026-07-22): this branch
+// deliberately does NOT include the OS-level local-notifications/locked-
+// screen alarm backstop that exists on `feature/ux-review-improvements` (née
+// `feature/notification-channel-fix`) — see that branch's `notifications.ts`
+// for the full v1-v5 history. That subsystem needs `USE_EXACT_ALARM`, a
+// Play-restricted permission whose accepted use cases are alarm-clock/
+// timer/calendar apps; CPP-DOSE's core function is a dosing calculator, not
+// an alarm app, making that declaration a real rejection risk (Owner
+// decision, 2026-07-22 — see `reports/PLAY-STORE-READINESS-2026-07-22.md`).
+// Rather than gamble on the review, this variant ships with the in-app
+// AudioContext alarm only (reliable while the app is foregrounded; may lag
+// or miss while the screen is locked, same as before the 2026-07-21 work
+// started). The full-featured build stays on `feature/ux-review-
+// improvements` for direct-APK distribution to known medics who request it.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fieldBundle } from "../clinical/loader";
 import { isRenderable } from "../clinical/guard";
@@ -14,14 +29,6 @@ import { SourceBadge } from "../components/SourceBadge";
 import type { Drug, Formula } from "../clinical/types";
 import { Metronome } from "./metronome";
 import { tapHaptic, warnHaptic, emptyHaptic } from "./haptics";
-import {
-  ensureNotificationPermission,
-  checkNotificationHealth,
-  rescheduleDripAlarms,
-  cancelDripAlarms,
-  forgetStaleDrips,
-  dripScheduleKey,
-} from "./notifications";
 import {
   clamp,
   DOSE,
@@ -358,7 +365,6 @@ export function DripScreen() {
   const [focusId, setFocusId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
-  const [notifDenied, setNotifDenied] = useState(false);
   const [audio, setAudio] = useState(true);
   const [haptic, setHaptic] = useState(true);
   const [flashOn, setFlashOn] = useState(false);
@@ -370,11 +376,6 @@ export function DripScreen() {
   const wantFlashRef = useRef(false);
   const confirmTimer = useRef<number | null>(null);
   const startedRef = useRef<string | null>(null);
-  // Per-drip "last scheduled" key (2026-07-22, v5 notification fix — see the
-  // reschedule effect below) — lets that effect skip drips whose alarm
-  // timing hasn't actually changed, instead of re-cancelling/rescheduling
-  // every drip on every unrelated `drips` change.
-  const scheduledKeyRef = useRef<Map<string, string>>(new Map());
 
   const preset = presets[presetIdx];
   const conc = preset?.conc ?? 1;
@@ -472,85 +473,6 @@ export function DripScreen() {
       window.removeEventListener("focus", onWake);
     };
   }, []);
-
-  // Ask once per session (Spec 001 FR-12, 2026-07-21) — the in-app alarm alone
-  // is not reliable once the screen locks; OS-level notifications are the
-  // backstop, and they need this permission. If denied, warn the medic rather
-  // than silently pretending the alarm will still fire in the background.
-  useEffect(() => {
-    ensureNotificationPermission().catch(() => {});
-  }, []);
-
-  // (Re)schedule each drip's OS-level backstop notifications only when its
-  // *actual* alarm timing changes (added, removed, retitrated, or silenced
-  // toggled) — keyed via dripScheduleKey() on bagMl/mlPerH/startedAt/silenced,
-  // deliberately NOT on warned10/warned5/warnedEmpty. Also re-checks
-  // notification health *live* every time (2026-07-22 fix) — the old code
-  // only snapshotted permission status once at mount, so the banner could
-  // show stale "fine" even after the OS silently downgraded something
-  // (channel importance, permission) mid-session.
-  //
-  // v5 (2026-07-22, three Owner field reports): this effect used to gate
-  // fireAt10/5/Empty directly on d.warned10/5/Empty (`d.warned10 ? null :
-  // ...`), and rescheduleDripAlarms() unconditionally cancels a drip's 3
-  // notification ids on every call before rescheduling. That meant the
-  // instant the *in-app* tick effect below (its own independent 1s poll)
-  // noticed the same threshold and flipped e.g. warned10 to true, this
-  // effect re-ran and cancelled — i.e. dismissed — notification id `warn10`,
-  // even if the OS had already delivered and shown it. On a locked screen
-  // the WebView's timers are suspended and only catch up once the screen is
-  // unlocked/the app reopened (see the file-header note above and
-  // notifications.ts) — so this self-cancel fired right as the medic looked
-  // at the phone. That explains, in one root cause: (1) the notification
-  // appearing to vanish/never-show ~1 min before the in-app alarm sounds
-  // (the in-app alarm is the delayed catch-up, and its firing is what
-  // triggered the self-cancel); (2) "no notification" specifically with the
-  // drip's sound toggle off (an actively-playing AudioContext exempts the
-  // WebView from Chromium's background-tab timer throttling, so with sound
-  // on the in-app tick barely lags and the self-cancel window was too
-  // narrow to ever notice — with sound off the tick freezes harder while
-  // locked, widening the window); (3) it also explains why the empty-bag
-  // notification could show up alone, looking like a stray glitch — the
-  // 10/5-min ones had already been silently self-cancelled before the medic
-  // checked.
-  //
-  // Fix: the OS notification and the in-app alarm are two fully independent
-  // delivery channels for the same event — that was the entire point of
-  // adding OS notifications (see the file-header history). warned10/5/Empty
-  // must only ever gate the in-app audio/haptic (the separate `now`-effect
-  // below); they must never cause this effect to touch the OS notification
-  // for that stage. scheduledKeyRef additionally guards against redundant
-  // cancel+reschedule calls firing on every unrelated `drips` change (e.g.
-  // a different drip's stage flipping), not just the self-cancel case.
-  useEffect(() => {
-    const liveIds = new Set(drips.map((d) => d.id));
-    drips.forEach((d) => {
-      if (d.bagMl == null || d.mlPerH <= 0) {
-        if (scheduledKeyRef.current.delete(d.id)) void cancelDripAlarms(d.id);
-        return;
-      }
-      const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced);
-      if (scheduledKeyRef.current.get(d.id) === key) return;
-      scheduledKeyRef.current.set(d.id, key);
-      const endAt =
-        d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
-      void rescheduleDripAlarms({
-        id: d.id,
-        label: d.label,
-        silenced: d.silenced,
-        fireAt10: endAt - PRE_END_ALARM_MS_10,
-        fireAt5: endAt - PRE_END_ALARM_MS_5,
-        fireAtEmpty: endAt,
-      });
-    });
-    for (const id of [...scheduledKeyRef.current.keys()]) {
-      if (!liveIds.has(id)) scheduledKeyRef.current.delete(id);
-    }
-    void forgetStaleDrips(liveIds);
-    checkNotificationHealth()
-      .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
-      .catch(() => setNotifDenied(true));
-  }, [drips]);
 
   useEffect(() => {
     if (drips.length === 0) return;
@@ -1118,19 +1040,14 @@ export function DripScreen() {
           <h2>
             Активні дріпи ({drips.length}/{MAX_DRIPS})
           </h2>
-          {notifDenied && drips.some((d) => d.bagMl != null) && (
-            <div className="banner banner--warn" role="alert">
-              ⚠ Сповіщення вимкнено або обмежені — будильник може не
-              спрацювати при заблокованому екрані. Перевір дозволи сповіщень
-              для CPP-DOSE в налаштуваннях телефону.
-            </div>
-          )}
-          {!notifDenied && drips.some((d) => d.bagMl != null) && (
+          {/* Play Store variant (2026-07-22): no OS-level notification
+              backstop on this branch (see file header) — be honest about
+              the one real limitation this leaves instead of silently
+              overselling reliability. */}
+          {drips.some((d) => d.bagMl != null) && (
             <div className="banner banner--hint">
-              Порада: додай CPP-DOSE у виключення з оптимізації батареї
-              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
-              телефон може відкладати будильник при заблокованому екрані,
-              навіть якщо сповіщення дозволені.
+              Будильник працює, поки застосунок відкритий і екран увімкнений.
+              Тримай телефон розблокованим під час дріпу.
             </div>
           )}
           {drips.map((d) => {

@@ -76,6 +76,15 @@ behind a loud watermark and is never shippable.
 
 ## 4a. Pre-end/at-empty alarms & backgrounding (Spec 001 FR-12, 2026-07-21)
 
+> **2026-07-22 — this whole section (§4a–§4a.4) describes
+> `feature/ux-review-improvements` (direct-APK distribution to known
+> medics).** `variant/play-store` (Google Play track, Owner decision
+> 2026-07-22) removes this subsystem entirely — `USE_EXACT_ALARM` is
+> Play-restricted to apps whose core function is precise timing, which
+> CPP-DOSE isn't. See `reports/PLAY-STORE-READINESS-2026-07-22.md` and that
+> branch's README/CHANGELOG. Nothing below is wrong, it just doesn't apply
+> to the Play-distributed build.
+
 - **Problem:** the in-app alarm (`alarm()` in `DripScreen.tsx` — AudioContext
   beep + Capacitor Haptics) only fires while the JS runtime is actually
   ticking (`setInterval` driving `now`). Android suspends a WebView's timers

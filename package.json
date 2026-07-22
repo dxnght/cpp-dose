@@ -5,11 +5,10 @@
   "type": "module",
   "description": "CPP-DOSE — offline IV drip-rate & dosing support for Prolonged Casualty Care (CPP). Android / iOS / PWA, fully offline, fail-closed clinical content.",
   "scripts": {
-    "postinstall": "patch-package",
     "predev": "npm run compile:field",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "apk:debug": "npm run build && cap sync android && npm run android:patch && cd android && ./gradlew assembleDebug",
+    "apk:debug": "npm run build && cap sync android && cd android && ./gradlew assembleDebug",
     "preview": "vite preview",
     "lint": "eslint .",
     "validate": "node scripts/validate.mjs",
@@ -20,15 +19,13 @@
     "prebuild": "npm run validate && npm run compile:field",
     "pretest": "npm run compile:field",
     "test": "vitest run",
-    "cap:sync": "cap sync android && npm run android:patch",
-    "android:patch": "node scripts/patch-android-manifest.mjs",
+    "cap:sync": "cap sync android",
     "ios:sync": "cap sync ios",
     "ios:open": "npm run build && cap sync ios && cap open ios"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
     "@capacitor/haptics": "^6.0.2",
-    "@capacitor/local-notifications": "^6.1.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -48,7 +45,6 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^9.9.1",
     "jsdom": "^25.0.0",
-    "patch-package": "^8.0.1",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2",

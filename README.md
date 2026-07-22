@@ -12,6 +12,19 @@ animation — all fully offline, at night, with gloves.
 
 Ukrainian UI · offline (zero network at runtime) · light + dark themes · Android + iOS.
 
+> **This branch (`variant/play-store`) is the Google Play distribution
+> track** (2026-07-22, Owner decision). It's built from
+> `feature/ux-review-improvements` with one deliberate difference: no
+> OS-level locked-screen notification backstop, because that feature needs
+> `USE_EXACT_ALARM`, a Play-restricted permission reserved for alarm-clock/
+> timer/calendar apps — CPP-DOSE's core function is a dosing calculator, not
+> an alarm app, making that declaration a real rejection risk. See
+> `reports/PLAY-STORE-READINESS-2026-07-22.md`. The full-featured build
+> (in-app alarm + OS notification backstop) stays on
+> `feature/ux-review-improvements` for direct-APK distribution to medics who
+> request it directly — that's the branch to build from for that use case,
+> not this one.
+
 ---
 
 ## What it does
@@ -19,9 +32,10 @@ Ukrainian UI · offline (zero network at runtime) · light + dark themes · Andr
 - **Drip engine** — drop-factor selector (10 / 15 / 20 gtt/ml), weight + dose
   steppers, live gtt/min hero, up to **5 concurrent drips** each with an end-of-bag
   timer and two-stage pre-end alarms at **10 and 5 minutes** remaining (loud,
-  distinct beep patterns per stage; an optional per-drip mute checkbox, off by
-  default). Alarms fire via OS-level local notifications too, so they still
-  work with the **screen locked**.
+  distinct beep patterns per stage; an optional per-drip alarm mute, off by
+  default — now a deliberate press-and-hold to enable). On this branch the
+  alarm is **in-app only** (reliable while the app is open and the screen is
+  on) — no OS-level locked-screen notification backstop; see the note above.
 - **By drug** — a curated list of verified drip medications/fluids (ketamine analgesia
   1 mg/ml, sedation 3 mg/ml, burn fluid) with the recommended dose + a priming/loading
   bolus computed for the patient.
