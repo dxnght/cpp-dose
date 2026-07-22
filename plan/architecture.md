@@ -167,6 +167,60 @@ behind a loud watermark and is never shippable.
     work and on-device testing this environment can't do, so it shouldn't be
     attempted opportunistically inside the same change.
 
+### 4a.2 v3 fix: notification-visibility patch + drop `ongoing` (2026-07-22)
+
+- **Regression reported:** after 4a.1 shipped, the Owner found (a) still no
+  vibration on the locked screen (sound was present), and (b) the
+  notification **stopped appearing on the lock screen at all** — worse than
+  before the channel fix. Also noted, as a comparison point: Telegram's
+  notifications do wake/break through this phone's lock screen.
+- **Root cause 1 (found by reading the plugin's Android source,
+  `LocalNotificationManager.java`):** `buildNotification()` unconditionally
+  calls `mBuilder.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)` on
+  *every* notification, regardless of the channel's configured
+  `visibility`. This is a real bug/limitation in
+  `@capacitor/local-notifications` 6.1.3 — the channel-level `visibility: 1`
+  (PUBLIC) set in 4a.1 was silently overridden and never actually took
+  effect. (There's even a `// TODO control visibility by flag
+  Notification.VISIBILITY_PRIVATE` left in the plugin's own source,
+  acknowledging this is hardcoded.)
+- **Fix 1:** patched that one line to `VISIBILITY_PUBLIC` via `patch-package`
+  (`patches/@capacitor+local-notifications+6.1.3.patch`, `postinstall:
+  patch-package` in `package.json`). Editing `node_modules` directly doesn't
+  survive `npm install`/`npm ci`; `patch-package` regenerates the same edit
+  automatically every install, which is the standard, durable way to carry a
+  small fix to a third-party dependency.
+- **Root cause 2 (hypothesis, not confirmed from source):** `ongoing: true`
+  was new in 4a.1 and is the most likely trigger for the "disappeared from
+  lock screen" regression specifically — some heavily-customized Android
+  skins (common on budget/Chinese-brand devices) treat `ongoing`
+  (`FLAG_ONGOING_EVENT`) notifications as a low-priority "background service
+  running" indicator (like a music player) rather than an alert, and
+  deprioritize or hide them from heads-up/lock-screen display. Removed
+  `ongoing: true` from all three scheduled notifications; kept `autoCancel:
+  true` (tap dismisses + opens the app).
+- **Channel bumped to `drip-alarms-v3`** (fresh id) since channel settings
+  are immutable once created on a device — any earlier, differently
+  configured channel from testing 4a.1 would otherwise stay stuck with the
+  old (broken) settings forever, muddying the next test.
+- **On "Telegram breaks through the lock screen" — investigated, not
+  matched.** Checked the plugin's Android source specifically for
+  `fullScreenIntent`/`setCategory(CATEGORY_ALARM)` support — **it has
+  none**. This is the actual Android mechanism alarm-clock apps and
+  incoming-call UIs (and very likely Telegram's own call handling) use to
+  wake the screen and draw a full-screen view over the lock screen
+  entirely. `@capacitor/local-notifications` cannot do this regardless of
+  configuration — it would need a small custom native Android plugin (kept
+  outside the gitignored `android/` folder, e.g. a local Capacitor plugin
+  package, so it survives regeneration). Not attempted here: real native
+  Android work, needs on-device iteration this environment can't do, and is
+  a materially bigger scope than a config/patch fix. Flagged as the next
+  concrete step if v3 still isn't sufficient after on-device testing.
+- **Still needs on-device confirmation** — this environment cannot verify
+  Android lock-screen/heads-up/vibration behavior at all; every fix in this
+  section is source-verified (read the actual plugin code causing each
+  symptom) but not device-verified.
+
 ## 5. Offline & zero-exfiltration (Art. V)
 
 - Service worker precaches the whole app shell + `field-bundle.json`. No runtime

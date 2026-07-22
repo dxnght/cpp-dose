@@ -5,6 +5,38 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-22 (same branch `feature/notification-channel-fix`)
+- **Fixed a regression from the previous entry (2026-07-21):** the Owner
+  reported the notification-channel fix made things *worse* — still no
+  vibration on the lock screen, and the notification stopped showing on the
+  lock screen at all. Root-caused by reading `@capacitor/local-notifications`
+  6.1.3's Android source: `LocalNotificationManager.buildNotification()`
+  unconditionally forces `VISIBILITY_PRIVATE` on every notification,
+  overriding whatever the channel's own visibility is set to (a real bug in
+  the plugin — even has a `// TODO` acknowledging it's hardcoded). Patched to
+  `VISIBILITY_PUBLIC` via `patch-package` (`patches/@capacitor+local-
+  notifications+6.1.3.patch`, `postinstall: patch-package` in
+  `package.json`) — durable across `npm install`, unlike editing
+  `node_modules` by hand.
+- Also removed `ongoing: true` from the scheduled notifications (added
+  2026-07-21) — the most likely trigger for the lock-screen regression, since
+  some Android skins deprioritize "ongoing" notifications for heads-up/
+  lock-screen display, treating them as a background-service indicator
+  rather than an alert.
+- Bumped the notification channel id to `drip-alarms-v3` (channel settings
+  are immutable once created — a stale differently-configured channel from
+  testing the previous fix would otherwise stick around).
+- **Investigated "why does Telegram break through the lock screen but not
+  this app"** — checked the plugin's Android source specifically for
+  `fullScreenIntent`/`CATEGORY_ALARM` support (the actual Android mechanism
+  for alarm-clock/incoming-call-style full-screen wake-and-display over the
+  lock screen). **Not supported by this plugin at all.** Documented as a
+  separate, bigger follow-up (custom native Android plugin) in
+  `plan/architecture.md` §4a.2 — not attempted here.
+- `validate/lint/test (38/38)/gate:release/tsc` all green. Still needs
+  on-device confirmation; this environment can't verify Android lock-screen/
+  heads-up/vibration behavior directly.
+
 ## 2026-07-21 (branch `feature/notification-channel-fix`, not master — per Owner)
 - **Fixed: locked-screen notifications posted silently.** The same-day local-
   notifications backstop (below) posted its text on time but with no

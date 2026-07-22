@@ -3,11 +3,13 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.5 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.6 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
-  alarms fire with the screen locked, on a dedicated HIGH-importance channel
-  after the first version posted silently — Owner decisions 2026-07-21)
+  alarms fire with the screen locked, on a dedicated HIGH-importance channel,
+  with a `patch-package` fix for a plugin bug that forced every notification
+  private regardless of channel config — Owner decisions 2026-07-21/22; see
+  `plan/architecture.md` §4a/§4a.1/§4a.2)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -138,9 +140,16 @@ unambiguous, usable one-handed with gloves at night.
   Notifications post to a dedicated HIGH-importance, public-visibility,
   vibrating channel (not the plugin's implicit default) — the first version
   posted the text on time but with no audible/vibration signal, which
-  defeats the purpose (Owner-reported same day). `ongoing: true` +
-  `autoCancel: true` so it can't be swiped away by accident but clears on
-  tap. (Owner decision 2026-07-21; see `plan/architecture.md` §4a/§4a.1.)
+  defeats the purpose (Owner-reported same day). The public-visibility part
+  needed a `patch-package` fix too: the plugin hardcodes every notification
+  to `VISIBILITY_PRIVATE` regardless of channel config (found in its Android
+  source) — patched to `VISIBILITY_PUBLIC`. `autoCancel: true` so it clears
+  on tap; `ongoing: true` was tried and then removed (likely cause of a
+  lock-screen-visibility regression on some OEM skins). No `fullScreenIntent`
+  support in this plugin — that's the real mechanism for "breaks through a
+  fully locked screen" (alarm-clock/incoming-call style), a separate, bigger
+  native-plugin item if still needed after on-device testing. (Owner
+  decisions 2026-07-21/22; see `plan/architecture.md` §4a/§4a.1/§4a.2.)
 
 ## 4. Acceptance criteria
 

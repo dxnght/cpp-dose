@@ -16,6 +16,28 @@
 // dedicated, explicitly HIGH-importance channel instead of trying to alter
 // the old one. See `ensureChannel()`.
 //
+// v3 (2026-07-22): Owner reported v2 made *less* visible on the lock screen
+// (no vibration there either, and the notification itself stopped showing on
+// the locked screen at all — a regression). Root-caused by reading the
+// plugin's own Android source (LocalNotificationManager.java): every
+// notification unconditionally got `.setVisibility(VISIBILITY_PRIVATE)`,
+// completely ignoring whatever the channel's lock-screen visibility was set
+// to — the channel-level `visibility` option in v2 was therefore a no-op.
+// Patched via `patch-package` (see `patches/`, `npm run postinstall`) to
+// `VISIBILITY_PUBLIC` instead — editing node_modules directly doesn't
+// survive `npm install`, patch-package does. Also removed `ongoing: true`
+// (added in v2): the most likely trigger for the lock-screen regression —
+// some OEM Android skins deprioritize "ongoing" notifications (treating them
+// as a low-priority background-service indicator, like a music player) for
+// heads-up/lock-screen display. Bumped to a fresh channel id (`-v3`) since
+// channel settings are immutable once created — any earlier, differently
+// configured channel on a test device would otherwise stay stuck forever.
+// Note: this plugin has no `fullScreenIntent`/`CATEGORY_ALARM` support at
+// all (checked the Java source) — that's the actual mechanism alarm-clock
+// and incoming-call apps (and likely Telegram's calls) use to wake/break
+// through a fully locked screen. Getting that would need a small custom
+// native Android plugin, a separate, bigger piece of work.
+//
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
 // passes a plain plan object) so it stays easy to reason about / test in
 // isolation. All calls are best-effort: any failure (unsupported browser in
@@ -27,9 +49,9 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 /** Dedicated alarm channel — deliberately not the plugin's implicit "Default"
  * one (see note above). IMPORTANCE_HIGH (5) = heads-up popup + sound even
  * over other apps; visibility PUBLIC (1) = full text shown on the lock
- * screen (not redacted); vibration on. This is the actual fix for "no
- * signal" — channel settings, not the alarm-scheduling logic, were the bug. */
-const CHANNEL_ID = "drip-alarms-v2";
+ * screen (not redacted); vibration on. Combined with the patch-package fix
+ * (VISIBILITY_PUBLIC on the notification itself, not just the channel). */
+const CHANNEL_ID = "drip-alarms-v3";
 let channelReady = false;
 
 async function ensureChannel(): Promise<void> {
@@ -122,7 +144,6 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       title: "CPP-DOSE — 10 хв до кінця",
       body: `${plan.label}: мішка закінчується приблизно через 10 хв.`,
       channelId: CHANNEL_ID,
-      ongoing: true,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAt10), allowWhileIdle: true },
     });
@@ -133,7 +154,6 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       title: "CPP-DOSE — 5 хв до кінця",
       body: `${plan.label}: мішка закінчується приблизно через 5 хв.`,
       channelId: CHANNEL_ID,
-      ongoing: true,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAt5), allowWhileIdle: true },
     });
@@ -144,7 +164,6 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       title: "CPP-DOSE — мішка порожня",
       body: `${plan.label}: час готувати наступну мішку / переоцінити стан.`,
       channelId: CHANNEL_ID,
-      ongoing: true,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAtEmpty), allowWhileIdle: true },
     });
