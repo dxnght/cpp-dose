@@ -132,20 +132,25 @@ export interface NotificationHealth {
 }
 
 export async function checkNotificationHealth(): Promise<NotificationHealth> {
-  let permissionGranted = false;
-  try {
-    permissionGranted = (await LocalNotifications.checkPermissions()).display === "granted";
-  } catch {
-    /* unsupported — stays false */
-  }
+  // The two checks are independent — run them concurrently instead of
+  // sequentially awaiting one after the other; each keeps its own fallback
+  // via Promise.allSettled so one platform not supporting listChannels
+  // (iOS/web) still leaves the permission check intact.
+  const [permResult, channelsResult] = await Promise.allSettled([
+    LocalNotifications.checkPermissions(),
+    LocalNotifications.listChannels(),
+  ]);
+
+  const permissionGranted =
+    permResult.status === "fulfilled" && permResult.value.display === "granted";
+
   let channelImportance: number | null = null;
-  try {
-    const { channels } = await LocalNotifications.listChannels();
-    const ch = channels.find((c) => c.id === CHANNEL_ID);
+  if (channelsResult.status === "fulfilled") {
+    const ch = channelsResult.value.channels.find((c) => c.id === CHANNEL_ID);
     channelImportance = ch?.importance ?? null;
-  } catch {
-    /* listChannels unsupported (iOS/web) — permission check above still stands */
   }
+  /* listChannels unsupported (iOS/web) — permission check above still stands */
+
   return { permissionGranted, channelImportance };
 }
 
