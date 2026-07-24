@@ -488,9 +488,14 @@ export function DripScreen() {
   }, []);
 
   // (Re)schedule each drip's OS-level backstop notifications only when its
-  // *actual* alarm timing changes (added, removed, retitrated, or silenced
-  // toggled) — keyed via dripScheduleKey() on bagMl/mlPerH/startedAt/silenced,
-  // deliberately NOT on warned10/warned5/warnedEmpty. Also re-checks
+  // *actual* alarm timing or notification content changes (added, removed,
+  // retitrated, silenced toggled, or auto-renumbered) — keyed via
+  // dripScheduleKey() on bagMl/mlPerH/startedAt/silenced/label, deliberately
+  // NOT on warned10/warned5/warnedEmpty. label is included so that
+  // withOrdinal()'s auto-renumbering (see addDrip() below) refreshes an
+  // already-scheduled notification's text instead of leaving it stale — a
+  // renumbered drip still needs its OS notification body rewritten even
+  // though its timing hasn't changed. Also re-checks
   // notification health *live* every time (2026-07-22 fix) — the old code
   // only snapshotted permission status once at mount, so the banner could
   // show stale "fine" even after the OS silently downgraded something
@@ -535,7 +540,7 @@ export function DripScreen() {
         if (scheduledKeyRef.current.delete(d.id)) void cancelDripAlarms(d.id);
         return;
       }
-      const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced);
+      const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced, d.label);
       if (scheduledKeyRef.current.get(d.id) === key) return;
       scheduledKeyRef.current.set(d.id, key);
       const endAt =

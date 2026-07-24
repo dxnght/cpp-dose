@@ -10,32 +10,43 @@ import { dripScheduleKey } from "../src/drip/notifications";
 // level, not just behaviorally.
 describe("dripScheduleKey (Spec 001 FR-12, v5 regression, 2026-07-22)", () => {
   it("is stable for identical inputs", () => {
-    const a = dripScheduleKey(100, 300, 1000, false);
-    const b = dripScheduleKey(100, 300, 1000, false);
+    const a = dripScheduleKey(100, 300, 1000, false, "Дріп");
+    const b = dripScheduleKey(100, 300, 1000, false, "Дріп");
     expect(a).toBe(b);
   });
 
   it("changes when bagMl changes", () => {
-    expect(dripScheduleKey(100, 300, 1000, false)).not.toBe(
-      dripScheduleKey(150, 300, 1000, false),
+    expect(dripScheduleKey(100, 300, 1000, false, "Дріп")).not.toBe(
+      dripScheduleKey(150, 300, 1000, false, "Дріп"),
     );
   });
 
   it("changes when mlPerH changes (retitration)", () => {
-    expect(dripScheduleKey(100, 300, 1000, false)).not.toBe(
-      dripScheduleKey(100, 320, 1000, false),
+    expect(dripScheduleKey(100, 300, 1000, false, "Дріп")).not.toBe(
+      dripScheduleKey(100, 320, 1000, false, "Дріп"),
     );
   });
 
   it("changes when startedAt changes", () => {
-    expect(dripScheduleKey(100, 300, 1000, false)).not.toBe(
-      dripScheduleKey(100, 300, 2000, false),
+    expect(dripScheduleKey(100, 300, 1000, false, "Дріп")).not.toBe(
+      dripScheduleKey(100, 300, 2000, false, "Дріп"),
     );
   });
 
   it("changes when silenced toggles", () => {
-    expect(dripScheduleKey(100, 300, 1000, false)).not.toBe(
-      dripScheduleKey(100, 300, 1000, true),
+    expect(dripScheduleKey(100, 300, 1000, false, "Дріп")).not.toBe(
+      dripScheduleKey(100, 300, 1000, true, "Дріп"),
+    );
+  });
+
+  // Regression (2026-07-24 fix): withOrdinal() can rename an already-running
+  // drip (e.g. "Дріп" → "Дріп 1") without touching its timing. Before this
+  // fix, the key excluded `label`, so a renumbered drip's already-scheduled
+  // OS notification kept showing the stale, un-suffixed text — defeating the
+  // whole point of auto-numbering concurrent same-drug drips.
+  it("changes when label changes (auto-renumbering)", () => {
+    expect(dripScheduleKey(100, 300, 1000, false, "Дріп")).not.toBe(
+      dripScheduleKey(100, 300, 1000, false, "Дріп 1"),
     );
   });
 });

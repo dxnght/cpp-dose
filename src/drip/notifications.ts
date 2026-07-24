@@ -187,18 +187,24 @@ export async function ensureNotificationPermission(): Promise<boolean> {
   }
 }
 
-/** Pure key for "has this drip's actual alarm timing changed" — used by
- * DripScreen.tsx to decide whether to call rescheduleDripAlarms() at all.
- * Deliberately excludes warned10/warned5/warnedEmpty (see the v5 note above):
- * those flags gate only the separate in-app alarm and must never trigger a
- * re-cancel of the OS-level notification. */
+/** Pure key for "does this drip's scheduled notification need to be
+ * rewritten" — used by DripScreen.tsx to decide whether to call
+ * rescheduleDripAlarms() at all. Deliberately excludes warned10/warned5/
+ * warnedEmpty (see the v5 note above): those flags gate only the separate
+ * in-app alarm and must never trigger a re-cancel of the OS-level
+ * notification. Includes `label`: withOrdinal()'s auto-renumbering
+ * (DripScreen.tsx) can rename an already-running drip without touching its
+ * timing, and the label is baked verbatim into the notification body text at
+ * schedule time — omitting it here left a renumbered drip's already-scheduled
+ * notification showing the stale, un-suffixed label. */
 export function dripScheduleKey(
   bagMl: number,
   mlPerH: number,
   startedAt: number,
   silenced: boolean,
+  label: string,
 ): string {
-  return `${bagMl}:${mlPerH}:${startedAt}:${silenced}`;
+  return `${bagMl}:${mlPerH}:${startedAt}:${silenced}:${label}`;
 }
 
 export interface DripAlarmPlan {
