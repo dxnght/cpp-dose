@@ -11,33 +11,51 @@ generic default and this script is what puts the real one back.
 
 Requires: pip install pillow --break-system-packages
 
-Source of truth: design/app-icon/drop_hovering.jpg (tracked in git; not
+Source of truth: design/app-icon/icon-2-2407.jpg (tracked in git; not
 shipped — it lives outside public/ so Vite never bundles it into the
-offline PWA build).
+offline PWA build). Four IV bottles (VOL/TIME/RATE/DOSE) converging on a
+"CP" logo ring.
 
-Chosen crop (2026-07-24, Owner pick from 5 generated candidates): a
-1792x1792 square from y=200..1992 of the source. That keeps the full
-glass dial ring, the droplet with its "drops/min / RATE ... ml/hr"
-readout, and the +/- dial control, with the top "00:00" tick just inside
-frame. It deliberately drops the baked-in "CPP-DOSE" wordmark at the
-bottom of the source art and the tail end of the wave below it — the OS
-already labels the icon with the app name, so baking the name into the
-icon graphic itself would just be redundant (and illegible once cropped
-to a launcher's safe zone anyway).
+Revision history:
+- 2026-07-24: first pick was design/app-icon/drop_hovering.jpg (a droplet
+  in a glass timer dial), one of 5 Owner-generated candidates. Superseded
+  the same day after the Owner saw it live on-device — a pale, mostly-
+  white icon reads as washed-out/invisible against a real home screen.
+  Kept on disk for the record; no longer referenced by this script.
+- 2026-07-24 (later): switched to icon-2-2407.jpg — high-contrast dark
+  background with neon pink/cyan, reads clearly at a glance on a home
+  screen grid where the droplet concept didn't.
+
+Chosen crop: a 1490x1490 square from (150, 330) to (1640, 1820) of the
+source. Frames all 4 bottles + the center ring/logo fully, right at the
+composition's own soft vignette edge — loose enough that no background
+clutter creeps in, tight enough that none of the bottles get clipped.
+Unlike the droplet source, this art has no separable wordmark to crop
+away: the small "CPP-DOSE" caption sits inside the ring, under the "CP"
+logo, as part of that logotype rather than a separate banner below it —
+left in place since removing it would mean cutting into the ring/logo
+itself.
 """
 
 import os
 from PIL import Image, ImageDraw
 
 REPO = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", ".."))
-SRC = os.path.join(REPO, "design/app-icon/drop_hovering.jpg")
-CROP_BOX = (0, 200, 1792, 1992)  # (left, top, right, bottom) -> 1792x1792
+SRC = os.path.join(REPO, "design/app-icon/icon-2-2407.jpg")
+CROP_BOX = (150, 330, 1640, 1820)  # (left, top, right, bottom) -> 1490x1490
 
 
 def load_mark():
     im = Image.open(SRC).convert("RGB")
     mark = im.crop(CROP_BOX)
-    bg = mark.getpixel((5, 5))  # sampled background tone, for seamless padding
+    # Average a small patch rather than one pixel — more robust against a
+    # stray anti-aliasing/JPEG-noise outlier at the exact sample point.
+    patch = [
+        mark.getpixel((x, y))
+        for x in (4, 8, 12)
+        for y in (4, 8, 12)
+    ]
+    bg = tuple(sum(c[i] for c in patch) // len(patch) for i in range(3))
     return mark, bg
 
 

@@ -5,6 +5,27 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (later, branch `feature/ux-review-improvements`)
+- **App icon swapped again, superseding the entry directly below.** The
+  droplet-in-a-dial icon looked wrong once actually seen on-device: pale
+  and mostly white/light-gray, it reads as washed-out against a real home
+  screen next to other apps' bolder icons. Owner picked a different one of
+  the same original 5 candidates instead — 4 IV bottles (VOL/TIME/RATE/
+  DOSE) converging on a "CP" logo ring, dark background with pink/cyan
+  neon. High contrast, reads clearly even at true 48px (checked directly,
+  not assumed).
+- New source `design/app-icon/icon-2-2407.jpg`; `scripts/design/
+  generate-app-icon.py` updated in place (`SRC`/`CROP_BOX`, now a
+  1490x1490 square framing all 4 bottles + the ring right at the
+  composition's own soft-vignette edge) and re-run — same script, same
+  output targets, just pointed at the new source. Old source
+  (`drop_hovering.jpg`) kept on disk for the record; no longer referenced.
+- This art has no separable wordmark to crop out: the small "CPP-DOSE"
+  caption sits inside the ring as part of the "CP" logotype itself, not a
+  banner below it like the droplet source had — left in place rather than
+  cutting into the logo mark to remove it.
+- `test` 43/43, `tsc -b` clean. Icon swap only.
+
 ## 2026-07-24 (branch `feature/ux-review-improvements`)
 - **Real app icon**, replacing Capacitor's generic default (teal "C" on a
   grid) everywhere it was still showing. Owner generated 5 candidate icon
