@@ -5,6 +5,46 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (branch `feature/ux-review-improvements`)
+- **Real app icon**, replacing Capacitor's generic default (teal "C" on a
+  grid) everywhere it was still showing. Owner generated 5 candidate icon
+  concepts externally (Flow/Gemini/ChatGPT, per Owner's own earlier call
+  that icon art is their task, not an agent's); picked the "droplet
+  hovering in a glass dial, drops/min + RATE … ml/hr readout, timer-tick
+  ring, flowing wave beneath" concept as the strongest fit — it's the only
+  one of the 5 that depicts the app's actual computed values (gtt/min,
+  ml/hr) and a timer face, versus a generic tech abstraction or a neon/
+  gaming treatment that fit poorly against "tool a medic trusts under
+  stress."
+- Source art `design/app-icon/drop_hovering.jpg` (tracked; lives outside
+  `public/` so Vite never bundles the source into the shipped offline PWA).
+  Cropped to a 1792×1792 mark (drops the source's own baked-in "CPP-DOSE"
+  wordmark — the OS already labels the icon with the app name, so a second
+  copy inside the graphic is redundant per both platforms' icon guidance —
+  and the tail of the wave below it).
+- New tracked, rerunnable `scripts/design/generate-app-icon.py`
+  (Pillow-based; manual design tool, not wired into `npm run build`/`test`/
+  `gate:release`) regenerates every platform size from that one source:
+  PWA icons in `public/` (192/512/1024/maskable/apple-touch-icon), Android
+  adaptive-icon foreground + legacy `ic_launcher`/`ic_launcher_round` at
+  all 5 densities plus a background color sampled from the art itself
+  (`#EDECF2`), and the iOS `AppIcon.appiconset` (single 1024×1024
+  "universal" image, current Xcode/Capacitor format).
+  **Why this script matters beyond today:** `android/` and `ios/` are
+  gitignored (regenerated from the web build, per `.gitignore`) — a fresh
+  `npx cap add android`/`ios` wipes any hand-edited native icon back to
+  Capacitor's generic default with no warning. This script is what puts
+  the real one back in one command; re-run it after any `cap add`.
+- Android/iOS content each get a *padded* variant (mark scaled to ~68-72%
+  of canvas, centered, background-color-filled margin) for the layers the
+  OS itself crops to a circle/squircle/rounded-square (adaptive-icon
+  foreground, maskable PWA icon) — every launcher mask shape guarantees
+  the inner 66-80% stays visible, so the full mark clears all of them.
+  Legacy square/full-bleed variants (iOS, `ic_launcher.png`, PWA icons) use
+  a plain resize, since the source art already has natural margin.
+- `test` 43/43, `tsc -b` clean. Icon swap only — no code path, clinical
+  content, or spec changed.
+
 ## 2026-07-22 (new branch `feature/ux-review-improvements`)
 - Implemented a batch of findings from `reports/UX-REVIEW-2026-07-22.md` (4
   parallel read-only expert passes; Owner picked which of the more
