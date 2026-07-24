@@ -277,6 +277,25 @@ function SilenceToggle({
     // only ever happens via the timer above.
   }
 
+  // Keyboard/switch-access equivalent of the pointer hold (2026-07-24 fix):
+  // the mute-enable path used to be reachable only via onPointerDown, so a
+  // keyboard-only user's Enter/Space activation — which native <button>
+  // semantics deliver as a plain `click`, with no pointerdown/pointerup —
+  // could never satisfy the hold and could never mute a drip. Holding
+  // Enter/Space now drives the same timer as a pointer hold; `e.repeat`
+  // guards against the OS's key-auto-repeat re-firing onPointerDown on every
+  // repeat tick while held.
+  function onKeyDown(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    if (e.repeat) return;
+    onPointerDown();
+  }
+
+  function onKeyUp(e: React.KeyboardEvent<HTMLButtonElement>) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    clearHold();
+  }
+
   return (
     <button
       type="button"
@@ -291,6 +310,9 @@ function SilenceToggle({
       onPointerUp={clearHold}
       onPointerLeave={clearHold}
       onPointerCancel={clearHold}
+      onKeyDown={onKeyDown}
+      onKeyUp={onKeyUp}
+      onBlur={clearHold}
       onClick={onClick}
       // A ~600ms hold on a text-bearing element is exactly the gesture
       // mobile WebViews use to trigger native text selection / the
