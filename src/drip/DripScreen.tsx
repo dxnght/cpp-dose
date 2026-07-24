@@ -563,14 +563,23 @@ export function DripScreen() {
   // a different drip's stage flipping), not just the self-cancel case.
   useEffect(() => {
     const liveIds = new Set(drips.map((d) => d.id));
+    // Tracks whether anything schedule-relevant actually happened this run,
+    // so checkNotificationHealth() below — two real native-bridge calls — only
+    // fires when there's a reason to, not on every unrelated `drips` change
+    // (e.g. a warned10/5/Empty flip, which never reaches this branch at all).
+    let scheduleChanged = false;
     drips.forEach((d) => {
       if (d.bagMl == null || d.mlPerH <= 0) {
-        if (scheduledKeyRef.current.delete(d.id)) void cancelDripAlarms(d.id);
+        if (scheduledKeyRef.current.delete(d.id)) {
+          void cancelDripAlarms(d.id);
+          scheduleChanged = true;
+        }
         return;
       }
       const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced, d.label);
       if (scheduledKeyRef.current.get(d.id) === key) return;
       scheduledKeyRef.current.set(d.id, key);
+      scheduleChanged = true;
       const endAt =
         d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
       void rescheduleDripAlarms({
@@ -583,12 +592,17 @@ export function DripScreen() {
       });
     });
     for (const id of [...scheduledKeyRef.current.keys()]) {
-      if (!liveIds.has(id)) scheduledKeyRef.current.delete(id);
+      if (!liveIds.has(id)) {
+        scheduledKeyRef.current.delete(id);
+        scheduleChanged = true;
+      }
     }
     void forgetStaleDrips(liveIds);
-    checkNotificationHealth()
-      .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
-      .catch(() => setNotifDenied(true));
+    if (scheduleChanged) {
+      checkNotificationHealth()
+        .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
+        .catch(() => setNotifDenied(true));
+    }
   }, [drips]);
 
   useEffect(() => {
