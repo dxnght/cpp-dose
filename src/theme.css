@@ -635,6 +635,24 @@ button.danger {
   font-size: 20px;
   color: var(--fg-dim);
 }
+.focus-tag {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin: 4px auto 0;
+  padding: 6px 10px;
+  min-height: var(--touch);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+.focus-tag::placeholder {
+  color: var(--fg-dim);
+  opacity: 0.7;
+}
 .focus-gtt {
   font-size: 84px;
   font-weight: 700;
@@ -678,6 +696,10 @@ button.danger {
   font-size: 15px;
   font-weight: 600;
   color: var(--fg-dim);
+}
+.drip-tag {
+  font-weight: 400;
+  opacity: 0.75;
 }
 .expand {
   color: var(--accent);

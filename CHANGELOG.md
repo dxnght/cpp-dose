@@ -5,6 +5,45 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (even later, branch `fix/ux-review-findings`)
+- **Owner did their own code review pass on this new branch** (several
+  real fixes: keyboard reachability on `SilenceToggle`, an aria-label
+  mismatch, a stale-closure bug in `addDrip`'s renumbering, a missing
+  `label` dependency in a schedule effect, perf tightening on
+  `checkNotificationHealth`, the flex-`order` visual reorder replaced with
+  a real JSX move, a spec FR-8 example fix, plus a spelling pass on the
+  notification strings). Not this agent's work — noted here since it's
+  the base everything below builds on. 44/44 tests (was 43).
+- **New: optional in-app-only per-drip display tag (FR-8a, AC-6d)** —
+  Owner asked whether concurrent drips should be labelable (callsign? bed
+  number?) as a "think about it" question. Worth walking through the
+  reasoning since it shaped the design: a free-text tag is fine to keep
+  purely in-memory (confirmed by reading the code — `drips` is a plain
+  `useState`, never hydrated from `localStorage`, and §6 already documents
+  that MVP doesn't persist live drips at all). But "never transmitted"
+  isn't the same as "never exposed" — `notifications.ts` interpolates a
+  drip's `label` directly into the OS notification body, and that channel
+  is deliberately `VISIBILITY_PUBLIC` (a prior fix, specifically so it
+  shows on a locked screen). Anything identifying in `label` would
+  therefore appear on the lock screen every 10/5 min and at bag-empty,
+  visible to anyone glancing at the phone — a materially bigger exposure
+  than local persistence, and one "in-memory only" doesn't address by
+  itself. Resolution: split the two. `ActiveDrip.displayTag` is a new,
+  separate, optional field — editable in Focus mode, shown on the card and
+  in Focus — that is never read by `dripScheduleKey()` or
+  `rescheduleDripAlarms()`; those keep using `label` alone, unchanged. The
+  `rescheduleDripAlarms({...})` call site is kept as an explicit field
+  list (not a `...d` spread) with a comment explaining why, specifically
+  so a future refactor can't silently smuggle `displayTag` into a
+  notification. No content validation on the tag; the input's placeholder
+  ("мітка (напр. ліжко 3)") nudges toward a positional tag over a personal
+  one (callsign/name) as a suggestion, not an enforced rule.
+- Spec 001 bumped to 1.10 (FR-8a, AC-6d).
+- `test` 44/44, `tsc -b` clean. No clinical values changed; no network
+  code added (Art. V unaffected — this is presentation-layer state,
+  scoped deliberately away from the one channel that does reach outside
+  the app itself).
+
 ## 2026-07-24 (later, branch `feature/ux-review-improvements`)
 - **App icon swapped again, superseding the entry directly below.** The
   droplet-in-a-dial icon looked wrong once actually seen on-device: pale

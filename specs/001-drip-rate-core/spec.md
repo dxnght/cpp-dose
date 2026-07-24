@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.9 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.10 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -16,7 +16,11 @@
   to enable the alarm mute (FR-7a), visual alarm-stage escalation (AC-6b),
   a persistent source/verification badge on running drips (AC-6c), drug names
   in labels + auto-numbering for duplicate concurrent drips (FR-8) — see
-  `plan/architecture.md` §4a/§4a.1/§4a.2/§4a.3/§4a.4)
+  `plan/architecture.md` §4a/§4a.1/§4a.2/§4a.3/§4a.4; plus (1.10) an optional
+  in-app-only per-drip display tag (FR-8a, e.g. a bed/litter number),
+  deliberately excluded from the OS notification channel since FR-12's
+  notifications are `VISIBILITY_PUBLIC`/lock-screen-visible by design —
+  Owner decision 2026-07-24, see AC-6d)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -142,6 +146,20 @@ unambiguous, usable one-handed with gloves at night.
   drug from the card alone); when two concurrent drips would otherwise share
   an identical label, both are auto-numbered ("Дріп 1"/"Дріп 2") so they're
   distinguishable without any patient data being entered.
+- **FR-8a (in-app display tag, 2026-07-24 Owner decision)** Each active drip
+  can optionally carry a free-text `displayTag` (e.g. a bed/litter number) —
+  entered/edited in Focus mode, shown next to `label` on the card and in
+  Focus. Purely in-memory, like the rest of `drips`: not written to
+  `localStorage` or any file, gone when the drip is removed or the app
+  restarts (MVP does not persist live drips at all — §6). **Must never
+  reach `label`, `dripScheduleKey()`, or `rescheduleDripAlarms()` /
+  notifications.ts** — FR-12's OS notifications are `VISIBILITY_PUBLIC` by
+  design (so they show on a locked screen), so anything potentially
+  identifying has to stay in-app-only, visible only while the phone is
+  unlocked with the app open. No content validation (not blocked from
+  holding a name) — the field's placeholder nudges toward a positional tag
+  (bed/litter number) rather than a personal one (callsign, name), as a
+  suggestion rather than an enforced rule.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
   the medic selects **one "active" drip** whose metronome sounds/vibrates at a time
   (others show visual countdown only), OR distinct cues per drip — **Owner to pick**
@@ -234,6 +252,12 @@ unambiguous, usable one-handed with gloves at night.
   or burn-formula record snapshotted at add-time), not only in the setup
   selector before the drip is added. bagtime-mode drips (no underlying
   record) show no badge.
+- **AC-6d (2026-07-24, Owner decision; FR-8a)** A drip's optional
+  `displayTag`, once set in Focus mode, appears next to its label on the
+  card and in Focus, and survives retitration/mute-toggle/renumbering. It
+  never appears in any OS notification title/body (FR-12) and is never
+  written to `localStorage` or any file — gone when the drip is removed or
+  the app restarts, same as the rest of `drips`.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 - **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a

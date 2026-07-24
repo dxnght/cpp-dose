@@ -65,6 +65,17 @@ interface ActiveDrip {
   // mode, which is plain arithmetic on user-entered numbers with no
   // underlying record to cite.
   sourceRecord: Drug | Formula | null;
+  // Optional free-text tag (e.g. a bed/litter number) so a medic can tell
+  // apart concurrent drips on different patients — 2026-07-24 Owner
+  // decision, deliberately kept separate from `label`. In-app display
+  // only: never read by notifications.ts / rescheduleDripAlarms() /
+  // dripScheduleKey(), which continue to use `label` alone. That split is
+  // the whole point — the OS notification channel is patched to
+  // VISIBILITY_PUBLIC (shows on the lock screen), so anything identifying
+  // must never reach it. Purely in-memory like the rest of `drips`, never
+  // touches localStorage or any file; gone the moment the drip is removed
+  // or the app restarts.
+  displayTag?: string;
 }
 
 type Mode = "dose" | "bagtime" | "burn";
@@ -592,6 +603,12 @@ export function DripScreen() {
       scheduledKeyRef.current.set(d.id, key);
       scheduleChanged = true;
       const endAt = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+      // Explicit field list, not `...d` — deliberate (2026-07-24). `d` also
+      // carries `displayTag` (see ActiveDrip), which must never reach the
+      // OS notification: that channel is VISIBILITY_PUBLIC (shows on the
+      // lock screen), and displayTag can hold something identifying (a
+      // callsign, a name). Keep this call an explicit literal so a future
+      // spread doesn't silently smuggle it in.
       void rescheduleDripAlarms({
         id: d.id,
         label: d.label,
@@ -798,6 +815,16 @@ export function DripScreen() {
     );
   }
 
+  // In-app-only tag (2026-07-24 Owner decision — see ActiveDrip.displayTag).
+  // Deliberately does not touch `label`, does not call rescheduleDripAlarms
+  // or anything in notifications.ts — nothing here should ever reach the
+  // OS notification channel.
+  function setDisplayTag(id: string, val: string) {
+    setDrips((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, displayTag: val } : x)),
+    );
+  }
+
   function applyCalib() {
     if (calRate) setBagGtt(Math.max(1, Math.min(600, calRate)));
     setCalib(false);
@@ -851,6 +878,16 @@ export function DripScreen() {
           onClick={() => setFocusId(null)}
         >
           <div className="focus-label">{focusDrip.label}</div>
+          <input
+            type="text"
+            className="focus-tag"
+            value={focusDrip.displayTag ?? ""}
+            onChange={(e) => setDisplayTag(focusDrip.id, e.target.value)}
+            onClick={(e) => e.stopPropagation()}
+            placeholder="мітка (напр. ліжко 3) — необов'язково"
+            aria-label="мітка дріпу, лише на цьому екрані"
+            maxLength={40}
+          />
           <div className="focus-retit" onClick={(e) => e.stopPropagation()}>
             <button
               aria-label="повільніше"
@@ -993,7 +1030,12 @@ export function DripScreen() {
               >
                 <div className="drip-tap" onClick={() => enterFocus(d.id)}>
                   <div className="drip-mini-top">
-                    <span className="drip-mini-name">{d.label}</span>
+                    <span className="drip-mini-name">
+                      {d.label}
+                      {d.displayTag && (
+                        <span className="drip-tag"> · {d.displayTag}</span>
+                      )}
+                    </span>
                     <span className="expand" aria-hidden="true">
                       ⤢
                     </span>
