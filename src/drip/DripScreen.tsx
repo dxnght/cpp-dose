@@ -655,8 +655,16 @@ export function DripScreen() {
           // standardized on "Дріп" to match dose mode's fallback (2026-07-22).
     const sourceRecord: Drug | Formula | null =
       mode === "dose" ? (preset?.drug ?? null) : mode === "burn" ? (burnFormula ?? null) : null;
-    const { label, renumberId } = withOrdinal(base, drips);
     setDrips((p) => {
+      // Re-check against the *latest* state, not the render-closure `drips`
+      // above — two addDrip() calls landing before a re-render commits (a
+      // fast double-tap) would otherwise both read the same stale snapshot
+      // and independently pick the same {label, renumberId}, producing two
+      // new drips with an identical, non-disambiguated label. Computing
+      // withOrdinal() from `p` inside this updater means the second call
+      // always sees the first call's already-applied result.
+      if (p.length >= MAX_DRIPS) return p;
+      const { label, renumberId } = withOrdinal(base, p);
       const renumbered = renumberId
         ? p.map((d) => (d.id === renumberId ? { ...d, label: `${base} 1` } : d))
         : p;
