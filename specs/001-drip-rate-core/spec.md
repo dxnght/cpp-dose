@@ -140,8 +140,8 @@ unambiguous, usable one-handed with gloves at night.
   now part of a dose-mode drip's label (previously only category +
   concentration, e.g. "Знеболення · 1 мг/мл", with no way to tell *which*
   drug from the card alone); when two concurrent drips would otherwise share
-  an identical label, both are auto-numbered ("Крапельниця 1"/"Крапельниця
-  2") so they're distinguishable without any patient data being entered.
+  an identical label, both are auto-numbered ("Дріп 1"/"Дріп 2") so they're
+  distinguishable without any patient data being entered.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
   the medic selects **one "active" drip** whose metronome sounds/vibrates at a time
   (others show visual countdown only), OR distinct cues per drip — **Owner to pick**
