@@ -35,6 +35,7 @@ import {
   burnRuleOfTenMlPerH,
   doseRangeMg,
   parseConcentrationMgPerMl,
+  preSatisfiedAlarmStages,
 } from "./calc";
 
 interface ConcPreset {
@@ -757,8 +758,18 @@ export function DripScreen() {
           bagMl,
           startedAt: Date.now(),
           animStart: nowMs(),
-          warned10: false,
-          warned5: false,
+          // A bag whose total run time is already ≤10/≤5 min starts out
+          // past that threshold, not crossing down through it — nothing
+          // to warn about, so seed warned10/5 pre-satisfied instead of
+          // firing that stage's alarm the instant the drip is created
+          // (Owner report 2026-07-24: an 8-min bag immediately fired the
+          // "10 min left" alarm at creation). See calc.ts.
+          ...preSatisfiedAlarmStages(
+            bagMl,
+            live.mlPerH,
+            PRE_END_ALARM_MS_10,
+            PRE_END_ALARM_MS_5,
+          ),
           warnedEmpty: false,
           silenced: false,
           sourceRecord,

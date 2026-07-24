@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.10 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.11 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -20,7 +20,9 @@
   in-app-only per-drip display tag (FR-8a, e.g. a bed/litter number),
   deliberately excluded from the OS notification channel since FR-12's
   notifications are `VISIBILITY_PUBLIC`/lock-screen-visible by design —
-  Owner decision 2026-07-24, see AC-6d)
+  Owner decision 2026-07-24, see AC-6d; plus (1.11) a drip whose bag is
+  already ≤10/≤5 min total no longer immediately fires that stage's alarm
+  at creation — Owner report 2026-07-24, see FR-6/AC-5a)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -118,6 +120,11 @@ unambiguous, usable one-handed with gloves at night.
   wall-clock time; fire **two local pre-end alarms — at 10 min and at 5 min
   before empty** (lead times, Owner decision 2026-07-21; supersedes the single
   10-min-only alarm from 2026-07-18) and a third alarm **at empty**. No network.
+  **A stage only fires if the drip's total run time genuinely crosses down
+  through it** (Owner report 2026-07-24): a bag whose whole run time is
+  already ≤10 min (or ≤5 min) starts out past that threshold rather than
+  crossing it, so that stage is pre-satisfied silently at creation instead
+  of alarming the instant the drip is added — see AC-5a.
 - **FR-7 (concurrency)** Support **1–5 concurrent drips** (raised from 3, Owner
   decision 2026-07-21). Each drip is an independent unit (its own volume, rate,
   drop factor, timer, alarms). Adding a 6th is blocked with a message.
@@ -233,6 +240,11 @@ unambiguous, usable one-handed with gloves at night.
 - **AC-5 (SC-9)** Each drip's finish time = start + volume/rate within ±1 min; the
   **10-min pre-end alarm**, the **5-min pre-end alarm**, and the **at-empty
   alarm** all fire, in airplane mode, each with a distinguishable pattern.
+- **AC-5a (2026-07-24, Owner report; FR-6)** Adding a drip whose total bag
+  run time is ≤10 min does **not** immediately fire the 10-min alarm; if
+  also ≤5 min, the 5-min alarm does not immediately fire either. Only the
+  at-empty alarm (and, for a bag between 5 and 10 min, the 5-min alarm at
+  its real crossing point) still fire normally.
 - **AC-6 (SC-9)** With **5 concurrent drips** at different rates, each keeps its own
   correct countdown and fires its own alarms independently; a 6th is blocked.
 - **AC-6a** With **"Без будильника" enabled** (via a ~600 ms press-and-hold, not

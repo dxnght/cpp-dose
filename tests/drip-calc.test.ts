@@ -9,9 +9,13 @@ import {
   burnRuleOfTenMlPerH,
   doseRangeMg,
   clamp,
+  preSatisfiedAlarmStages,
   WEIGHT,
   VOLUME,
 } from "../src/drip/calc";
+
+const WARN10_MS = 10 * 60_000;
+const WARN5_MS = 5 * 60_000;
 
 describe("burn Rule of Ten", () => {
   it("(40%,70kg)=400, (40%,100kg)=600, (30%,80kg)=300", () => {
@@ -38,6 +42,57 @@ describe("bag-volume stepper stays on the 50 ml grid (Owner-reported regression,
     // A min not aligned to the step let the DripScreen stepper clamp to the
     // floor, then climb off-grid (51, 101, 151 ml…) instead of round values.
     expect(VOLUME.min % 50).toBe(0);
+  });
+});
+
+describe("preSatisfiedAlarmStages (Owner-reported regression, 2026-07-24)", () => {
+  // Owner report: adding an 8-min bag immediately fired the "10 min left"
+  // alarm at creation — remaining time started out already below the
+  // threshold, so there was never a moment of crossing down through it.
+  it("an 8-min bag pre-satisfies warned10 but not warned5", () => {
+    // 100 ml @ 750 ml/h = 0.1333h = 8 min.
+    expect(preSatisfiedAlarmStages(100, 750, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: false,
+    });
+  });
+
+  it("a 3-min bag pre-satisfies both stages (nothing to warn about at all)", () => {
+    // 100 ml @ 2000 ml/h = 0.05h = 3 min.
+    expect(preSatisfiedAlarmStages(100, 2000, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: true,
+    });
+  });
+
+  it("a 15-min bag pre-satisfies neither — both alarms are still real crossings", () => {
+    // 100 ml @ 400 ml/h = 0.25h = 15 min.
+    expect(preSatisfiedAlarmStages(100, 400, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
+  });
+
+  it("exactly 10 min is pre-satisfied for warned10 (boundary is inclusive)", () => {
+    // 100 ml @ 600 ml/h = 0.16667h = 10 min exactly.
+    expect(preSatisfiedAlarmStages(100, 600, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: false,
+    });
+  });
+
+  it("no bag timer (bagMl null) pre-satisfies neither — moot, never checked", () => {
+    expect(preSatisfiedAlarmStages(null, 750, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
+  });
+
+  it("mlPerH <= 0 pre-satisfies neither (guards the same way bagRunHours does)", () => {
+    expect(preSatisfiedAlarmStages(100, 0, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
   });
 });
 

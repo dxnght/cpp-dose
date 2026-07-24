@@ -5,6 +5,33 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (still later, branch `fix/ux-review-findings`)
+- **Fixed: a short bag (<10 min total) immediately fired the "10 min
+  left" alarm at creation** (Owner report). Root cause: `warned10`/
+  `warned5` always started `false`, and the in-app tick effect fires a
+  stage the instant `remaining <= threshold`. For a bag whose whole run
+  time is already ≤10 min, remaining time starts below the threshold —
+  there's no moment of *crossing down through it*, so firing that alarm
+  at t=0 was announcing something that was never a real event, just an
+  inherent (and already-known) property of a short bag.
+- **Fix:** new `preSatisfiedAlarmStages()` in `calc.ts` (pure, unit
+  tested) — seeds `warned10`/`warned5` as already-satisfied at `addDrip()`
+  time when the bag's total duration never exceeds that threshold, so
+  only a stage the drip can genuinely cross still fires. Deliberately a
+  one-time seed at creation, not a new dependency in the reschedule
+  effect — doesn't touch `dripScheduleKey`/`rescheduleDripAlarms` at all,
+  so it can't reintroduce the v5 self-cancel class of bug (warned-flag
+  changes still don't drive OS-notification rescheduling). Scoped only to
+  drip *creation*; retitration that shortens a running drip below a
+  threshold still fires normally (that's a real, alarm-worthy change in
+  circumstances, not a bag that was always going to be short) — out of
+  scope for this report, not touched.
+- Spec 001 bumped to 1.11 (FR-6 note, AC-5a). 6 new unit tests in
+  `tests/drip-calc.test.ts` (8-min/3-min/15-min/exactly-10-min/no-bag-
+  timer/mlPerH-0 cases).
+- `test` 50/50 (was 44), `tsc -b`/lint/validate/gate:release all clean.
+  No clinical values changed.
+
 ## 2026-07-24 (even later, branch `fix/ux-review-findings`)
 - **Owner did their own code review pass on this new branch** (several
   real fixes: keyboard reachability on `SilenceToggle`, an aria-label

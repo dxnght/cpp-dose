@@ -60,6 +60,40 @@ export function bagRunHours(volumeMl: number, mlPerH: number): number {
   return volumeMl / mlPerH;
 }
 
+/**
+ * Whether a bag's total run time is already at/under a pre-end warning
+ * threshold from the moment it starts — i.e. there is no point during this
+ * drip where "more than N ms remain" was ever true, so crossing down
+ * through N isn't a real event and shouldn't fire that stage's alarm.
+ *
+ * Owner report (2026-07-24): adding an 8-minute drip immediately screamed
+ * "10 min left" the instant it was created, because remaining time started
+ * out already below the 10-min threshold — nothing was actually crossed,
+ * the bag was just always going to be short, which the medic already
+ * knows. Used to seed `warned10`/`warned5` at drip creation instead of
+ * always `false`, so only thresholds a drip could genuinely cross ever
+ * fire.
+ *
+ * `bagMl === null` means no bag timer at all (dose-mode drip with no
+ * countdown) — neither stage applies, so both come back `false` (moot;
+ * the caller never checks them for a drip with no bag timer).
+ */
+export function preSatisfiedAlarmStages(
+  bagMl: number | null,
+  mlPerH: number,
+  warn10Ms: number,
+  warn5Ms: number,
+): { warned10: boolean; warned5: boolean } {
+  if (bagMl == null || mlPerH <= 0) {
+    return { warned10: false, warned5: false };
+  }
+  const totalMs = bagRunHours(bagMl, mlPerH) * 3600_000;
+  return {
+    warned10: totalMs <= warn10Ms,
+    warned5: totalMs <= warn5Ms,
+  };
+}
+
 /** Extract a leading "N mg/ml" concentration from a record's free-text string. */
 export function parseConcentrationMgPerMl(s?: string): number | null {
   if (!s) return null;
