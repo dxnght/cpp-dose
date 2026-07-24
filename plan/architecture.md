@@ -1,6 +1,6 @@
 # Technical Plan — Architecture (the HOW)
 
-Covers all P0 features (Specs 001–003, 005). This is the *implementation* plan;
+Covers all P0 features (Specs 001–003, 005). This is the _implementation_ plan;
 intent lives in the specs. Nothing here may weaken `memory/constitution.md`.
 
 ## Constitution Check
@@ -25,13 +25,13 @@ intent lives in the specs. Nothing here may weaken `memory/constitution.md`.
 
 ## 2. Module map
 
-| Module | Spec | Notes |
-|--------|------|-------|
-| `drip/` | 001 | formula, drop-factor, metronome scheduler, end-of-bag timer |
-| `dose/` | 002 | weight input, drug list from field bundle, dose math, confirm-to-reveal |
-| `burn/` | 003 | Rule of Nines diagram, Rule of Ten rate, hand-off to `drip/` |
-| `clinical/` | 005 | field-bundle loader, guards, source/verification badges |
-| `shell/` | 000 | night theme, disclaimer, navigation, ≥48 px targets, i18n (uk) |
+| Module      | Spec | Notes                                                                   |
+| ----------- | ---- | ----------------------------------------------------------------------- |
+| `drip/`     | 001  | formula, drop-factor, metronome scheduler, end-of-bag timer             |
+| `dose/`     | 002  | weight input, drug list from field bundle, dose math, confirm-to-reveal |
+| `burn/`     | 003  | Rule of Nines diagram, Rule of Ten rate, hand-off to `drip/`            |
+| `clinical/` | 005  | field-bundle loader, guards, source/verification badges                 |
+| `shell/`    | 000  | night theme, disclaimer, navigation, ≥48 px targets, i18n (uk)          |
 
 ## 3. Clinical content build pipeline (safety-critical)
 
@@ -123,7 +123,7 @@ behind a loud watermark and is never shippable.
 
 - **Problem:** v1 above scheduled onto the `@capacitor/local-notifications`
   plugin's implicit "Default" channel (`IMPORTANCE_DEFAULT`). Owner confirmed
-  the notification *posted* on time and with the right text, but with **no
+  the notification _posted_ on time and with the right text, but with **no
   audible/vibration signal** noticeable on a locked screen — the actual
   point of the feature. Android notification channels are immutable after
   first creation (importance/sound/vibration can only change via the user
@@ -159,7 +159,7 @@ behind a loud watermark and is never shippable.
     smooth, and multiplies scheduled alarms 5× with up to 5 concurrent drips.
   - "Always on top of every other app's notifications" isn't something
     Android lets any app guarantee outside a small set of system categories
-    (calls, media playback) — `importance: 5` + recency gets it *near* the
+    (calls, media playback) — `importance: 5` + recency gets it _near_ the
     top in practice, which is as far as this can honestly go.
   - **Recommendation:** ship this channel fix now (directly fixes the
     reported defect, low risk, no native code); treat a true chronometer
@@ -177,16 +177,16 @@ behind a loud watermark and is never shippable.
 - **Root cause 1 (found by reading the plugin's Android source,
   `LocalNotificationManager.java`):** `buildNotification()` unconditionally
   calls `mBuilder.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)` on
-  *every* notification, regardless of the channel's configured
+  _every_ notification, regardless of the channel's configured
   `visibility`. This is a real bug/limitation in
   `@capacitor/local-notifications` 6.1.3 — the channel-level `visibility: 1`
   (PUBLIC) set in 4a.1 was silently overridden and never actually took
   effect. (There's even a `// TODO control visibility by flag
-  Notification.VISIBILITY_PRIVATE` left in the plugin's own source,
+Notification.VISIBILITY_PRIVATE` left in the plugin's own source,
   acknowledging this is hardcoded.)
 - **Fix 1:** patched that one line to `VISIBILITY_PUBLIC` via `patch-package`
   (`patches/@capacitor+local-notifications+6.1.3.patch`, `postinstall:
-  patch-package` in `package.json`). Editing `node_modules` directly doesn't
+patch-package` in `package.json`). Editing `node_modules` directly doesn't
   survive `npm install`/`npm ci`; `patch-package` regenerates the same edit
   automatically every install, which is the standard, durable way to carry a
   small fix to a third-party dependency.
@@ -198,7 +198,7 @@ behind a loud watermark and is never shippable.
   running" indicator (like a music player) rather than an alert, and
   deprioritize or hide them from heads-up/lock-screen display. Removed
   `ongoing: true` from all three scheduled notifications; kept `autoCancel:
-  true` (tap dismisses + opens the app).
+true` (tap dismisses + opens the app).
 - **Channel bumped to `drip-alarms-v3`** (fresh id) since channel settings
   are immutable once created on a device — any earlier, differently
   configured channel from testing 4a.1 would otherwise stay stuck with the
@@ -225,21 +225,21 @@ behind a loud watermark and is never shippable.
 
 - **Field report came back inconsistent**, not a clean pass/fail: unlocked
   worked (no alarm tone, as expected — the metronome "Звук" toggle
-  controlling *that* was off, unrelated in code to the alarm/notification
+  controlling _that_ was off, unrelated in code to the alarm/notification
   path at all); locked-but-screen-on produced nothing (no notification, no
   sound); locked-and-asleep worked fully, both while locked and after
   unlocking. Screen-on/off doesn't line up with a Doze explanation (Doze is
-  *more* restrictive screen-off, but that's the case that worked), and the
+  _more_ restrictive screen-off, but that's the case that worked), and the
   one tracked variable (the metronome toggle) has no code path to the alarm
   system at all — so neither of the Owner's two candidate explanations
   actually fits the pattern.
 - **Bug found while re-checking the channel config against real Android
   constants:** `ensureChannel()` requested `importance: 5`. Android's actual
   `NotificationManager` importance scale is `NONE=0, MIN=1, LOW=2,
-  DEFAULT=3, HIGH=4` — **there is no 5**. The plugin's TypeScript type
+DEFAULT=3, HIGH=4` — **there is no 5**. The plugin's TypeScript type
   (`Importance = 1|2|3|4|5`) doesn't catch this at compile time, so it
   silently passed an out-of-range value straight to Android's
-  `NotificationChannel` constructor. Not confirmed as *the* cause of the
+  `NotificationChannel` constructor. Not confirmed as _the_ cause of the
   inconsistent field report, but a definite, real bug on its own — fixed to
   the correct constant, `4`. Channel bumped to `drip-alarms-v4` (fresh id,
   since importance can't be changed on an already-created channel).
@@ -255,17 +255,17 @@ behind a loud watermark and is never shippable.
   whenever a drip has a bag timer and no other known problem is detected.
   Still no additional native plugin — Android does have a plain intent
   (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) an app can launch to
-  prompt for this directly, but that needs *some* native bridge to invoke
+  prompt for this directly, but that needs _some_ native bridge to invoke
   from JS; out of scope for this pass per Owner instruction (no new Android
   plugins this version) — manual settings instruction only.
 - **Live health check added** (`checkNotificationHealth()` in
-  `notifications.ts`): re-checks permission grant *and* the actual channel
+  `notifications.ts`): re-checks permission grant _and_ the actual channel
   importance (via `LocalNotifications.listChannels()`) every time the drips
   effect runs, not just once at app launch. The old code snapshotted
   permission status once at mount, so the in-app warning banner could show a
   stale "fine" even after the OS silently downgraded something (e.g. the
   user or system disabling the channel) mid-session. The red warning banner
-  now only shows for a *detected* problem (permission denied, or channel
+  now only shows for a _detected_ problem (permission denied, or channel
   importance reported below HIGH); the battery-optimization tip is separate
   and always shown, since that specific restriction isn't queryable from
   this plugin.
@@ -273,17 +273,17 @@ behind a loud watermark and is never shippable.
 ### 4a.4 v5 fix: OS notification and in-app alarm were cancelling each other (2026-07-22, later still)
 
 - **Three more field reports, same day:** (1) the empty-bag notification's
-  text ("CPP-DOSE — мішка порожня", no lead-in) looked like a stray,
+  text ("CPP-DOSE — дріп порожній", no lead-in) looked like a stray,
   out-of-context glitch; (2) the notification consistently appeared on the
-  lock screen roughly a minute *before* the in-app alarm sounded; (3) with
+  lock screen roughly a minute _before_ the in-app alarm sounded; (3) with
   the drip's own metronome "Звук" toggle off and the screen locked, no
   notification arrived at all — yet with that same toggle on, the locked-
   screen notification was "абсолютно вірна" (fully correct).
 - **Root cause, found in `DripScreen.tsx`'s reschedule effect, not in
   `notifications.ts` itself:** the effect computed
   `fireAt10: d.warned10 ? null : endAt - PRE_END_ALARM_MS_10` (and the same
-  for `warned5`/`warnedEmpty`) — i.e. it gated the *OS-level* notification
-  directly on the *in-app* alarm's one-shot-per-stage flags.
+  for `warned5`/`warnedEmpty`) — i.e. it gated the _OS-level_ notification
+  directly on the _in-app_ alarm's one-shot-per-stage flags.
   `rescheduleDripAlarms()` unconditionally cancels a drip's 3 notification
   ids on every call, before rescheduling. So the instant the in-app tick
   effect (its own independent 1-second poll of `Date.now()`) noticed the
@@ -312,11 +312,11 @@ behind a loud watermark and is never shippable.
   - The empty-alarm text looking like an isolated glitch was very likely a
     side effect too: if the 10-min and 5-min notifications had already been
     silently self-cancelled earlier in the same session, only the final
-    "мішка порожня" notification would ever be seen, with no lead-up context
+    "дріп порожній" notification would ever be seen, with no lead-up context
     to make sense of it.
 - **Fix:** the OS notification and the in-app alarm are now fully
   independent channels, matching the original intent of adding OS
-  notifications in the first place (§4a) — `warned10/5/Empty` gate *only*
+  notifications in the first place (§4a) — `warned10/5/Empty` gate _only_
   the in-app audio/haptic (the separate `now`-driven tick effect) and are no
   longer read anywhere near the notification-scheduling call. A new pure
   helper, `dripScheduleKey(bagMl, mlPerH, startedAt, silenced)` (exported
@@ -325,7 +325,7 @@ behind a loud watermark and is never shippable.
   changed, so unrelated `drips` updates (e.g. a different drip's stage
   flipping) no longer trigger a redundant cancel+reschedule round trip
   either. Also fixed the empty-alarm text to mirror the 10/5-min
-  notifications' phrasing instead of a bare "мішка порожня" fragment. A
+  notifications' phrasing instead of a bare "дріп порожній" fragment. A
   small additional robustness fix: a `visibilitychange`/`focus` listener now
   forces an immediate `now` refresh the moment the screen unlocks, instead
   of waiting up to 1s for the next interval tick — shaves a small, avoidable
@@ -352,14 +352,14 @@ behind a loud watermark and is never shippable.
 Proposed defaults (Owner to confirm; these are engineering guardrails, not clinical
 values):
 
-| Input | Min | Max | On violation |
-|-------|-----|-----|--------------|
-| Patient weight | 30 kg | 150 kg | suppress outputs + reason |
-| Volume (drip) | 1 ml | 1000 ml | block + reason |
-| Time (drip) | 1 min | 24 h | block + reason |
-| Drop factor | 1 | 100 gtt/ml | block + reason |
-| gtt/min (inverse) | 1 | 600 | warn above practical gravity range |
-| TBSA % | 0 | 100 | round to nearest 10% |
+| Input             | Min   | Max        | On violation                       |
+| ----------------- | ----- | ---------- | ---------------------------------- |
+| Patient weight    | 30 kg | 150 kg     | suppress outputs + reason          |
+| Volume (drip)     | 1 ml  | 1000 ml    | block + reason                     |
+| Time (drip)       | 1 min | 24 h       | block + reason                     |
+| Drop factor       | 1     | 100 gtt/ml | block + reason                     |
+| gtt/min (inverse) | 1     | 600        | warn above practical gravity range |
+| TBSA %            | 0     | 100        | round to nearest 10%               |
 
 Per-drug `min_max` dose clamps come from the clinical record, not from this table.
 Sub-40 kg / pediatric behavior is `TODO(clinical-review)` (Specs 002/003) — until

@@ -16,7 +16,10 @@ type TickHandler = () => void;
 type AudioCtor = typeof AudioContext;
 
 function getAudioCtor(): AudioCtor | null {
-  const w = window as unknown as { AudioContext?: AudioCtor; webkitAudioContext?: AudioCtor };
+  const w = window as unknown as {
+    AudioContext?: AudioCtor;
+    webkitAudioContext?: AudioCtor;
+  };
   return w.AudioContext ?? w.webkitAudioContext ?? null;
 }
 
@@ -27,7 +30,11 @@ export class Metronome {
   private nextTickTime = 0;
   private timer: number | null = null;
   private gttPerMin = 0;
-  private channels: MetronomeChannels = { audio: true, haptic: true, animation: true };
+  private channels: MetronomeChannels = {
+    audio: true,
+    haptic: true,
+    animation: true,
+  };
   private onTick: TickHandler | null = null;
   private onHaptic: (() => void) | null = null;
 

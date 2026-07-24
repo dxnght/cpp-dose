@@ -24,7 +24,11 @@ export function clamp(v: number, c: Clamp): number {
 }
 
 /** Weight-based infusion → ml/h (dose_rate_to_gtt, step 1). */
-export function doseToMlPerH(doseMgPerKgPerH: number, weightKg: number, concMgPerMl: number): number {
+export function doseToMlPerH(
+  doseMgPerKgPerH: number,
+  weightKg: number,
+  concMgPerMl: number,
+): number {
   if (concMgPerMl <= 0) return NaN;
   return (doseMgPerKgPerH * weightKg) / concMgPerMl;
 }
@@ -35,7 +39,11 @@ export function mlPerHToGtt(mlPerH: number, dropFactor: number): number {
 }
 
 /** Classic gravity drip (`drip_rate`): volume/time × drop factor → whole drops. */
-export function volumeTimeToGtt(volumeMl: number, timeMin: number, dropFactor: number): number {
+export function volumeTimeToGtt(
+  volumeMl: number,
+  timeMin: number,
+  dropFactor: number,
+): number {
   if (timeMin <= 0) return NaN;
   return Math.round((volumeMl / timeMin) * dropFactor);
 }
@@ -70,9 +78,15 @@ export function burnRuleOfTenMlPerH(tbsaPct: number, weightKg: number): number {
 }
 
 /** Weight-scale a "0.2-0.3 mg/kg" or "1 mg/kg" bolus string to a mg (range). */
-export function doseRangeMg(dosePerKg: string, weightKg: number): string | null {
-  const range = dosePerKg.match(/([\d.]+)\s*(?:-|–|to)\s*([\d.]+)\s*mg\s*\/\s*kg/i);
-  if (range) return `${Math.round(Number(range[1]) * weightKg)}–${Math.round(Number(range[2]) * weightKg)} мг`;
+export function doseRangeMg(
+  dosePerKg: string,
+  weightKg: number,
+): string | null {
+  const range = dosePerKg.match(
+    /([\d.]+)\s*(?:-|–|to)\s*([\d.]+)\s*mg\s*\/\s*kg/i,
+  );
+  if (range)
+    return `${Math.round(Number(range[1]) * weightKg)}–${Math.round(Number(range[2]) * weightKg)} мг`;
   const single = dosePerKg.match(/([\d.]+)\s*mg\s*\/\s*kg/i);
   if (single) return `${Math.round(Number(single[1]) * weightKg)} мг`;
   return null;

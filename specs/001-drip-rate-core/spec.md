@@ -94,8 +94,8 @@ unambiguous, usable one-handed with gloves at night.
   tone at near-max gain, ~0.45 s each** (louder/longer than the original soft
   sine beeps — Owner decision 2026-07-21, field feedback that the original was
   too quiet to trust).
-- **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
-  plugin + native build; deferred to the APK step.*
+- **FR-3i** Auto-dim the screen in night focus — _needs the Capacitor screen-brightness
+  plugin + native build; deferred to the APK step._
 - **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
   Pacing is an explicit play/pause control on the card **and** in focus; **opening
   focus never starts or stops pacing**. The audio/haptic/flash channel toggles are
@@ -138,7 +138,7 @@ unambiguous, usable one-handed with gloves at night.
   gtt/min, time remaining). The medic can tell them apart at a glance under
   stress. **Strengthened 2026-07-22 (UX review):** the drug's actual name is
   now part of a dose-mode drip's label (previously only category +
-  concentration, e.g. "Знеболення · 1 мг/мл", with no way to tell *which*
+  concentration, e.g. "Знеболення · 1 мг/мл", with no way to tell _which_
   drug from the card alone); when two concurrent drips would otherwise share
   an identical label, both are auto-numbered ("Дріп 1"/"Дріп 2") so they're
   distinguishable without any patient data being entered.
@@ -185,13 +185,13 @@ unambiguous, usable one-handed with gloves at night.
   §4a/§4a.1/§4a.2/§4a.3.)
 
   **v5 fix (2026-07-22, three more Owner field reports):** the empty-bag
-  notification's text ("мішка порожня" alone, no lead-in) read as a
+  notification's text ("дріп порожній" alone, no lead-in) read as a
   context-free glitch; the notification consistently appeared ~1 min before
   the in-app alarm sounded; and with the drip's sound toggle off + screen
   locked, no notification arrived at all, though it was "fully correct" with
   sound on. Root cause: the reschedule effect gated each stage's OS
   notification on that stage's in-app `warned10/5/Empty` flag, and
-  rescheduling always *cancels* a drip's notification ids first — so the
+  rescheduling always _cancels_ a drip's notification ids first — so the
   moment the in-app tick (a separate, independent 1s poll) caught up and
   flipped a flag, it silently dismissed a notification the OS had already
   delivered. Because the WebView's timers suspend while the screen is
@@ -267,7 +267,7 @@ modes, >5 concurrent drips, cross-drip interaction logic.
   confirm.
 - **Rounding policy — RESOLVED (Owner, 2026-07-13):** compute **exact**, round only
   the final displayed drops/min (option A). Keep full precision internally (e.g.
-  ml/min = 0.267, not 0.26). Consequence accepted: two cells of the *sedation* table
+  ml/min = 0.267, not 0.26). Consequence accepted: two cells of the _sedation_ table
   (1.25 & 1.75 mg/kg/h) read 1 ml/h below CPG-61's printed card (CPG derives ml/h
   from rounded µg/kg/min) — clinically trivial, and the analgesia drip has no printed
   card to clash with.

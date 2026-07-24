@@ -359,7 +359,12 @@ export function DripScreen() {
         // running-drip card used to show only category+concentration
         // ("Знеболення · 1 мг/мл"), never which drug, so a medic had to infer
         // it from the concentration number alone.
-        return { drug: d, conc: c, use, label: `${d.drug} · ${use} · ${c} мг/мл` };
+        return {
+          drug: d,
+          conc: c,
+          use,
+          label: `${d.drug} · ${use} · ${c} мг/мл`,
+        };
       })
       .filter((x): x is ConcPreset => x !== null);
     list.sort((a, b) => a.conc - b.conc); // analgesia (1 mg/ml) default / left
@@ -576,12 +581,17 @@ export function DripScreen() {
         }
         return;
       }
-      const key = dripScheduleKey(d.bagMl, d.mlPerH, d.startedAt, d.silenced, d.label);
+      const key = dripScheduleKey(
+        d.bagMl,
+        d.mlPerH,
+        d.startedAt,
+        d.silenced,
+        d.label,
+      );
       if (scheduledKeyRef.current.get(d.id) === key) return;
       scheduledKeyRef.current.set(d.id, key);
       scheduleChanged = true;
-      const endAt =
-        d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+      const endAt = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
       void rescheduleDripAlarms({
         id: d.id,
         label: d.label,
@@ -600,7 +610,12 @@ export function DripScreen() {
     void forgetStaleDrips(liveIds);
     if (scheduleChanged) {
       checkNotificationHealth()
-        .then((h) => setNotifDenied(!h.permissionGranted || (h.channelImportance != null && h.channelImportance < 4)))
+        .then((h) =>
+          setNotifDenied(
+            !h.permissionGranted ||
+              (h.channelImportance != null && h.channelImportance < 4),
+          ),
+        )
         .catch(() => setNotifDenied(true));
     }
   }, [drips]);
@@ -694,9 +709,13 @@ export function DripScreen() {
         : mode === "burn"
           ? "Опікова рідина"
           : "Дріп"; // was "Крапельниця" — same word as the screen's own h1;
-          // standardized on "Дріп" to match dose mode's fallback (2026-07-22).
+    // standardized on "Дріп" to match dose mode's fallback (2026-07-22).
     const sourceRecord: Drug | Formula | null =
-      mode === "dose" ? (preset?.drug ?? null) : mode === "burn" ? (burnFormula ?? null) : null;
+      mode === "dose"
+        ? (preset?.drug ?? null)
+        : mode === "burn"
+          ? (burnFormula ?? null)
+          : null;
     setDrips((p) => {
       // Re-check against the *latest* state, not the render-closure `drips`
       // above — two addDrip() calls landing before a re-render commits (a
@@ -951,17 +970,17 @@ export function DripScreen() {
           </h2>
           {notifDenied && drips.some((d) => d.bagMl != null) && (
             <div className="banner banner--warn" role="alert">
-              ⚠ Сповіщення вимкнено або обмежені — будильник може не
-              спрацювати при заблокованому екрані. Перевір дозволи сповіщень
-              для CPP-DOSE в налаштуваннях телефону.
+              ⚠ Сповіщення вимкнено або обмежені — будильник може не спрацювати
+              при заблокованому екрані. Перевір дозволи сповіщень для CPP-DOSE в
+              налаштуваннях телефону.
             </div>
           )}
           {!notifDenied && drips.some((d) => d.bagMl != null) && (
             <div className="banner banner--hint">
               Порада: додай CPP-DOSE у виключення з оптимізації батареї
-              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
-              телефон може відкладати будильник при заблокованому екрані,
-              навіть якщо сповіщення дозволені.
+              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше телефон
+              може відкладати будильник при заблокованому екрані, навіть якщо
+              сповіщення дозволені.
             </div>
           )}
           {drips.map((d) => {
@@ -1058,7 +1077,7 @@ export function DripScreen() {
       )}
 
       {drips.length > 0 && <h2>Новий дріп</h2>}
-        <div className="seg" role="tablist" aria-label="режим">
+      <div className="seg" role="tablist" aria-label="режим">
         {presets.length > 0 && (
           <button
             className={mode === "dose" ? "on" : ""}

@@ -59,7 +59,7 @@
 // after the OS silently downgraded something mid-session.
 //
 // v5 (2026-07-22, same day — three more Owner field reports): (1) the
-// "мішка порожня" notification looked like a stray, out-of-context glitch;
+// "дріп/мішок порожній" notification looked like a stray, out-of-context glitch;
 // (2) the notification consistently appears ~1 min before the in-app alarm
 // sounds; (3) with the drip's own sound toggle off + screen locked, no
 // notification shows at all, but it's "абсолютно вірна" (fully correct) with
@@ -77,7 +77,7 @@
 // two channels (OS notification, in-app alarm) are now fully independent;
 // `warned10/5/Empty` only ever gate the in-app alarm. Also fixed here: the
 // empty-alarm text below now mirrors the 10/5-min notifications' phrasing
-// instead of a bare, context-free "мішка порожня" fragment.
+// instead of a bare, context-free "дріп/мішок порожній" fragment.
 //
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
 // passes a plain plan object) so it stays easy to reason about / test in
@@ -107,7 +107,7 @@ async function ensureChannel(): Promise<void> {
     await LocalNotifications.createChannel({
       id: CHANNEL_ID,
       name: "Будильники дріпів",
-      description: "10 хв / 5 хв / порожньо — сигнали про закінчення мішки.",
+      description: "10 хв / 5 хв / порожньо — сигнали про закінчення мішка.",
       importance: 4,
       visibility: 1,
       vibration: true,
@@ -158,10 +158,17 @@ export async function checkNotificationHealth(): Promise<NotificationHealth> {
  * existing precedent that live drips are not persisted across app restarts
  * (see DripScreen.tsx edge cases). Android notification ids are 32-bit ints;
  * a simple session-local counter avoids ever needing something bigger. */
-const idMap = new Map<string, { warn10: number; warn5: number; empty: number }>();
+const idMap = new Map<
+  string,
+  { warn10: number; warn5: number; empty: number }
+>();
 let nextId = 1;
 
-function idsFor(dripId: string): { warn10: number; warn5: number; empty: number } {
+function idsFor(dripId: string): {
+  warn10: number;
+  warn5: number;
+  empty: number;
+} {
   let ids = idMap.get(dripId);
   if (!ids) {
     ids = { warn10: nextId++, warn5: nextId++, empty: nextId++ };
@@ -238,13 +245,14 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
   if (plan.silenced) return;
   await ensureChannel();
   const now = Date.now();
-  const notifications: Parameters<typeof LocalNotifications.schedule>[0]["notifications"] =
-    [];
+  const notifications: Parameters<
+    typeof LocalNotifications.schedule
+  >[0]["notifications"] = [];
   if (plan.fireAt10 != null && plan.fireAt10 > now) {
     notifications.push({
       id: ids.warn10,
       title: "CPP-DOSE — 10 хв до кінця",
-      body: `${plan.label}: мішка закінчується приблизно через 10 хв.`,
+      body: `${plan.label}: дріп/мішок закінчується приблизно через 10 хв.`,
       channelId: CHANNEL_ID,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAt10), allowWhileIdle: true },
@@ -254,7 +262,7 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
     notifications.push({
       id: ids.warn5,
       title: "CPP-DOSE — 5 хв до кінця",
-      body: `${plan.label}: мішка закінчується приблизно через 5 хв.`,
+      body: `${plan.label}: дріп/мішок закінчується приблизно через 5 хв.`,
       channelId: CHANNEL_ID,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAt5), allowWhileIdle: true },
@@ -263,8 +271,8 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
   if (plan.fireAtEmpty != null && plan.fireAtEmpty > now) {
     notifications.push({
       id: ids.empty,
-      title: "CPP-DOSE — мішка закінчилася",
-      body: `${plan.label}: мішка закінчилася — час готувати наступну мішку / переоцінити стан.`,
+      title: "CPP-DOSE — дріп/мішок закінчився",
+      body: `${plan.label}: дріп/мішок закінчився — час готувати наступний / переоцінити стан.`,
       channelId: CHANNEL_ID,
       autoCancel: true,
       schedule: { at: new Date(plan.fireAtEmpty), allowWhileIdle: true },
