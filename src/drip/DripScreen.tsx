@@ -821,7 +821,7 @@ export function DripScreen() {
   const spd = live.gtt > 0 ? Math.round(secPerDrop(live.gtt)) : 0;
 
   return (
-    <section className="drip-screen">
+    <section>
       <div ref={flashElRef} className="flash-layer" aria-hidden="true" />
 
       {focusDrip && (
@@ -943,12 +943,121 @@ export function DripScreen() {
 
       {/* Active drips render above the calculator once any exist
           (2026-07-22 UX review — checking/muting a running drip used to
-          require scrolling past the whole setup panel every time). Ordering
-          is done via CSS (.drip-screen/.active-section/.calc-section) rather
-          than relocating this JSX, so nothing about the calculator's own
-          logic below changes. */}
-      <div className="calc-section">
-        {drips.length > 0 && <h2>Новий дріп</h2>}
+          require scrolling past the whole setup panel every time). */}
+      {drips.length > 0 && (
+        <>
+          <h2>
+            Активні дріпи ({drips.length}/{MAX_DRIPS})
+          </h2>
+          {notifDenied && drips.some((d) => d.bagMl != null) && (
+            <div className="banner banner--warn" role="alert">
+              ⚠ Сповіщення вимкнено або обмежені — будильник може не
+              спрацювати при заблокованому екрані. Перевір дозволи сповіщень
+              для CPP-DOSE в налаштуваннях телефону.
+            </div>
+          )}
+          {!notifDenied && drips.some((d) => d.bagMl != null) && (
+            <div className="banner banner--hint">
+              Порада: додай CPP-DOSE у виключення з оптимізації батареї
+              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
+              телефон може відкладати будильник при заблокованому екрані,
+              навіть якщо сповіщення дозволені.
+            </div>
+          )}
+          {drips.map((d) => {
+            const isActive = d.id === activeId;
+            const stage = alarmStage(d);
+            return (
+              <article
+                key={d.id}
+                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}`}
+              >
+                <div className="drip-tap" onClick={() => enterFocus(d.id)}>
+                  <div className="drip-mini-top">
+                    <span className="drip-mini-name">{d.label}</span>
+                    <span className="expand" aria-hidden="true">
+                      ⤢
+                    </span>
+                  </div>
+                  <div className="drip-mini-gtt">
+                    {d.gtt}
+                    <span> кр/хв</span>
+                  </div>
+                  <Chamber
+                    gtt={d.gtt}
+                    animStart={d.animStart}
+                    muted={d.id !== activeId}
+                  />
+                  <div className="drip-mini-meta">
+                    {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год ·{" "}
+                    {remaining(d)}
+                  </div>
+                  <div className="tap-hint">Тап — на весь екран</div>
+                  {d.sourceRecord && (
+                    <SourceBadge record={d.sourceRecord} compact />
+                  )}
+                </div>
+                <div className="drip-actions">
+                  <button
+                    className={isActive ? "on" : ""}
+                    onClick={() => togglePacing(d.id)}
+                  >
+                    {isActive ? "◼ Метроном" : "▶ Метроном"}
+                  </button>
+                  <button
+                    className={confirmId === d.id ? "danger" : ""}
+                    onClick={() => onRemoveClick(d.id)}
+                  >
+                    {confirmId === d.id ? "Точно прибрати?" : "Прибрати"}
+                  </button>
+                </div>
+                {d.bagMl != null && (
+                  <SilenceToggle
+                    silenced={d.silenced}
+                    hint={quietHint(d)}
+                    onSetSilenced={(v) => setSilenced(d.id, v)}
+                  />
+                )}
+              </article>
+            );
+          })}
+          {activeId != null && (
+            <div className="toggles">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={audio}
+                  onChange={(e) => setAudio(e.target.checked)}
+                />{" "}
+                Звук
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={haptic}
+                  onChange={(e) => setHaptic(e.target.checked)}
+                />{" "}
+                Вібрація
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={flashOn}
+                  onChange={(e) => setFlashOn(e.target.checked)}
+                />{" "}
+                Спалах
+              </label>
+            </div>
+          )}
+          <p className="runtime left">
+            {activeId != null
+              ? "Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом."
+              : "Тап по дріпу — фокус-режим. Запусти метроном (▶), щоб задати темп."}
+          </p>
+        </>
+      )}
+
+      {drips.length > 0 && <h2>Новий дріп</h2>}
         <div className="seg" role="tablist" aria-label="режим">
         {presets.length > 0 && (
           <button
@@ -1163,129 +1272,15 @@ export function DripScreen() {
       {mode === "dose" && preset && <SourceBadge record={preset.drug} />}
       {mode === "burn" && burnFormula && <SourceBadge record={burnFormula} />}
 
-        <button
-          className="primary add-btn"
-          disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
-          onClick={addDrip}
-        >
-          {drips.length >= MAX_DRIPS
-            ? `Максимум ${MAX_DRIPS} дріпів`
-            : "＋ Додати дріп"}
-        </button>
-      </div>
-
-      {drips.length > 0 && (
-        <div className="active-section">
-          <h2>
-            Активні дріпи ({drips.length}/{MAX_DRIPS})
-          </h2>
-          {notifDenied && drips.some((d) => d.bagMl != null) && (
-            <div className="banner banner--warn" role="alert">
-              ⚠ Сповіщення вимкнено або обмежені — будильник може не
-              спрацювати при заблокованому екрані. Перевір дозволи сповіщень
-              для CPP-DOSE в налаштуваннях телефону.
-            </div>
-          )}
-          {!notifDenied && drips.some((d) => d.bagMl != null) && (
-            <div className="banner banner--hint">
-              Порада: додай CPP-DOSE у виключення з оптимізації батареї
-              (Налаштування → Застосунки → CPP-DOSE → Батарея) — інакше
-              телефон може відкладати будильник при заблокованому екрані,
-              навіть якщо сповіщення дозволені.
-            </div>
-          )}
-          {drips.map((d) => {
-            const isActive = d.id === activeId;
-            const stage = alarmStage(d);
-            return (
-              <article
-                key={d.id}
-                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}`}
-              >
-                <div className="drip-tap" onClick={() => enterFocus(d.id)}>
-                  <div className="drip-mini-top">
-                    <span className="drip-mini-name">{d.label}</span>
-                    <span className="expand" aria-hidden="true">
-                      ⤢
-                    </span>
-                  </div>
-                  <div className="drip-mini-gtt">
-                    {d.gtt}
-                    <span> кр/хв</span>
-                  </div>
-                  <Chamber
-                    gtt={d.gtt}
-                    animStart={d.animStart}
-                    muted={d.id !== activeId}
-                  />
-                  <div className="drip-mini-meta">
-                    {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год ·{" "}
-                    {remaining(d)}
-                  </div>
-                  <div className="tap-hint">Тап — на весь екран</div>
-                  {d.sourceRecord && (
-                    <SourceBadge record={d.sourceRecord} compact />
-                  )}
-                </div>
-                <div className="drip-actions">
-                  <button
-                    className={isActive ? "on" : ""}
-                    onClick={() => togglePacing(d.id)}
-                  >
-                    {isActive ? "◼ Метроном" : "▶ Метроном"}
-                  </button>
-                  <button
-                    className={confirmId === d.id ? "danger" : ""}
-                    onClick={() => onRemoveClick(d.id)}
-                  >
-                    {confirmId === d.id ? "Точно прибрати?" : "Прибрати"}
-                  </button>
-                </div>
-                {d.bagMl != null && (
-                  <SilenceToggle
-                    silenced={d.silenced}
-                    hint={quietHint(d)}
-                    onSetSilenced={(v) => setSilenced(d.id, v)}
-                  />
-                )}
-              </article>
-            );
-          })}
-          {activeId != null && (
-            <div className="toggles">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={audio}
-                  onChange={(e) => setAudio(e.target.checked)}
-                />{" "}
-                Звук
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={haptic}
-                  onChange={(e) => setHaptic(e.target.checked)}
-                />{" "}
-                Вібрація
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={flashOn}
-                  onChange={(e) => setFlashOn(e.target.checked)}
-                />{" "}
-                Спалах
-              </label>
-            </div>
-          )}
-          <p className="runtime left">
-            {activeId != null
-              ? "Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом."
-              : "Тап по дріпу — фокус-режим. Запусти метроном (▶), щоб задати темп."}
-          </p>
-        </div>
-      )}
+      <button
+        className="primary add-btn"
+        disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
+        onClick={addDrip}
+      >
+        {drips.length >= MAX_DRIPS
+          ? `Максимум ${MAX_DRIPS} дріпів`
+          : "＋ Додати дріп"}
+      </button>
     </section>
   );
 }

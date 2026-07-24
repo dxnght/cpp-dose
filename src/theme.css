@@ -270,25 +270,6 @@ h2 {
 }
 
 /* ---- Drip engine (Spec 001) ---- */
-/* Active drips render above the "new drip" calculator once any exist
-   (2026-07-22 UX review) — reordering is done here via flex `order` rather
-   than moving the JSX in DripScreen.tsx, so the calculator's own logic
-   didn't need to move. h1 always first; .active-section (if present) second;
-   .calc-section always last. Focus/calibrator overlays are position:fixed
-   and unaffected by this. */
-.drip-screen {
-  display: flex;
-  flex-direction: column;
-}
-.drip-screen > h1 {
-  order: -2;
-}
-.active-section {
-  order: -1;
-}
-.calc-section {
-  order: 0;
-}
 .fieldlabel {
   font-size: var(--fs-2xs);
   color: var(--fg-dim);
