@@ -37,7 +37,7 @@ export function Navigation({
           reason. */}
       <button
         className="nav-aux"
-        aria-label={t("nav.disclaimer")}
+        aria-label={t("disclaimer.reopen")}
         onClick={onOpenDisclaimer}
       >
         ⓘ {t("disclaimer.reopen")}
