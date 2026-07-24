@@ -25,7 +25,7 @@ describe("safety interlocks (Art. IV) and fail-closed UI (Art. III)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Я зрозумів(-ла)" })); // dismiss first-run
     for (const scr of ["Крапельниця", "Препарати", "Про застосунок / джерела"]) {
       fireEvent.click(screen.getByRole("button", { name: scr }));
-      fireEvent.click(screen.getByRole("button", { name: "Застереження" }));
+      fireEvent.click(screen.getByRole("button", { name: "Показати повне застереження" }));
       expect(screen.getByRole("dialog")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Я зрозумів(-ла)" }));
     }
