@@ -251,6 +251,12 @@ function SilenceToggle({
   }
 
   function onPointerDown() {
+    // Reset defensively on every new press: on some Android WebViews the
+    // click that normally follows a completed hold can fail to fire (the
+    // same long-press-vs-click-callout quirk `onContextMenu` below works
+    // around), which would otherwise strand justMutedRef=true forever and
+    // silently swallow the medic's next real un-mute tap.
+    justMutedRef.current = false;
     if (silenced) return; // un-mute path is the plain onClick below
     setHolding(true);
     holdTimer.current = window.setTimeout(() => {
