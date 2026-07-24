@@ -14,6 +14,7 @@ src/clinical/field-bundle.json
 # android/local.properties and iOS signing).
 android/
 ios/
+outreach/
 
 # stray derived extract (source of truth is clinical/sources/antibiotocs-UA.pdf)
 antibiotics_uk.txt
