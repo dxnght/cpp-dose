@@ -5,6 +5,52 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (v7 — drip state now survives a restart, `fix/ux-review-findings`)
+- **Owner report:** started drips, swiped the app away, notifications still
+  arrived — "баг чи фіча, навіть не знаю".
+- **Diagnosis: the notifications are correct** (that's the entire point of
+  FR-12 — the process *is* dead; Android's AlarmManager holds the alarms, not
+  a leaked process). **The real defect was underneath it:** drip state and
+  alarms had different lifetimes. Drips died with the process (§6, on
+  purpose); alarms survived (FR-12, on purpose). So an alarm fired for a drip
+  the app could no longer show.
+- **And the v6 sweep made one case actively worse — flagged rather than
+  buried.** Medic starts a 4 h drip → Android reclaims the app (memory
+  pressure, indistinguishable from a swipe) → medic reopens an hour later →
+  the sweep cancels every remaining alarm, while the bag is *physically still
+  running*. Before v6: a contextless alarm. After v6: silence. That's a
+  regression in the dangerous direction.
+- Also found: §6 required a "running drips were lost" warning on relaunch.
+  Grepped for it — **never implemented**.
+- **Owner decision (asked, not assumed — this changes a documented spec
+  decision): persist drips + require confirmation.** New
+  `src/drip/persistence.ts`; drips are written to `localStorage` (on-device,
+  no network — Art. V untouched) and restored on launch as `unconfirmed`:
+  dashed border, dimmed, warning banner, explicit "підтвердь, що ще крапає"
+  per card. They still count down and still arm alarms — a spurious alarm
+  beats a missed one — but can't be read as verified until acknowledged. That
+  keeps §6's original concern (no false sense of a still-running countdown)
+  while ending the lifetime mismatch that caused all of this.
+- **Deliberately not persisted:** `displayTag` (may hold a callsign — the
+  2026-07-24 threat model keeps it in memory only; `serializeDrips` rebuilds
+  the record field-by-field so this holds at *runtime*, not just in the type
+  system, and there's a test that smuggles the field past a cast to prove it);
+  the `sourceRecord` snapshot (re-resolved by id from the field bundle, so
+  verified clinical content is never duplicated into mutable storage — Art.
+  I/II); `warned10/5` (recomputed from the clock, so a stale flag can't
+  suppress a warning still due).
+- Storage that's absent, malformed, or describes a bag that ran dry over an
+  hour ago is discarded silently — a dosing tool must always start. The
+  one-hour cutoff is an engineering/UX judgement, not a clinical value, and is
+  documented as such; say the word if it should be different.
+- The v6 sweep is now safe as-is: restored drips re-arm fresh alarms in the
+  same pass, and v6's scheduling gate already guarantees the sweep finishes
+  first.
+- Spec 001 → 1.13 (FR-13, AC-6f; §6's "does not persist live drips" marked
+  superseded). `test` 67/67 (was 54), `tsc -b`/lint clean.
+- **Needs on-device confirmation:** kill the app with a drip running, reopen,
+  check the drip is back, marked unconfirmed, with a sane countdown.
+
 ## 2026-07-24 (v6 notifications, branch `fix/ux-review-findings`)
 - **Fixed: alarms fired for drips that had been deleted, with the app not
   even running** (Owner field report). This is the last one in the

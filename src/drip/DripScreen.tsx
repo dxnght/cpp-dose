@@ -38,6 +38,12 @@ import {
   parseConcentrationMgPerMl,
   preSatisfiedAlarmStages,
 } from "./calc";
+import {
+  DRIPS_STORAGE_KEY,
+  deserializeDrips,
+  serializeDrips,
+  type PersistedDrip,
+} from "./persistence";
 
 interface ConcPreset {
   drug: Drug;
@@ -78,6 +84,13 @@ interface ActiveDrip {
   // touches localStorage or any file; gone the moment the drip is removed
   // or the app restarts.
   displayTag?: string;
+  // Restored from storage after an app restart and not yet acknowledged by
+  // the medic (FR-13/AC-6f, Owner decision 2026-07-24). The drip still runs
+  // its countdown and still arms its alarms — a spurious alarm is far safer
+  // than a missed one — but it renders visibly un-trusted until confirmed,
+  // so a stale countdown can never be read as a verified one. Undefined for
+  // any drip added in this session.
+  unconfirmed?: boolean;
 }
 
 type Mode = "dose" | "bagtime" | "burn";
@@ -405,7 +418,47 @@ export function DripScreen() {
   const [bagGtt, setBagGtt] = useState(5);
   const [bagMl, setBagMl] = useState(100);
 
-  const [drips, setDrips] = useState<ActiveDrip[]>([]);
+  // Restore drips left running by a previous session (FR-13/AC-6f, Owner
+  // decision 2026-07-24). They come back `unconfirmed` — countdown and alarms
+  // active, but visibly un-trusted until the medic acknowledges them (see
+  // persistence.ts for why restoring beats discarding). Lazy initialiser, so
+  // this runs before the reschedule effect and the restored drips get their
+  // alarms re-armed in the same pass that sweeps the old session's.
+  const [drips, setDrips] = useState<ActiveDrip[]>(() => {
+    const stored = deserializeDrips(LS.get(DRIPS_STORAGE_KEY), Date.now());
+    return stored.map((p) => {
+      const record =
+        p.sourceRecordId == null
+          ? null
+          : ((fieldBundle.drugs.find((d) => d.id === p.sourceRecordId) ??
+              fieldBundle.formulas.find((f) => f.id === p.sourceRecordId) ??
+              null) as Drug | Formula | null);
+      return {
+        id: p.id,
+        label: p.label,
+        gtt: p.gtt,
+        mlPerH: p.mlPerH,
+        dropFactor: p.dropFactor,
+        bagMl: p.bagMl,
+        startedAt: p.startedAt,
+        animStart: nowMs(),
+        // Recompute rather than persist: which stages already passed follows
+        // from startedAt and the clock, and persisting them would let a stale
+        // flag suppress a warning the medic should still get.
+        ...preSatisfiedAlarmStages(
+          p.bagMl,
+          p.mlPerH,
+          PRE_END_ALARM_MS_10,
+          PRE_END_ALARM_MS_5,
+        ),
+        warnedEmpty: false,
+        silenced: p.silenced,
+        sourceRecord: record,
+        // displayTag deliberately not restored — never written to disk.
+        unconfirmed: true,
+      };
+    });
+  });
   const [activeId, setActiveId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
@@ -467,6 +520,26 @@ export function DripScreen() {
   useEffect(() => {
     if (preset) LS.set("cpp-dose.drugId", preset.drug.id);
   }, [preset]);
+
+  // Persist live drips so a killed session can be restored (FR-13/AC-6f).
+  // Explicit field-by-field mapping, never a spread: `displayTag` must not
+  // reach storage (it can hold a callsign — see persistence.ts), and building
+  // the record by hand is what guarantees a future field added to ActiveDrip
+  // isn't silently written to disk too.
+  useEffect(() => {
+    const payload: PersistedDrip[] = drips.map((d) => ({
+      id: d.id,
+      label: d.label,
+      gtt: d.gtt,
+      mlPerH: d.mlPerH,
+      dropFactor: d.dropFactor,
+      bagMl: d.bagMl,
+      startedAt: d.startedAt,
+      silenced: d.silenced,
+      sourceRecordId: d.sourceRecord?.id ?? null,
+    }));
+    LS.set(DRIPS_STORAGE_KEY, serializeDrips(payload));
+  }, [drips]);
   useEffect(() => {
     wantFlashRef.current = flashOn;
   }, [flashOn]);
@@ -834,6 +907,16 @@ export function DripScreen() {
     );
   }
 
+  // Acknowledge a drip restored from a previous session (FR-13/AC-6f). Only
+  // clears the un-trusted flag — the drip's numbers and timing are untouched,
+  // since confirming means "yes, this bag is still running as shown", not
+  // "recalculate it".
+  function confirmDrip(id: string) {
+    setDrips((prev) =>
+      prev.map((x) => (x.id === id ? { ...x, unconfirmed: false } : x)),
+    );
+  }
+
   // In-app-only tag (2026-07-24 Owner decision — see ActiveDrip.displayTag).
   // Deliberately does not touch `label`, does not call rescheduleDripAlarms
   // or anything in notifications.ts — nothing here should ever reach the
@@ -1024,6 +1107,14 @@ export function DripScreen() {
           <h2>
             Активні дріпи ({drips.length}/{MAX_DRIPS})
           </h2>
+          {drips.some((d) => d.unconfirmed) && (
+            <div className="banner banner--warn" role="alert">
+              ⚠ Ці дріпи відновлено після перезапуску застосунку. Звір із
+              реальними крапельницями: підтверди ті, що ще крапають, і прибери
+              решту. Відлік показано з попередньої сесії — не покладайся на
+              нього, доки не підтвердиш.
+            </div>
+          )}
           {notifDenied && drips.some((d) => d.bagMl != null) && (
             <div className="banner banner--warn" role="alert">
               ⚠ Сповіщення вимкнено або обмежені — будильник може не спрацювати
@@ -1045,8 +1136,16 @@ export function DripScreen() {
             return (
               <article
                 key={d.id}
-                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}`}
+                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}${d.unconfirmed ? " unconfirmed" : ""}`}
               >
+                {d.unconfirmed && (
+                  <button
+                    className="drip-confirm"
+                    onClick={() => confirmDrip(d.id)}
+                  >
+                    ⟳ Відновлено після перезапуску — підтвердь, що ще крапає
+                  </button>
+                )}
                 <div className="drip-tap" onClick={() => enterFocus(d.id)}>
                   <div className="drip-mini-top">
                     <span className="drip-mini-name">

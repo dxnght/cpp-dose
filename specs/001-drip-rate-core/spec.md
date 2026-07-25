@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.12 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.13 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -24,7 +24,10 @@
   already ≤10/≤5 min total no longer immediately fires that stage's alarm
   at creation — Owner report 2026-07-24, see FR-6/AC-5a; plus (1.12)
   startup cleanup of alarms orphaned by a killed session, which were firing
-  with no drips on screen — Owner report 2026-07-24, see FR-12/AC-6e)
+  with no drips on screen — Owner report 2026-07-24, see FR-12/AC-6e; plus
+  (1.13) live drips now persist across a restart and return `unconfirmed`,
+  superseding §6's "MVP does not persist live drips" — Owner decision
+  2026-07-24, see FR-13/AC-6f)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -169,6 +172,29 @@ unambiguous, usable one-handed with gloves at night.
   holding a name) — the field's placeholder nudges toward a positional tag
   (bed/litter number) rather than a personal one (callsign, name), as a
   suggestion rather than an enforced rule.
+- **FR-13 (drip state survives an app restart, 2026-07-24 Owner decision —
+  supersedes the "MVP does not persist live drips" line in §6)** Active drips
+  are persisted on-device (`localStorage`, no network — Art. V unaffected) and
+  restored on launch. **Restored drips come back `unconfirmed`:** visibly
+  un-trusted (dashed border, dimmed) with an explicit "підтвердь, що ще
+  крапає" action, and a warning banner above the list. They still run their
+  countdown and still arm their alarms — a spurious alarm is far safer than a
+  missed one — but the medic must acknowledge each before it reads as
+  verified. *Rationale:* previously drip state died with the process while the
+  OS alarms (FR-12) survived it, so an alarm could fire for a drip the app
+  could no longer show, and the AC-6e sweep could cancel the remaining alarms
+  of a bag that was still physically running. Persisting is what makes state
+  and alarms share one lifetime; `unconfirmed` is what preserves §6's original
+  concern ("no false sense of a still-running countdown") without discarding
+  the state that keeps the medic warned.
+  **Never persisted:** `displayTag` (may hold a callsign — the 2026-07-24
+  threat model keeps it in memory only; enforced structurally in
+  `serializeDrips`, not just by types), the `sourceRecord` snapshot (re-resolved
+  by id from the field bundle, so verified content is never duplicated into
+  mutable storage — Art. I/II), and the `warned10/5` flags (recomputed from
+  the clock, so a stale flag can't suppress a warning that's still due).
+  Storage that is missing, malformed, or describes a drip that ran dry over an
+  hour ago is discarded silently — the app must always start.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
   the medic selects **one "active" drip** whose metronome sounds/vibrates at a time
   (others show visual countdown only), OR distinct cues per drip — **Owner to pick**
@@ -286,6 +312,13 @@ unambiguous, usable one-handed with gloves at night.
   cancelled and any already-delivered one is cleared from the tray. Since live
   drips are deliberately not persisted (§6), a pending drip alarm at startup
   belongs to no drip and is by definition an orphan.
+- **AC-6f (2026-07-24, Owner decision; FR-13)** After the app is killed with
+  drips running and reopened, those drips are back on screen with correct
+  elapsed/remaining time, marked `unconfirmed` (dashed border, dimmed, warning
+  banner, per-card confirm action), and their alarms are re-armed. Confirming
+  clears the marking without altering any number. A restored drip carries no
+  `displayTag`. Corrupt/absent storage, or a bag that ran dry more than an
+  hour ago, leaves the list empty rather than failing to start.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 - **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a
@@ -307,8 +340,14 @@ modes, >5 concurrent drips, cross-drip interaction logic.
 - Screen sleep / app backgrounded → alarms must still fire — **implemented
   2026-07-21 via local notifications (FR-12)**; audio metronome may still be
   suspended and re-anchors on resume (documented in architecture, §4a).
-- App killed → on relaunch, warn that running drips/timers were lost (no false
-  sense of a still-running countdown). MVP does not persist live drips.
+- ~~App killed → on relaunch, warn that running drips/timers were lost (no false
+  sense of a still-running countdown). MVP does not persist live drips.~~
+  **Superseded 2026-07-24 by FR-13/AC-6f:** drips *are* now persisted and
+  restored, because discarding them while the OS alarms survived meant alarms
+  fired for drips the app couldn't show — and, after the AC-6e sweep, could
+  cancel warnings for a bag still physically running. The original concern
+  (no false sense of a still-running countdown) is now handled by restoring
+  them `unconfirmed` rather than by throwing the state away.
 
 ## Clarifications needed
 

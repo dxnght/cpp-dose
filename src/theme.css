@@ -701,6 +701,30 @@ button.danger {
   font-weight: 400;
   opacity: 0.75;
 }
+/* Restored from a previous session, not yet acknowledged (FR-13/AC-6f).
+   Dimmed so a stale countdown never reads as a verified one, but not so
+   dim it becomes unreadable at night — the numbers still have to be usable
+   the moment the medic confirms. */
+.drip-card.unconfirmed {
+  border-style: dashed;
+  border-color: var(--warn);
+}
+.drip-card.unconfirmed .drip-tap {
+  opacity: 0.72;
+}
+.drip-confirm {
+  width: 100%;
+  min-height: var(--touch);
+  margin-bottom: 8px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--warn);
+  background: var(--warn-bg);
+  color: var(--fg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  text-align: left;
+}
 .expand {
   color: var(--accent);
   font-size: 18px;
