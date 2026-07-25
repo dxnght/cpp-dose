@@ -125,8 +125,12 @@ cpp-dose/
 ## Status
 
 MVP feature-complete (drip engine, by-drug, bag-time, burn, focus mode, calibrator).
-6 clinical records verified and live. Remaining: on-device Lighthouse pass, and each
-verified record is the Owner's sign-off (`clinical/OPEN-CLINICAL-QUESTIONS.md`).
+**43 clinical records verified and live** (31 drugs + 12 antibiotic-prophylaxis
+regimens); 8 more are still `UNVERIFIED` and are deliberately not rendered.
+Run `npm run compile:field` or `npm run gate:release` for the current count
+rather than trusting this line — it read "6" until 2026-07-24, long after the
+antibiotics set landed. Remaining: on-device Lighthouse pass, and each verified
+record is the Owner's sign-off (`clinical/OPEN-CLINICAL-QUESTIONS.md`).
 
 ## License
 

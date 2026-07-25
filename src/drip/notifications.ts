@@ -234,6 +234,10 @@ export interface DripAlarmPlan {
  * cancels first — simplest correct way to reflect retitration, silence
  * toggling, or a stage having just fired in-app. */
 export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
+  // Must complete before we hand out/reuse any id — see cancelOrphanedAlarms()
+  // for why (session-local ids restart at 1 and would collide with the very
+  // orphans being swept). Memoised, so this is a no-op after the first call.
+  await cancelOrphanedAlarms();
   const ids = idsFor(plan.id);
   try {
     await LocalNotifications.cancel({
@@ -284,6 +288,62 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
   } catch {
     /* unsupported (web/PWA) — in-app alarm remains the baseline */
   }
+}
+
+/**
+ * One-time sweep of notifications left over from a *previous* app session.
+ *
+ * v6 (2026-07-24, Owner field report): "надсилає повідомлення про закінчення
+ * дріпу навіть коли всі дріпи видалено і додаток не запущено."
+ *
+ * Root cause — a lifetime mismatch, not a logic error:
+ * - `idMap`/`nextId` above are **in-memory only** (deliberately: live drips
+ *   aren't persisted either, see DripScreen.tsx edge cases).
+ * - The notifications themselves are handed to Android's **AlarmManager**,
+ *   which survives the app being killed, swiped away, and even a reboot.
+ *
+ * So once the process dies, every id this module ever handed out is
+ * forgotten, while the alarms those ids refer to are still armed in the OS.
+ * `cancelDripAlarms()`/`forgetStaleDrips()` can only cancel ids they can
+ * still see in `idMap`, so on the next launch there is nothing left to
+ * cancel *with* — and the orphaned alarm fires on schedule, with no drips
+ * on screen and possibly no app running at all. Exactly the report.
+ *
+ * Fix: because live drips are never restored across a restart, **any**
+ * pending drip alarm at startup is by definition an orphan — there is no
+ * drip it could legitimately belong to. So sweep all of them, plus anything
+ * already sitting delivered in the tray from the same dead session.
+ *
+ * Memoised, and awaited by rescheduleDripAlarms() below, which closes a real
+ * race: `nextId` restarts at 1 each session, so a newly added drip would
+ * otherwise be handed the same ids as the orphans this sweep is cancelling,
+ * and an in-flight sweep could cancel the *new* drip's alarms. Gating
+ * scheduling on the sweep having finished makes that ordering impossible.
+ */
+let orphanSweep: Promise<void> | null = null;
+
+export function cancelOrphanedAlarms(): Promise<void> {
+  orphanSweep ??= (async () => {
+    try {
+      const pending = await LocalNotifications.getPending();
+      if (pending.notifications.length > 0) {
+        await LocalNotifications.cancel({
+          notifications: pending.notifications.map((n) => ({ id: n.id })),
+        });
+      }
+    } catch {
+      /* unsupported (web/PWA) — nothing scheduled natively to clean up */
+    }
+    try {
+      // Already-delivered ones from the dead session: same orphan status,
+      // and the medic would otherwise find a stale "мішок закінчився" in the
+      // tray for a drip that no longer exists.
+      await LocalNotifications.removeAllDeliveredNotifications();
+    } catch {
+      /* unsupported — fine */
+    }
+  })();
+  return orphanSweep;
 }
 
 /** Cancel and forget a drip's notifications entirely (removed/finished drip). */

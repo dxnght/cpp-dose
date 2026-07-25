@@ -19,6 +19,7 @@ import {
   checkNotificationHealth,
   rescheduleDripAlarms,
   cancelDripAlarms,
+  cancelOrphanedAlarms,
   forgetStaleDrips,
   dripScheduleKey,
 } from "./notifications";
@@ -530,6 +531,13 @@ export function DripScreen() {
   // than silently pretending the alarm will still fire in the background.
   useEffect(() => {
     ensureNotificationPermission().catch(() => {});
+    // Sweep alarms armed by a previous, now-dead session (v6, 2026-07-24
+    // Owner report: notifications fired for drips that had been deleted,
+    // with the app not even running). Live drips are never restored across
+    // a restart, so anything still pending here belongs to no drip. Safe to
+    // run unconditionally at mount — at this point `drips` is always empty.
+    // See cancelOrphanedAlarms() in notifications.ts for the full account.
+    cancelOrphanedAlarms().catch(() => {});
   }, []);
 
   // (Re)schedule each drip's OS-level backstop notifications only when its

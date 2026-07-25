@@ -5,6 +5,45 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (v6 notifications, branch `fix/ux-review-findings`)
+- **Fixed: alarms fired for drips that had been deleted, with the app not
+  even running** (Owner field report). This is the last one in the
+  notification saga that wasn't a logic error at all — it was a **lifetime
+  mismatch**.
+- **Root cause:** `notifications.ts` keeps its notification-id bookkeeping
+  (`idMap`, `nextId`) **in memory**, deliberately — live drips aren't
+  persisted either. But the notifications themselves are armed in Android's
+  **AlarmManager**, which survives the app being killed, swiped away, or the
+  device rebooting. So the moment the process died, every id the module had
+  handed out was forgotten while the alarms those ids referred to stayed
+  armed in the OS. `cancelDripAlarms()`/`forgetStaleDrips()` can only cancel
+  ids still visible in `idMap`, so after a restart there was nothing left to
+  cancel *with*, and the orphan fired on schedule. Within a single session
+  cleanup always worked — which is why this survived five previous rounds of
+  notification fixes.
+- **Fix:** new `cancelOrphanedAlarms()` — a memoised, once-per-launch sweep
+  that cancels every still-pending notification and clears already-delivered
+  ones from the tray. It's safe to do unconditionally *because* live drips
+  are never restored across a restart: any pending drip alarm at startup
+  belongs to no drip, by construction. Called at mount in `DripScreen.tsx`.
+- **Subtle part, worth knowing:** `rescheduleDripAlarms()` now `await`s that
+  sweep before touching any id. `nextId` restarts at 1 every launch, so a
+  drip added right after opening the app gets exactly the ids the sweep is
+  busy cancelling — without the gate, an in-flight sweep could cancel the
+  *new* drip's alarms, which is a worse failure than the one being fixed
+  (silent no-warning instead of a spurious warning).
+- New `tests/notification-orphans.test.ts` (4 tests, Capacitor plugin
+  mocked). **Verified these actually catch the bug** — removed the fix and
+  confirmed the ordering test fails, then restored it. The first draft of
+  that test passed with *and* without the fix (a bare `indexOf` comparison
+  is vacuously true when the sweep never runs at all: `-1 < anything`);
+  rewritten to assert presence before order.
+- Spec 001 → 1.12 (FR-12 note, AC-6e). `test` 54/54 (was 50), `tsc -b`/
+  lint/validate/gate:release clean. No clinical values changed.
+- **Needs on-device confirmation** — like the rest of this saga, the
+  reasoning is grounded in the actual code, but the symptom was only ever
+  observed on a real device.
+
 ## 2026-07-24 (still later, branch `fix/ux-review-findings`)
 - **Fixed: a short bag (<10 min total) immediately fired the "10 min
   left" alarm at creation** (Owner report). Root cause: `warned10`/

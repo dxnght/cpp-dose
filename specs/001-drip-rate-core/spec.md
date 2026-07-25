@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.11 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.12 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -22,7 +22,9 @@
   notifications are `VISIBILITY_PUBLIC`/lock-screen-visible by design —
   Owner decision 2026-07-24, see AC-6d; plus (1.11) a drip whose bag is
   already ≤10/≤5 min total no longer immediately fires that stage's alarm
-  at creation — Owner report 2026-07-24, see FR-6/AC-5a)
+  at creation — Owner report 2026-07-24, see FR-6/AC-5a; plus (1.12)
+  startup cleanup of alarms orphaned by a killed session, which were firing
+  with no drips on screen — Owner report 2026-07-24, see FR-12/AC-6e)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -208,6 +210,14 @@ unambiguous, usable one-handed with gloves at night.
   now recommends the medic exempt CPP-DOSE from battery optimization.
   (Owner decisions 2026-07-21/22; see `plan/architecture.md`
   §4a/§4a.1/§4a.2/§4a.3.)
+  **Orphan cleanup (2026-07-24 Owner report, see AC-6e):** notifications are
+  armed in Android's AlarmManager, which outlives the app process, while the
+  module's notification-id bookkeeping is in-memory and dies with it. A killed
+  session therefore left alarms armed that nothing could name, let alone
+  cancel — they fired later with no drips on screen and the app not running.
+  On launch the app now cancels every pending notification and clears
+  delivered ones; scheduling is gated behind that sweep, since session-local
+  ids restart at 1 and would otherwise collide with the orphans being swept.
 
   **v5 fix (2026-07-22, three more Owner field reports):** the empty-bag
   notification's text ("дріп порожній" alone, no lead-in) read as a
@@ -270,6 +280,12 @@ unambiguous, usable one-handed with gloves at night.
   never appears in any OS notification title/body (FR-12) and is never
   written to `localStorage` or any file — gone when the drip is removed or
   the app restarts, same as the rest of `drips`.
+- **AC-6e (2026-07-24, Owner report; FR-12)** After the app is killed (swiped
+  away, or reclaimed by the OS) with drips running, **no alarm from that dead
+  session ever fires**: on next launch every still-pending notification is
+  cancelled and any already-delivered one is cleared from the tray. Since live
+  drips are deliberately not persisted (§6), a pending drip alarm at startup
+  belongs to no drip and is by definition an orphan.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 - **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a
