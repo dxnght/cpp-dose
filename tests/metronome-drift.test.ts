@@ -18,6 +18,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Metronome } from "../src/drip/metronome";
+import { __resetAudioForTests } from "../src/drip/audio";
 
 interface FakeClock {
   currentTime: number;
@@ -62,6 +63,7 @@ function installFakeAudio(clock: FakeClock): { ticks: number[]; uninstall: () =>
     ticks,
     uninstall: () => {
       w.AudioContext = prev as typeof AudioContext;
+      __resetAudioForTests();
     },
   };
 }
@@ -71,6 +73,11 @@ function installFakeAudio(clock: FakeClock): { ticks: number[]; uninstall: () =>
 // scheduler always stays ahead and never has to re-anchor / drop a tick).
 function simulate(rate: number, minutes: number) {
   const clock: FakeClock = { currentTime: 0 };
+  // The app now shares ONE AudioContext between the metronome and the alarm
+  // (src/drip/audio.ts) — that shared context is what fixed the alarm being
+  // silent on iOS. It memoises, so without this reset the second simulate()
+  // in a file would keep the first case's fake and record zero ticks.
+  __resetAudioForTests();
   const { ticks: audioTicks, uninstall } = installFakeAudio(clock);
   let hapticCount = 0;
   let animCount = 0;

@@ -4,6 +4,7 @@
 // at the same tick time, so the three channels cannot drift apart.
 //
 // No network, no persistence. Audio uses a short synthesized click (no asset).
+import { getAudioContext, resumeAudio } from "./audio";
 
 export interface MetronomeChannels {
   audio: boolean;
@@ -12,16 +13,6 @@ export interface MetronomeChannels {
 }
 
 type TickHandler = () => void;
-
-type AudioCtor = typeof AudioContext;
-
-function getAudioCtor(): AudioCtor | null {
-  const w = window as unknown as {
-    AudioContext?: AudioCtor;
-    webkitAudioContext?: AudioCtor;
-  };
-  return w.AudioContext ?? w.webkitAudioContext ?? null;
-}
 
 export class Metronome {
   private ctx: AudioContext | null = null;
@@ -62,12 +53,15 @@ export class Metronome {
   start(gttPerMin: number, anchorWallSec?: number): void {
     if (gttPerMin <= 0) return;
     this.gttPerMin = gttPerMin;
+    // Shared with the alarm (see audio.ts) — one context for the whole app.
+    // Two separate contexts is how the alarm ended up silent on iOS: the
+    // metronome's got unlocked by the tap that started it, the alarm's never
+    // did.
     if (!this.ctx) {
-      const Ctor = getAudioCtor();
-      if (!Ctor) return; // no Web Audio (e.g. jsdom) — silently no-op
-      this.ctx = new Ctor();
+      this.ctx = getAudioContext();
+      if (!this.ctx) return; // no Web Audio (e.g. jsdom) — silently no-op
     }
-    if (this.ctx.state === "suspended") void this.ctx.resume();
+    resumeAudio();
     const period = 60 / gttPerMin;
     if (anchorWallSec != null && typeof performance !== "undefined") {
       // Align ticks to the visual chamber's phase (anchorWallSec + n·period) so the

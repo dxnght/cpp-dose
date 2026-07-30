@@ -48,6 +48,7 @@ import { NOTIFICATIONS_ENABLED } from "../config";
 import { nowMs, fmtHours, fmtHM } from "./format";
 import { alarm } from "./alarm-audio";
 import { Stepper, Chamber, SilenceToggle } from "./components";
+import { unlockAudio } from "./audio";
 
 interface ConcPreset {
   drug: Drug;
@@ -368,6 +369,31 @@ export function DripScreen() {
   // is not reliable once the screen locks; OS-level notifications are the
   // backstop, and they need this permission. If denied, warn the medic rather
   // than silently pretending the alarm will still fire in the background.
+  // Unlock audio on the first touch anywhere (Owner field report 2026-07-25:
+  // the alarm was completely silent on iPhone). iOS only lets an AudioContext
+  // start producing sound if it was unlocked from inside a real user gesture;
+  // an alarm firing from a timer can never do that itself. Listening once, on
+  // the first interaction of the session, means the alarm is already armed
+  // long before it's needed — rather than depending on the medic having
+  // happened to start the metronome first.
+  useEffect(() => {
+    const onFirstGesture = () => unlockAudio();
+    // `once` handles removal; capture so it runs even if a child stops
+    // propagation. Both events because a stylus/mouse won't fire touchstart.
+    window.addEventListener("pointerdown", onFirstGesture, {
+      once: true,
+      capture: true,
+    });
+    window.addEventListener("touchstart", onFirstGesture, {
+      once: true,
+      capture: true,
+    });
+    return () => {
+      window.removeEventListener("pointerdown", onFirstGesture, true);
+      window.removeEventListener("touchstart", onFirstGesture, true);
+    };
+  }, []);
+
   useEffect(() => {
     ensureNotificationPermission().catch(() => {});
     // Sweep alarms armed by a previous, now-dead session (v6, 2026-07-24
@@ -888,6 +914,10 @@ export function DripScreen() {
             <div className="banner banner--hint">
               Будильник працює, поки застосунок відкритий і екран увімкнений.
               Тримай телефон розблокованим під час дріпу.
+              <br />
+              На iPhone: перемикач «без звуку» (збоку корпусу) глушить сигнал —
+              переконайся, що він у положенні дзвінка. Вібрація й підсвітка
+              картки працюють у будь-якому разі.
             </div>
           )}
           {NOTIFICATIONS_ENABLED &&
