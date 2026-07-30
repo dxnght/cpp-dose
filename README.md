@@ -48,7 +48,7 @@ See [`memory/constitution.md`](memory/constitution.md) and
 
 ## Try it
 
-**PWA (no install, works offline after first load):** `[PWA_URL]` —
+**PWA (no install, works offline after first load):** `https://cpp-dose.probleminu.workers.dev/` —
 see [`reports/DEPLOY-PWA.md`](reports/DEPLOY-PWA.md) to publish it.
 Note the web build's alarm only runs while the app is open and the screen is
 on; the Android APK adds the OS-level locked-screen backstop.
