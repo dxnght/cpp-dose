@@ -22,6 +22,8 @@ export function AboutScreen() {
           ))}
         </ul>
       )}
+      <h2>{t("about.credits")}</h2>
+      <p className="about-credits">{t("about.creditsBody")}</p>
     </section>
   );
 }

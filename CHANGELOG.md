@@ -5,6 +5,56 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-25 (alarm was silent on iPhone — four real bugs, not a platform limit)
+- **Owner field report:** on iPhone the alarm changed the card colour but made
+  **no sound**. Easy to write off as "PWA/iOS limitation" — it wasn't. Four
+  separate defects in `alarm()`, each independently enough to silence it, and
+  all four failing *silently* because the function swallowed everything in a
+  bare `catch`. For the app's primary safety signal that's the worst possible
+  failure mode.
+  1. **A fresh `AudioContext` built inside a timer callback.** iOS starts any
+     context created outside a user gesture in `suspended` state, and a
+     suspended context plays nothing. The metronome worked only because
+     `Metronome.start()` happens to run from a tap, unlocking *its own,
+     different* context — which is exactly why it looked like "the app makes
+     sound but the alarm doesn't".
+  2. **`resume()` never called.** iOS suspends the context whenever the app is
+     backgrounded and leaves it that way on return.
+  3. **No `webkitAudioContext` fallback** (the metronome had one). On Safari
+     builds exposing only the prefixed constructor, `alarm()` found
+     `undefined` and did nothing at all.
+  4. **A leaked context per alarm, never closed.** iOS caps concurrent
+     AudioContexts (historically ~4); past that, construction throws — into
+     that same empty `catch`.
+- **Fix:** new `src/drip/audio.ts` — one shared context for the whole app,
+  created once, unlocked from the first user gesture (a one-sample silent
+  buffer, which is what iOS actually requires; `resume()` alone isn't enough
+  on older versions), and resumed defensively before every sound. `alarm()`
+  and `Metronome` now both use it. `DripScreen` unlocks on the first
+  pointerdown/touchstart of the session, so the alarm is armed long before
+  it's needed rather than depending on the medic having started the metronome.
+- **A test caught a bug in the fix itself** — `alarm()` called `resumeAudio()`
+  *before* `getAudioContext()`, and since resume only acts on an
+  already-created context, the very first alarm of a session skipped the
+  resume entirely. That is precisely the case that matters. Order swapped;
+  the test pins it.
+- New `tests/alarm-audio.test.ts` (6 tests), one per defect plus the
+  beep-count-per-stage escalation. `tests/metronome-drift.test.ts` updated for
+  the now-shared context (it memoises, so each case resets it).
+- **Still genuinely not fixable here, and now said in the UI:** on iPhone the
+  hardware Ring/Silent switch mutes Web Audio. A native app can override that
+  with an AVAudioSession `playback` category; a web app cannot. The drip
+  screen's hint now tells the medic to check the switch and notes that
+  vibration and the card highlight work regardless.
+- **Notifications not arriving in the PWA is expected**, not a bug: the PWA is
+  built with `VITE_VARIANT=play`, which compiles the OS-notification layer out
+  entirely — and iOS PWAs can't schedule local notifications anyway.
+- Attribution added to the About screen and README: «Створено інструкторами
+  151 НЦ, за підтримки Тактичної Медицини "ПІВНІЧ"».
+- `test` 80/80 (was 74), `tsc -b`/lint clean. No clinical values changed.
+- **Needs on-device recheck:** iPhone, ring switch ON, tap the screen once,
+  then let a drip reach its 10-min mark.
+
 ## 2026-07-24 (simplification pass, branch `fix/ux-review-findings`)
 - **`variant/play-store` replaced by a build flag — it had rotted 20 commits
   behind.** Found while answering the Owner's "should we rewrite natively"

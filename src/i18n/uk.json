@@ -30,6 +30,8 @@
   "about.protocolVersion": "Версія протоколу",
   "about.sources": "Джерела",
   "about.noVerifiedSources": "Немає підтверджених клінічних джерел у цій збірці.",
+  "about.credits": "Автори",
+  "about.creditsBody": "Створено інструкторами 151 НЦ, за підтримки Тактичної Медицини «ПІВНІЧ».",
   "badge.verified": "ПІДТВЕРДЖЕНО",
   "badge.unverified": "НЕ ПІДТВЕРДЖЕНО",
   "badge.engineering": "МАТЕМАТИКА",

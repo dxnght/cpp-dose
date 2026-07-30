@@ -12,6 +12,8 @@ animation — all fully offline, at night, with gloves.
 
 Ukrainian UI · offline (zero network at runtime) · light + dark themes · Android + iOS.
 
+> **Створено інструкторами 151 НЦ, за підтримки Тактичної Медицини «ПІВНІЧ».**
+
 ---
 
 ## What it does
