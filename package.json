@@ -23,7 +23,9 @@
     "cap:sync": "cap sync android && npm run android:patch",
     "android:patch": "node scripts/patch-android-manifest.mjs",
     "ios:sync": "cap sync ios",
-    "ios:open": "npm run build && cap sync ios && cap open ios"
+    "ios:open": "npm run build && cap sync ios && cap open ios",
+    "build:play": "VITE_VARIANT=play npm run build",
+    "apk:play": "VITE_VARIANT=play npm run build && VITE_VARIANT=play npx cap sync android && VITE_VARIANT=play node scripts/patch-android-manifest.mjs && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",

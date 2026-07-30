@@ -39,6 +39,30 @@ if (!existsSync(MANIFEST)) {
   process.exit(0);
 }
 
+// Play Store variant must NOT declare USE_EXACT_ALARM — it's a Play-restricted
+// permission for apps whose core function is precise timing, and a dosing
+// calculator declaring it is a real rejection risk (see src/config.ts and
+// reports/PLAY-STORE-READINESS-2026-07-22.md). Actively *removes* it too, so
+// switching variants in an existing android/ folder can't leave it behind.
+if (process.env.VITE_VARIANT === "play") {
+  const xml = readFileSync(MANIFEST, "utf8");
+  if (!xml.includes(PERMISSION_TAG)) {
+    console.log(
+      "android:patch — play variant, USE_EXACT_ALARM absent as required. Nothing to do.",
+    );
+    process.exit(0);
+  }
+  const stripped = xml
+    .split("\n")
+    .filter((line) => !line.includes(PERMISSION_TAG))
+    .join("\n");
+  writeFileSync(MANIFEST, stripped);
+  console.log(
+    "android:patch — play variant: removed USE_EXACT_ALARM from AndroidManifest.xml.",
+  );
+  process.exit(0);
+}
+
 const xml = readFileSync(MANIFEST, "utf8");
 
 if (xml.includes(PERMISSION_TAG)) {
