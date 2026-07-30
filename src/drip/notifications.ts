@@ -1,91 +1,41 @@
 // OS-level local notifications for the drip pre-end/at-empty alarms — Spec 001
-// FR-12 (2026-07-21). The in-app alarm() (AudioContext + Haptics) only fires
-// while the JS runtime is actually running; on a locked screen, Android
-// suspends the WebView's timers, so the in-app alarm can fire minutes late (or
-// not at all) — Owner-reported 2026-07-21 (fired 7 min late after screen-off).
-// Local notifications are scheduled via Android's AlarmManager (through the
-// Capacitor plugin), which keeps working with the screen locked. Runs
-// entirely on-device — no network call, consistent with Art. V.
+// FR-12. The in-app alarm() (AudioContext + Haptics) only fires while the JS
+// runtime is running; Android suspends a WebView's timers on a locked screen,
+// so the in-app alarm alone can fire minutes late or not at all. Local
+// notifications go through Android's AlarmManager (via the Capacitor plugin),
+// which keeps working with the screen locked. Entirely on-device — no network
+// call, consistent with Art. V.
 //
-// v2 (2026-07-21, same day): the first version scheduled onto the plugin's
-// implicit "Default" channel (IMPORTANCE_DEFAULT), which posted the
-// notification but produced no audible/vibration signal reliably enough to
-// notice on a locked screen — Owner-reported. Android notification channels
-// are immutable after first creation (importance/sound/vibration can't be
-// changed later, only by the user in system settings), so this uses a new,
-// dedicated, explicitly HIGH-importance channel instead of trying to alter
-// the old one. See `ensureChannel()`.
+// ⚠ This module went through seven on-device iterations. The full account —
+// what each round fixed, and which invariants must not be re-broken — is in
+// `decisions/ADR-0008-notification-saga.md`. Read it before changing anything
+// here. The short version of the two rules it exists to protect:
 //
-// v3 (2026-07-22): Owner reported v2 made *less* visible on the lock screen
-// (no vibration there either, and the notification itself stopped showing on
-// the locked screen at all — a regression). Root-caused by reading the
-// plugin's own Android source (LocalNotificationManager.java): every
-// notification unconditionally got `.setVisibility(VISIBILITY_PRIVATE)`,
-// completely ignoring whatever the channel's lock-screen visibility was set
-// to — the channel-level `visibility` option in v2 was therefore a no-op.
-// Patched via `patch-package` (see `patches/`, `npm run postinstall`) to
-// `VISIBILITY_PUBLIC` instead — editing node_modules directly doesn't
-// survive `npm install`, patch-package does. Also removed `ongoing: true`
-// (added in v2): the most likely trigger for the lock-screen regression —
-// some OEM Android skins deprioritize "ongoing" notifications (treating them
-// as a low-priority background-service indicator, like a music player) for
-// heads-up/lock-screen display. Bumped to a fresh channel id (`-v3`) since
-// channel settings are immutable once created — any earlier, differently
-// configured channel on a test device would otherwise stay stuck forever.
-// Note: this plugin has no `fullScreenIntent`/`CATEGORY_ALARM` support at
-// all (checked the Java source) — that's the actual mechanism alarm-clock
-// and incoming-call apps (and likely Telegram's calls) use to wake/break
-// through a fully locked screen. Getting that would need a small custom
-// native Android plugin, a separate, bigger piece of work.
-//
-// v3 field report (2026-07-22, same day): three on-device tests came back
-// inconsistent — unlocked/no-alarm-sound "fine"; locked-but-lit "nothing at
-// all"; locked-and-asleep "everything worked, both locked and after
-// unlocking". The one variable the Owner tracked (the drip's own "Звук"
-// toggle — the *metronome tick*, unrelated in code to this module at all)
-// doesn't explain the pattern; screen-on-vs-off doesn't line up with Doze
-// theory either (Doze is *more* restrictive screen-off, but that's the
-// scenario that worked). The much more likely explanator: Android's App
-// Standby / battery-optimization bucket for this app, which depends on how
-// recently the app was actively used, not on any toggle inside it — exactly
-// why messaging apps like Telegram (which the Owner compared this to) ask
-// for battery-optimization exemption. This can't be fixed by any config in
-// this module; it needs the *user* to exempt the app once, or ideally the
-// app to prompt for it (still no custom native plugin needed — Android
-// exposes `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` as a plain intent).
-// Added `checkHealth()` below so the in-app warning banner reflects the
-// *current* permission/channel state on every drip change, not a one-time
-// snapshot from app launch — the old code could show a stale "fine" even
-// after the OS silently downgraded something mid-session.
-//
-// v5 (2026-07-22, same day — three more Owner field reports): (1) the
-// "дріп/мішок порожній" notification looked like a stray, out-of-context glitch;
-// (2) the notification consistently appears ~1 min before the in-app alarm
-// sounds; (3) with the drip's own sound toggle off + screen locked, no
-// notification shows at all, but it's "абсолютно вірна" (fully correct) with
-// sound on. Root cause, found in DripScreen.tsx, not here: the reschedule
-// effect gated fireAt10/5/Empty on `d.warned10/5/Empty` (`d.warned10 ? null :
-// ...`), and rescheduleDripAlarms() below unconditionally *cancels* a drip's
-// 3 notification ids on every call. So the instant the in-app tick (its own
-// independent 1s poll) noticed the same threshold and flipped e.g.
-// `warned10`, this ran again and cancelled — i.e. dismissed — notification
-// id `warn10`, even if the OS had already shown it. On a locked screen the
-// WebView's timers are suspended and only catch up once the screen is
-// unlocked/the app reopened, so this self-cancel fired right as the medic
-// looked at the phone — explaining all three reports at once (see the full
-// account in DripScreen.tsx's reschedule-effect comment). Fixed there: the
-// two channels (OS notification, in-app alarm) are now fully independent;
-// `warned10/5/Empty` only ever gate the in-app alarm. Also fixed here: the
-// empty-alarm text below now mirrors the 10/5-min notifications' phrasing
-// instead of a bare, context-free "дріп/мішок порожній" fragment.
+//   1. The OS notification and the in-app alarm are INDEPENDENT channels for
+//      the same event. `warned10/5/Empty` gate the in-app audio ONLY and must
+//      never cause an OS notification to be cancelled (v5 self-cancel bug).
+//   2. Notification ids are session-local; the alarms they name outlive the
+//      process. cancelOrphanedAlarms() reconciles that at startup, and
+//      scheduling must wait for it (v6).
 //
 // This module is deliberately decoupled from `ActiveDrip` (DripScreen.tsx
-// passes a plain plan object) so it stays easy to reason about / test in
+// passes a plain plan object) so it stays easy to reason about and test in
 // isolation. All calls are best-effort: any failure (unsupported browser in
 // the web/PWA build, permission denied, plugin unavailable) is swallowed —
 // this is a reliability *enhancement*, it must never crash or block the
 // in-app alarm path, which remains the fail-closed baseline.
 import { LocalNotifications } from "@capacitor/local-notifications";
+import { NOTIFICATIONS_ENABLED } from "../config";
+
+// Play Store variant (VITE_VARIANT=play): the whole OS-notification layer is
+// compiled out behaviourally — every exported function below early-returns,
+// so DripScreen keeps one unconditional call site and doesn't sprout `if
+// (variant)` branches. See src/config.ts for why this is a build flag rather
+// than the separate branch it used to be.
+//
+// checkHealth() reports "granted" in that build on purpose: the in-app alarm
+// is then the only channel, and warning the medic about a notification
+// permission that this build never uses would be noise, not safety.
 
 /** Dedicated alarm channel — deliberately not the plugin's implicit "Default"
  * one (see note above). IMPORTANCE_HIGH (5) = heads-up popup + sound even
@@ -132,6 +82,10 @@ export interface NotificationHealth {
 }
 
 export async function checkNotificationHealth(): Promise<NotificationHealth> {
+  // Play build: nothing to be unhealthy about — see the note at the import.
+  if (!NOTIFICATIONS_ENABLED) {
+    return { permissionGranted: true, channelImportance: null };
+  }
   // The two checks are independent — run them concurrently instead of
   // sequentially awaiting one after the other; each keeps its own fallback
   // via Promise.allSettled so one platform not supporting listChannels
@@ -183,6 +137,8 @@ let permissionRequested = false;
  * granted). Returns whether notifications can actually be shown — the caller
  * uses this to warn the medic if background alarms won't work. */
 export async function ensureNotificationPermission(): Promise<boolean> {
+  // Play build: never prompt for a permission this build doesn't use.
+  if (!NOTIFICATIONS_ENABLED) return false;
   try {
     const cur = await LocalNotifications.checkPermissions();
     if (cur.display !== "granted" && !permissionRequested) {
@@ -234,6 +190,7 @@ export interface DripAlarmPlan {
  * cancels first — simplest correct way to reflect retitration, silence
  * toggling, or a stage having just fired in-app. */
 export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
+  if (!NOTIFICATIONS_ENABLED) return;
   // Must complete before we hand out/reuse any id — see cancelOrphanedAlarms()
   // for why (session-local ids restart at 1 and would collide with the very
   // orphans being swept). Memoised, so this is a no-op after the first call.
@@ -323,6 +280,10 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
 let orphanSweep: Promise<void> | null = null;
 
 export function cancelOrphanedAlarms(): Promise<void> {
+  // Play build schedules nothing, so there is nothing to orphan. (A build
+  // switched play→apk on the same device is covered too: the apk build does
+  // sweep, and it sweeps everything pending.)
+  if (!NOTIFICATIONS_ENABLED) return Promise.resolve();
   orphanSweep ??= (async () => {
     try {
       const pending = await LocalNotifications.getPending();
@@ -348,6 +309,7 @@ export function cancelOrphanedAlarms(): Promise<void> {
 
 /** Cancel and forget a drip's notifications entirely (removed/finished drip). */
 export async function cancelDripAlarms(dripId: string): Promise<void> {
+  if (!NOTIFICATIONS_ENABLED) return;
   const ids = idMap.get(dripId);
   if (!ids) return;
   idMap.delete(dripId);
