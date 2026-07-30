@@ -5,6 +5,44 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-24 (simplification pass, branch `fix/ux-review-findings`)
+- **`variant/play-store` replaced by a build flag — it had rotted 20 commits
+  behind.** Found while answering the Owner's "should we rewrite natively"
+  question: the branch we were preparing *specifically to publish on Google
+  Play* was missing every fix from the preceding two days (mute
+  text-selection, short-bag false alarm, `displayTag`, v6 orphan sweep, v7
+  persistence, the new icon). A release cut from it would have shipped
+  known-broken. New `src/config.ts` + `VITE_VARIANT=play|apk`: one codebase,
+  the notification subsystem no-ops in the Play build, and
+  `patch-android-manifest.mjs` now actively *removes* `USE_EXACT_ALARM` for
+  that variant (so switching variants can't leave it behind). New
+  `npm run build:play` / `apk:play`. 7 tests in `tests/variant-play.test.ts`
+  pin that the flag really disables scheduling — including two that prove the
+  default build still schedules, so the test can't pass by mocking things
+  into silence.
+- **Notification archaeology moved to `decisions/ADR-0008-notification-saga.md`.**
+  `notifications.ts` was 368 lines of which 177 (48%) were comments — seven
+  rounds of on-device debugging history. Valuable (it's what stops v5's
+  self-cancel being reintroduced) but it doubled the reading cost of the
+  module. File is now 330 lines with a short header naming the two invariants
+  that must not be re-broken, pointing at the ADR for the full account.
+  **No behaviour changed.**
+- **`DripScreen.tsx` 1479 → 1244 lines.** Extracted the self-contained leaves:
+  `format.ts` (nowMs/fmtHours/fmtHM/dur), `alarm-audio.ts` (the in-app tone),
+  `components.tsx` (Stepper/Chamber/SilenceToggle). Mechanical, behaviour
+  unchanged, covered by the existing suite. The larger hook extraction
+  (`useDrips`/`useDripAlarms`) is still worth doing but is a bigger, riskier
+  change — left for its own pass rather than bundled in here.
+- New `reports/DEPLOY-PWA.md` — step-by-step to a public PWA URL (~3 h). The
+  PWA was already fully configured in `vite.config.ts`; nothing needed
+  building, only hosting. This is the cheapest route to real users: no store
+  review, no 12-testers-for-14-days, no fees, and it's a way to test iOS
+  *now* without the macOS/Xcode upgrade.
+- Grant materials reviewed before first send: stale "50 автотестів" → 74,
+  `[PWA_URL]` slots added to every pitch, and a pre-send checklist added at
+  the top of `outreach/PITCH-MESSAGES-2026-07-24.md`.
+- `test` 74/74 (was 67), `tsc -b`/lint/validate/gate:release clean.
+
 ## 2026-07-24 (v7 — drip state now survives a restart, `fix/ux-review-findings`)
 - **Owner report:** started drips, swiped the app away, notifications still
   arrived — "баг чи фіча, навіть не знаю".

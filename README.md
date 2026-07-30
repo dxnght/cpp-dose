@@ -46,6 +46,26 @@ A wrong number can kill, so the app is **fail-closed by construction**:
 See [`memory/constitution.md`](memory/constitution.md) and
 [`specs/005-clinical-content-pipeline`](specs/005-clinical-content-pipeline/spec.md).
 
+## Try it
+
+**PWA (no install, works offline after first load):** `[PWA_URL]` —
+see [`reports/DEPLOY-PWA.md`](reports/DEPLOY-PWA.md) to publish it.
+Note the web build's alarm only runs while the app is open and the screen is
+on; the Android APK adds the OS-level locked-screen backstop.
+
+## Build variants
+
+One codebase, two builds (replaced the old `variant/play-store` branch, which
+drifted 20 commits behind before anyone noticed):
+
+```bash
+npm run build            # apk variant (default) — full alarm stack
+npm run build:play       # Play Store variant — no OS notifications,
+                         #   no USE_EXACT_ALARM (Play-restricted permission)
+```
+
+See [`src/config.ts`](src/config.ts) for why the split exists.
+
 ## Quick start
 
 ```bash
