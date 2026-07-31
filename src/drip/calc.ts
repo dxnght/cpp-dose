@@ -61,6 +61,36 @@ export function bagRunHours(volumeMl: number, mlPerH: number): number {
 }
 
 /**
+ * Re-anchor a running drip's `startedAt` after its rate changes (retitration
+ * in Focus mode), so the existing `startedAt + bagRunHours(bagMl, mlPerH) *
+ * 3600_000` end-time formula — used everywhere: in-app alarms, the OS
+ * notification reschedule, `remaining()`, `quietHint()` — keeps landing on
+ * the true remaining-volume end time.
+ *
+ * Retitration only ever changes the rate; `bagMl` (the original bag size)
+ * and the formula above stay untouched. Without re-anchoring `startedAt`,
+ * that formula silently re-ran the WHOLE original bag at the NEW rate from
+ * the ORIGINAL start — e.g. dropping a 500 ml/200 ml-h bag to 100 ml/h an
+ * hour in computed an end time a full hour after the bag actually runs dry
+ * (bug found in code review 2026-08-01).
+ *
+ * Solving `startedAt' + bagMl/newRate = now + (bagMl - infused)/newRate` for
+ * `startedAt'`, where `infused = (now - startedAt) * oldRate`, cancels
+ * `bagMl` out entirely: the new anchor only needs how much time has elapsed
+ * at the OLD rate, scaled by how much the rate just changed. That also makes
+ * this correct across repeated retitrations — each call re-anchors from
+ * whatever the previous call (or the original creation) left behind.
+ */
+export function retitratedStartedAt(
+  startedAt: number,
+  oldMlPerH: number,
+  newMlPerH: number,
+  now: number,
+): number {
+  return now - (now - startedAt) * (oldMlPerH / newMlPerH);
+}
+
+/**
  * Whether a bag's total run time is already at/under a pre-end warning
  * threshold from the moment it starts — i.e. there is no point during this
  * drip where "more than N ms remain" was ever true, so crossing down

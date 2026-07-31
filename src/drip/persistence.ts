@@ -25,6 +25,8 @@
 //   mutable storage, which would be a second, unverifiable copy (Art. I/II).
 // - `animStart` — a `performance.now()` value, meaningless across processes.
 
+import { bagRunHours, DROP_FACTORS, VOLUME } from "./calc";
+
 /** Shape written to storage. Deliberately a narrow, explicit subset — not a
  * spread of ActiveDrip — so adding a field to ActiveDrip can never silently
  * start persisting it (the `displayTag` rule above depends on that). */
@@ -84,7 +86,7 @@ export function serializeDrips(drips: PersistedDrip[]): string {
 /** Bag run time in ms, or null when the drip has no bag timer. */
 function endsAt(d: PersistedDrip): number | null {
   if (d.bagMl == null || d.mlPerH <= 0) return null;
-  return d.startedAt + (d.bagMl / d.mlPerH) * 3600_000;
+  return d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
 }
 
 /**
@@ -114,17 +116,36 @@ export function deserializeDrips(
     if (typeof c.id !== "string" || c.id === "") return false;
     if (typeof c.label !== "string") return false;
     if (typeof c.gtt !== "number" || !Number.isFinite(c.gtt)) return false;
-    if (typeof c.mlPerH !== "number" || !Number.isFinite(c.mlPerH)) return false;
+    // > 0, not just finite: a live-created drip's rate can never be <= 0
+    // (addDrip() only ever runs with live.gtt > 0), and a non-positive rate
+    // makes endsAt() below return null, which bypassed the staleness check
+    // a few lines down — a corrupt record could restore as a live drip
+    // instead of being dropped as long-dead.
     if (
-      typeof c.dropFactor !== "number" ||
-      !Number.isFinite(c.dropFactor) ||
-      c.dropFactor <= 0
+      typeof c.mlPerH !== "number" ||
+      !Number.isFinite(c.mlPerH) ||
+      c.mlPerH <= 0
     ) {
       return false;
     }
+    // Restricted to the same set the drop-factor selector actually offers
+    // (calc.ts DROP_FACTORS), not just "positive" — a restored drip
+    // shouldn't be able to carry a value the live-creation UI could never
+    // produce.
+    if (
+      typeof c.dropFactor !== "number" ||
+      !(DROP_FACTORS as readonly number[]).includes(c.dropFactor)
+    ) {
+      return false;
+    }
+    // Same idea for bagMl: within the stepper's clamp range (calc.ts
+    // VOLUME), not just finite — `null` (no bag timer) still passes through.
     if (
       c.bagMl !== null &&
-      (typeof c.bagMl !== "number" || !Number.isFinite(c.bagMl))
+      (typeof c.bagMl !== "number" ||
+        !Number.isFinite(c.bagMl) ||
+        c.bagMl < VOLUME.min ||
+        c.bagMl > VOLUME.max)
     ) {
       return false;
     }

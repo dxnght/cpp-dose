@@ -5,6 +5,7 @@ import {
   mlPerHToGtt,
   secPerDrop,
   bagRunHours,
+  retitratedStartedAt,
   parseConcentrationMgPerMl,
   burnRuleOfTenMlPerH,
   doseRangeMg,
@@ -93,6 +94,47 @@ describe("preSatisfiedAlarmStages (Owner-reported regression, 2026-07-24)", () =
       warned10: false,
       warned5: false,
     });
+  });
+});
+
+describe("retitratedStartedAt (code review 2026-08-01 — retitration finish-time bug)", () => {
+  const START = 1_700_000_000_000;
+
+  it("preserves the true remaining-volume end time across a rate change", () => {
+    // 500 ml bag at 200 ml/h; after 1h, 200 ml infused, 300 ml left. Dropping
+    // to 100 ml/h should still empty the bag 4h after the original start
+    // (1h elapsed + 300/100h remaining) — not 5h (500/100h from scratch).
+    const oneHourIn = START + 3600_000;
+    const newStart = retitratedStartedAt(START, 200, 100, oneHourIn);
+    const endAt = newStart + bagRunHours(500, 100) * 3600_000;
+    expect(endAt).toBe(START + 4 * 3600_000);
+  });
+
+  it("is a no-op when the rate doesn't change", () => {
+    const now = START + 1234;
+    expect(retitratedStartedAt(START, 100, 100, now)).toBe(START);
+  });
+
+  it("speeding up moves the end time earlier, not later (the safe direction)", () => {
+    const oneHourIn = START + 3600_000;
+    const newStart = retitratedStartedAt(START, 100, 200, oneHourIn);
+    const endAt = newStart + bagRunHours(500, 200) * 3600_000;
+    // Original rate (100 ml/h) would have emptied at START + 5h.
+    expect(endAt).toBeLessThan(START + 5 * 3600_000);
+  });
+
+  it("handles a second retitration correctly (re-anchors from the first)", () => {
+    // 500 ml @ 200 ml/h -> after 1h, drop to 100 ml/h -> after another 1h
+    // (2h total elapsed), drop to 50 ml/h.
+    // At the second retitration: 200 ml infused in hour 1, 100 ml infused in
+    // hour 2 (at 100 ml/h) = 300 ml infused total, 200 ml left. At 50 ml/h
+    // that's 4h more, so the bag should empty at START + 2h + 4h = START+6h.
+    const oneHourIn = START + 3600_000;
+    const twoHoursIn = START + 2 * 3600_000;
+    const afterFirst = retitratedStartedAt(START, 200, 100, oneHourIn);
+    const afterSecond = retitratedStartedAt(afterFirst, 100, 50, twoHoursIn);
+    const endAt = afterSecond + bagRunHours(500, 50) * 3600_000;
+    expect(endAt).toBe(START + 6 * 3600_000);
   });
 });
 
