@@ -65,7 +65,7 @@ export class Metronome {
     const period = 60 / gttPerMin;
     if (anchorWallSec != null && typeof performance !== "undefined") {
       // Align ticks to the visual chamber's phase (anchorWallSec + n·period) so the
-      // audio tick, the screen flash and the drop animation share one phase.
+      // audio tick and the drop animation share one phase.
       const wallNow = performance.now() / 1000;
       const off = wallNow - this.ctx.currentTime; // wall = audio + off
       const k = Math.ceil((wallNow + 0.08 - anchorWallSec) / period);

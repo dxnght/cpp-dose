@@ -104,3 +104,14 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 
 - Accounts, cloud sync, analytics/telemetry, patient records, any data
   transmission, AI-generated clinical content. (Constitution Art. V.)
+
+- **Silent screen-flash metronome channel** — a full-screen tint pulsing on
+  each drop, for pacing under sound *and* vibration discipline. Built, shipped,
+  then **removed 2026-07-25** at the Owner's call ("не потрібен наразі"). Taken
+  out rather than left behind a setting: an unused toggle on a safety-critical
+  night screen is one a medic can hit by accident. Restoring it is small — the
+  metronome's `setTickHandler` already exists for exactly this kind of channel,
+  and the removal is one commit to revert. Revisit only if a medic asks for a
+  fully silent pacing mode; note that on an iPhone PWA there is no vibration
+  either (WebKit has no Vibration API), so for that platform a visual channel
+  is the *only* silent option there could be.

@@ -3,7 +3,7 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.13 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.14 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
   alarms fire with the screen locked, on a dedicated HIGH-importance channel,
@@ -27,7 +27,10 @@
   with no drips on screen — Owner report 2026-07-24, see FR-12/AC-6e; plus
   (1.13) live drips now persist across a restart and return `unconfirmed`,
   superseding §6's "MVP does not persist live drips" — Owner decision
-  2026-07-24, see FR-13/AC-6f)
+  2026-07-24, see FR-13/AC-6f; plus (1.14) the silent screen-flash metronome
+  channel removed (FR-3l) and the iOS platform limits on audio/vibration
+  stated in-app rather than implied — Owner decision + field report
+  2026-07-25)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -93,9 +96,19 @@ unambiguous, usable one-handed with gloves at night.
   drops/min with live **retitration** (±1 gtt/min), and a large chamber. The chamber
   shares the card's phase via a per-drip `animStart` anchor, so opening focus
   **continues the phase — it never restarts**.
-- **FR-3f Phase sync.** The audio metronome, the optional silent **screen flash**,
-  and the chamber animation are all anchored to the active drip's `animStart` (ticks
-  at `animStart + n·period`) so sound, flash and drop share one phase. (ADR-0005.)
+- **FR-3f Phase sync.** The audio metronome and the chamber animation are both
+  anchored to the active drip's `animStart` (ticks at `animStart + n·period`) so
+  sound and drop share one phase. (ADR-0005.)
+  *~~The optional silent **screen flash** was a third channel on this anchor;
+  removed 2026-07-25 by Owner decision — see FR-3l.~~*
+- **FR-3l Silent screen flash — removed (Owner decision 2026-07-25).** The
+  metronome previously had a third, fully silent channel: a full-screen tint
+  pulsing on each drop, for pacing under sound and vibration discipline. Owner
+  judged it unnecessary in practice and asked for it to be dropped. Removed
+  rather than hidden behind a setting, because an unused option on a
+  safety-critical screen is still something a medic can switch on by accident
+  at night. The chamber animation remains as the visual channel.
+  *Restoring it is straightforward if a medic ever asks — logged in `IDEAS.md`.*
 - **FR-3g Tap calibrator.** Tapping in time with the real chamber (≥3 taps) measures
   the actual gtt/min being run + its bag run-time; applies to the "Час мішка" calc.
 - **FR-3h** Confirm-to-remove (two-tap) for a running drip; remembered last drop
@@ -109,7 +122,7 @@ unambiguous, usable one-handed with gloves at night.
   plugin + native build; deferred to the APK step._
 - **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
   Pacing is an explicit play/pause control on the card **and** in focus; **opening
-  focus never starts or stops pacing**. The audio/haptic/flash channel toggles are
+  focus never starts or stops pacing**. The audio/haptic channel toggles are
   shown **only while a drip is pacing** (they only describe how the metronome
   signals) — so there is no "sound is on but nothing plays" state. (Fixed 2026-07-15.)
 - **FR-3k** The drip-chamber drop is **muted/grey when that drip is not pacing** (its

@@ -610,15 +610,6 @@ button.danger {
   color: var(--danger);
   background: transparent;
 }
-.flash-layer {
-  position: fixed;
-  inset: 0;
-  background: var(--accent);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 60ms ease;
-  z-index: 200;
-}
 .focus-overlay {
   position: fixed;
   inset: 0;

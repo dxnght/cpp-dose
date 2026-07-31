@@ -3,8 +3,8 @@
 // two-stage pre-end alarm — 10 min and 5 min remaining (Owner decision
 // 2026-07-21, expanding the single 5→10 min change from 2026-07-18); one
 // audible metronome at a time (FR-9). Focus mode with
-// live retitration, a phase-synced drip-chamber animation shared with a silent
-// screen-flash and the audio metronome, confirm-to-remove, tap-to-calibrate, and
+// live retitration, a phase-synced drip-chamber animation shared with the audio
+// metronome, confirm-to-remove, tap-to-calibrate, and
 // remembered last drop-factor/drug. All math is engineering; drug concentrations
 // and the burn Rule of Ten come from VERIFIED records only (fail-closed).
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -233,13 +233,10 @@ export function DripScreen() {
   const [notifDenied, setNotifDenied] = useState(false);
   const [audio, setAudio] = useState(true);
   const [haptic, setHaptic] = useState(true);
-  const [flashOn, setFlashOn] = useState(false);
   const [calib, setCalib] = useState(false);
   const [taps, setTaps] = useState<number[]>([]);
 
   const metronome = useRef<Metronome | null>(null);
-  const flashElRef = useRef<HTMLDivElement>(null);
-  const wantFlashRef = useRef(false);
   const confirmTimer = useRef<number | null>(null);
   const startedRef = useRef<string | null>(null);
   // Per-drip "last scheduled" key (2026-07-22, v5 notification fix — see the
@@ -308,27 +305,14 @@ export function DripScreen() {
     LS.set(DRIPS_STORAGE_KEY, serializeDrips(payload));
   }, [drips]);
   useEffect(() => {
-    wantFlashRef.current = flashOn;
-  }, [flashOn]);
-
-  useEffect(() => {
     const m = new Metronome();
     m.setHapticHandler(() => tapHaptic());
-    m.setTickHandler(() => {
-      if (!wantFlashRef.current) return;
-      const el = flashElRef.current;
-      if (!el) return;
-      el.style.opacity = "0.5";
-      window.setTimeout(() => {
-        if (el) el.style.opacity = "0";
-      }, 90);
-    });
     metronome.current = m;
     return () => m.stop();
   }, []);
 
   // (Re)start the metronome only when the active drip or its rate changes, anchored
-  // to that drip's animStart so audio, flash and animation share one phase.
+  // to that drip's animStart so audio and animation share one phase.
   useEffect(() => {
     const m = metronome.current;
     if (!m) return;
@@ -762,8 +746,6 @@ export function DripScreen() {
 
   return (
     <section>
-      <div ref={flashElRef} className="flash-layer" aria-hidden="true" />
-
       {focusDrip && (
         <div
           className="focus-overlay"
@@ -842,14 +824,6 @@ export function DripScreen() {
                 />{" "}
                 Вібрація
               </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={flashOn}
-                  onChange={(e) => setFlashOn(e.target.checked)}
-                />{" "}
-                Спалах
-              </label>
             </div>
           )}
           <div className="focus-hint">Торкніться фону, щоб вийти</div>
@@ -915,9 +889,11 @@ export function DripScreen() {
               Будильник працює, поки застосунок відкритий і екран увімкнений.
               Тримай телефон розблокованим під час дріпу.
               <br />
-              На iPhone: перемикач «без звуку» (збоку корпусу) глушить сигнал —
-              переконайся, що він у положенні дзвінка. Вібрація й підсвітка
-              картки працюють у будь-якому разі.
+              <strong>На iPhone у веб-версії:</strong> вібрації немає (Safari її
+              не підтримує), а бічний перемикач «без звуку» глушить сигнал. Тобто
+              з вимкненим звуком лишиться <em>лише</em> підсвітка картки —
+              перевір, що перемикач у положенні дзвінка. Для вібрації потрібна
+              Android-збірка (APK).
             </div>
           )}
           {NOTIFICATIONS_ENABLED &&
@@ -1027,19 +1003,11 @@ export function DripScreen() {
                 />{" "}
                 Вібрація
               </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={flashOn}
-                  onChange={(e) => setFlashOn(e.target.checked)}
-                />{" "}
-                Спалах
-              </label>
             </div>
           )}
           <p className="runtime left">
             {activeId != null
-              ? "Тап по дріпу — фокус-режим. «Спалах» — беззвучний темп світлом."
+              ? "Тап по дріпу — фокус-режим."
               : "Тап по дріпу — фокус-режим. Запусти метроном (▶), щоб задати темп."}
           </p>
         </>
