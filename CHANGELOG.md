@@ -5,6 +5,33 @@ working agreement #5). Grouped by day; not a 1:1 mirror of `git log` — see tha
 full commit-level detail. Clinical-content verification changes are also logged
 separately, per-record, in `clinical/VERIFICATION-LOG.md`.
 
+## 2026-07-25 (later — vibration on iPhone, and the screen flash removed)
+- **Vibration on iPhone: genuinely impossible in the web build, unlike the
+  alarm sound.** Owner reported the drip doesn't buzz on iPhone. Re-checked
+  rather than assumed, because the sound turned out to be our bug an hour
+  earlier: **WebKit has never shipped the Vibration API** — no flag, no
+  prefixed variant, nothing a web page can reach the taptic engine with.
+  Where vibration does work: Android web/PWA ✔, Android APK ✔, native iOS app
+  ✔ (Capacitor Haptics → `UIImpactFeedbackGenerator`), iPhone PWA ✘.
+- **Why that matters more than a missing nicety:** on an iPhone PWA with the
+  ring switch on silent, there is now **no non-visual alarm channel at all**.
+  The drip hint says that outright — check the ring switch, and use the
+  Android APK if vibration is needed — instead of leaving the medic to assume
+  a buzz that can't come. `haptics.ts` documents the per-platform matrix so
+  this isn't rediscovered later.
+- **Screen flash removed (Owner: "не потрібен наразі").** The metronome's
+  third, fully silent channel — a full-screen tint pulsing on each drop —
+  is gone: state, refs, tick handler, the overlay element, both toggles, the
+  CSS layer, and the hint text that advertised it. Taken out rather than
+  hidden behind a setting: an unused option on a safety-critical night screen
+  is one a medic can switch on by accident. Spec 001 FR-3l records the removal
+  and FR-3f no longer claims a three-channel phase anchor; `IDEAS.md` notes how
+  to restore it (the metronome's `setTickHandler` seam still exists) and that
+  on iPhone PWA a visual channel is the *only* silent option there could be —
+  worth remembering if a medic ever asks for silent pacing.
+- Spec 001 → 1.14. `test` 80/80, `tsc -b`/lint clean. No clinical values
+  changed.
+
 ## 2026-07-25 (alarm was silent on iPhone — four real bugs, not a platform limit)
 - **Owner field report:** on iPhone the alarm changed the card colour but made
   **no sound**. Easy to write off as "PWA/iOS limitation" — it wasn't. Four
