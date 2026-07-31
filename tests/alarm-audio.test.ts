@@ -9,6 +9,7 @@
 // See src/drip/audio.ts for the full account.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { fakeGainNode } from "./fake-gain-node";
 
 interface Created {
   count: number;
@@ -39,13 +40,7 @@ function installFakeAudio(opts: { prefixedOnly?: boolean } = {}): Created {
       return Promise.resolve();
     }
     createGain() {
-      return {
-        gain: {
-          setValueAtTime() {},
-          exponentialRampToValueAtTime() {},
-        },
-        connect() {},
-      };
+      return fakeGainNode();
     }
     createOscillator() {
       return {
