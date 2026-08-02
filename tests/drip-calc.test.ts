@@ -137,6 +137,18 @@ describe("retitratedStartedAt (code review 2026-08-01 — retitration finish-tim
     const endAt = afterSecond + bagRunHours(500, 50) * 3600_000;
     expect(endAt).toBe(START + 6 * 3600_000);
   });
+
+  it("clamps a backward clock jump instead of anchoring into the future (code review 2026-08-02)", () => {
+    // Device clock is corrected backward after the drip started, so `now`
+    // ends up before `startedAt`. Without clamping, elapsed time would go
+    // negative and the new anchor would land after `now` — a startedAt in
+    // the future, which deserializeDrips() would reject outright on the
+    // next restart, silently losing an otherwise-live drip.
+    const clockJumpedBack = START - 60_000;
+    const newStart = retitratedStartedAt(START, 200, 100, clockJumpedBack);
+    expect(newStart).toBe(clockJumpedBack);
+    expect(newStart).toBeLessThanOrEqual(clockJumpedBack);
+  });
 });
 
 describe("dripEndsAt (code review 2026-08-02 — single source for the bag end-time formula)", () => {

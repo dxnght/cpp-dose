@@ -87,7 +87,14 @@ export function retitratedStartedAt(
   newMlPerH: number,
   now: number,
 ): number {
-  return now - (now - startedAt) * (oldMlPerH / newMlPerH);
+  // Clamp to 0 (code review 2026-08-02): a backward device-clock jump
+  // between the drip's last anchor and this call would otherwise make
+  // `now - startedAt` negative, pushing the new anchor into the future.
+  // deserializeDrips() rejects any persisted startedAt > now, so that drip
+  // would vanish entirely on the next restart instead of just showing a
+  // temporarily wrong remaining time.
+  const elapsed = Math.max(0, now - startedAt);
+  return now - elapsed * (oldMlPerH / newMlPerH);
 }
 
 /** Absolute epoch-ms a bag started at `startedAt` and running at `mlPerH`
