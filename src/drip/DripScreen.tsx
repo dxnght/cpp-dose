@@ -135,7 +135,22 @@ const LS = {
 };
 
 
-export function DripScreen() {
+// Reported to the parent (App.tsx) so the bottom nav can badge the
+// "Крапельниця" tab with the active-drip count — since DripScreen now stays
+// mounted (just `hidden`) across tab navigation, a drip's clock keeps
+// running while the medic is on Drugs/About with nothing on that screen to
+// show it. `stage` mirrors alarmStage() below, worst across all drips, so
+// the badge can escalate the same way a card does.
+export interface DripBadgeStatus {
+  count: number;
+  stage: "" | "warn10" | "warn5" | "empty";
+}
+
+export function DripScreen({
+  onStatusChange,
+}: {
+  onStatusChange?: (status: DripBadgeStatus) => void;
+} = {}) {
   const presets: ConcPreset[] = useMemo(() => {
     const list = fieldBundle.drugs
       // Fail-closed (Art. III), quietly excluding rather than throwing
@@ -573,6 +588,21 @@ export function DripScreen() {
     void forgetStaleDrips(liveIds);
     if (scheduleChanged) refreshNotifHealth();
   }, [drips]);
+
+  useEffect(() => {
+    if (!onStatusChange) return;
+    let stage: DripBadgeStatus["stage"] = "";
+    for (const d of drips) {
+      const s = alarmStage(d);
+      if (s === "empty") {
+        stage = "empty";
+        break;
+      }
+      if (s === "warn5") stage = "warn5";
+      else if (s === "warn10" && stage === "") stage = "warn10";
+    }
+    onStatusChange({ count: drips.length, stage });
+  }, [drips, onStatusChange]);
 
   useEffect(() => {
     if (drips.length === 0) return;

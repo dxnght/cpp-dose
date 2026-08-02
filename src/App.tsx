@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { DisclaimerBanner } from "./components/DisclaimerBanner";
 import { FirstRunDisclaimer } from "./components/FirstRunDisclaimer";
 import { Navigation, type Screen } from "./components/Navigation";
 import { DrugsScreen } from "./screens/DrugsScreen";
 import { AboutScreen } from "./screens/AboutScreen";
-import { DripScreen } from "./drip/DripScreen";
+import { DripScreen, type DripBadgeStatus } from "./drip/DripScreen";
 
 const DISCLAIMER_ACK_KEY = "cpp-dose.disclaimer.acknowledged.v1";
+
+const NO_DRIPS: DripBadgeStatus = { count: 0, stage: "" };
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("drip");
@@ -14,6 +16,19 @@ export function App() {
   const [showDisclaimer, setShowDisclaimer] = useState(
     () => localStorage.getItem(DISCLAIMER_ACK_KEY) !== "1",
   );
+  // Badges the nav's "Крапельниця" tab with the active-drip count (UX fix,
+  // 2026-08-02) — DripScreen stays mounted-but-hidden on tab-away (see
+  // below), so without this the medic loses all visibility into running
+  // drips the moment they check Drugs/About. Stable identity + bail-if-
+  // unchanged so DripScreen's reporting effect can't loop through App.
+  const [dripStatus, setDripStatus] = useState<DripBadgeStatus>(NO_DRIPS);
+  const handleDripStatusChange = useCallback((status: DripBadgeStatus) => {
+    setDripStatus((prev) =>
+      prev.count === status.count && prev.stage === status.stage
+        ? prev
+        : status,
+    );
+  }, []);
 
   const acknowledge = () => {
     localStorage.setItem(DISCLAIMER_ACK_KEY, "1");
@@ -36,12 +51,17 @@ export function App() {
             removes it from layout and the accessibility tree without
             stopping its effects/timers. */}
         <div hidden={screen !== "drip"}>
-          <DripScreen />
+          <DripScreen onStatusChange={handleDripStatusChange} />
         </div>
         {screen === "drugs" && <DrugsScreen />}
         {screen === "about" && <AboutScreen />}
       </main>
-      <Navigation active={screen} onNavigate={setScreen} onOpenDisclaimer={() => setShowDisclaimer(true)} />
+      <Navigation
+        active={screen}
+        onNavigate={setScreen}
+        onOpenDisclaimer={() => setShowDisclaimer(true)}
+        dripStatus={dripStatus}
+      />
       {showDisclaimer && <FirstRunDisclaimer onAcknowledge={acknowledge} />}
     </div>
   );
