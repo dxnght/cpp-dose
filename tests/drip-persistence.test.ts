@@ -104,6 +104,28 @@ describe("drip persistence rejects anything unusable", () => {
     expect(deserializeDrips(JSON.stringify([drip({ gtt: -1 })]), NOW)).toEqual([]);
   });
 
+  it("dropFactor accepts any value in the DROP_FACTOR sanity range, not just today's preset list (code review 2026-08-02)", () => {
+    // A drip created by a future/past build could legitimately carry a
+    // dropFactor outside today's exact [10, 15, 20] UI preset list — it
+    // should still restore as long as it's within the calc.ts DROP_FACTOR
+    // sanity range (1-100 gtt/ml), rather than being silently dropped.
+    const out = deserializeDrips(
+      JSON.stringify([drip({ dropFactor: 25 })]),
+      NOW,
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].dropFactor).toBe(25);
+  });
+
+  it("dropFactor outside the sanity range is still rejected", () => {
+    expect(
+      deserializeDrips(JSON.stringify([drip({ dropFactor: 0 })]), NOW),
+    ).toEqual([]);
+    expect(
+      deserializeDrips(JSON.stringify([drip({ dropFactor: 150 })]), NOW),
+    ).toEqual([]);
+  });
+
   it("keeps the good entries and drops only the bad ones", () => {
     const mixed = [drip({ id: "good" }), { ...drip({ id: "bad" }), gtt: null }];
     const out = deserializeDrips(JSON.stringify(mixed), NOW);

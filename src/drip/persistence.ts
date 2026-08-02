@@ -25,7 +25,7 @@
 //   mutable storage, which would be a second, unverifiable copy (Art. I/II).
 // - `animStart` — a `performance.now()` value, meaningless across processes.
 
-import { dripEndsAt, DROP_FACTORS, VOLUME } from "./calc";
+import { dripEndsAt, DROP_FACTOR, VOLUME } from "./calc";
 
 /** Shape written to storage. Deliberately a narrow, explicit subset — not a
  * spread of ActiveDrip — so adding a field to ActiveDrip can never silently
@@ -134,13 +134,18 @@ export function deserializeDrips(
     ) {
       return false;
     }
-    // Restricted to the same set the drop-factor selector actually offers
-    // (calc.ts DROP_FACTORS), not just "positive" — a restored drip
-    // shouldn't be able to carry a value the live-creation UI could never
-    // produce.
+    // Sanity range (calc.ts DROP_FACTOR), not exact membership in the
+    // current DROP_FACTORS UI preset list (code review 2026-08-02): a
+    // live-created drip's dropFactor always was one of those presets *for
+    // the app version that created it*, but rejecting anything outside
+    // today's preset list would silently drop an otherwise-legitimate,
+    // still-running drip — alarms and all — if that list is ever changed in
+    // a later build. Still rejects anything the UI could never produce.
     if (
       typeof c.dropFactor !== "number" ||
-      !(DROP_FACTORS as readonly number[]).includes(c.dropFactor)
+      !Number.isFinite(c.dropFactor) ||
+      c.dropFactor < DROP_FACTOR.min ||
+      c.dropFactor > DROP_FACTOR.max
     ) {
       return false;
     }
