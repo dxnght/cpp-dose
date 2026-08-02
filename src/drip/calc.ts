@@ -90,6 +90,21 @@ export function retitratedStartedAt(
   return now - (now - startedAt) * (oldMlPerH / newMlPerH);
 }
 
+/** Absolute epoch-ms a bag started at `startedAt` and running at `mlPerH`
+ * will run dry. The single source for this formula — used at drip creation,
+ * restore, retitration, the OS-notification reschedule, and both in-app
+ * remaining-time displays — so it can't drift out of sync between them
+ * (code review 2026-08-02). Callers own their own "no bag timer"/"rate not
+ * positive" guard, since what that case means differs by call site
+ * (Infinity vs. null vs. "—"). */
+export function dripEndsAt(
+  startedAt: number,
+  bagMl: number,
+  mlPerH: number,
+): number {
+  return startedAt + bagRunHours(bagMl, mlPerH) * 3600_000;
+}
+
 /**
  * Whether a bag's total run time is already at/under a pre-end warning
  * threshold from the moment it starts — i.e. there is no point during this

@@ -33,7 +33,7 @@ import {
   doseToMlPerH,
   mlPerHToGtt,
   secPerDrop,
-  bagRunHours,
+  dripEndsAt,
   retitratedStartedAt,
   burnRuleOfTenMlPerH,
   doseRangeMg,
@@ -223,7 +223,7 @@ export function DripScreen() {
       // restart — the same formula the tick effect below uses — fixes that.
       const remMs =
         p.bagMl != null && p.mlPerH > 0
-          ? p.startedAt + bagRunHours(p.bagMl, p.mlPerH) * 3600_000 - restoredAt
+          ? dripEndsAt(p.startedAt, p.bagMl, p.mlPerH) - restoredAt
           : Infinity;
       return {
         id: p.id,
@@ -529,7 +529,7 @@ export function DripScreen() {
       if (scheduledKeyRef.current.get(d.id) === key) return;
       scheduledKeyRef.current.set(d.id, key);
       scheduleChanged = true;
-      const endAt = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+      const endAt = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH);
       // Explicit field list, not `...d` — deliberate (2026-07-24). `d` also
       // carries `displayTag` (see ActiveDrip), which must never reach the
       // OS notification: that channel is VISIBILITY_PUBLIC (shows on the
@@ -590,8 +590,7 @@ export function DripScreen() {
       let changed = false;
       const next = prev.map((d) => {
         if (d.bagMl == null || d.mlPerH <= 0) return d;
-        const remMs =
-          d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+        const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
         if (!d.warned10 && remMs <= PRE_END_ALARM_MS_10 && remMs > 0) {
           if (!d.silenced) alarm("warn10");
           changed = true;
@@ -779,7 +778,7 @@ export function DripScreen() {
 
   function remaining(d: ActiveDrip): string {
     if (d.bagMl == null || d.mlPerH <= 0) return "—";
-    const remMs = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+    const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
     if (remMs <= 0) return "порожньо";
     const min = Math.floor(remMs / 60_000);
     return min >= 60
@@ -792,7 +791,7 @@ export function DripScreen() {
   // how long "Без будильника" will actually stay quiet. Never drives logic.
   function quietHint(d: ActiveDrip): string | null {
     if (d.bagMl == null || d.mlPerH <= 0) return null;
-    const remMs = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+    const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
     const quietMs = remMs - PRE_END_ALARM_MS_10;
     if (quietMs <= 0) return null;
     const min = Math.floor(quietMs / 60_000);

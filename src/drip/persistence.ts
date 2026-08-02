@@ -25,7 +25,7 @@
 //   mutable storage, which would be a second, unverifiable copy (Art. I/II).
 // - `animStart` — a `performance.now()` value, meaningless across processes.
 
-import { bagRunHours, DROP_FACTORS, VOLUME } from "./calc";
+import { dripEndsAt, DROP_FACTORS, VOLUME } from "./calc";
 
 /** Shape written to storage. Deliberately a narrow, explicit subset — not a
  * spread of ActiveDrip — so adding a field to ActiveDrip can never silently
@@ -86,7 +86,7 @@ export function serializeDrips(drips: PersistedDrip[]): string {
 /** Bag run time in ms, or null when the drip has no bag timer. */
 function endsAt(d: PersistedDrip): number | null {
   if (d.bagMl == null || d.mlPerH <= 0) return null;
-  return d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+  return dripEndsAt(d.startedAt, d.bagMl, d.mlPerH);
 }
 
 /**

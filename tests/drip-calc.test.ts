@@ -6,6 +6,7 @@ import {
   secPerDrop,
   bagRunHours,
   retitratedStartedAt,
+  dripEndsAt,
   parseConcentrationMgPerMl,
   burnRuleOfTenMlPerH,
   doseRangeMg,
@@ -135,6 +136,20 @@ describe("retitratedStartedAt (code review 2026-08-01 — retitration finish-tim
     const afterSecond = retitratedStartedAt(afterFirst, 100, 50, twoHoursIn);
     const endAt = afterSecond + bagRunHours(500, 50) * 3600_000;
     expect(endAt).toBe(START + 6 * 3600_000);
+  });
+});
+
+describe("dripEndsAt (code review 2026-08-02 — single source for the bag end-time formula)", () => {
+  const START = 1_700_000_000_000;
+
+  it("matches startedAt + bagRunHours(bagMl, mlPerH)", () => {
+    expect(dripEndsAt(START, 500, 100)).toBe(
+      START + bagRunHours(500, 100) * 3600_000,
+    );
+  });
+
+  it("(500 ml @ 100 ml/h) ends 5h after start", () => {
+    expect(dripEndsAt(START, 500, 100)).toBe(START + 5 * 3600_000);
   });
 });
 
