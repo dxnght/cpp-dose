@@ -84,6 +84,8 @@ describe("drip persistence rejects anything unusable", () => {
     const bad = [
       { ...drip(), id: "" },
       { ...drip(), gtt: "20" },
+      { ...drip(), gtt: 0 },
+      { ...drip(), gtt: -5 },
       { ...drip(), mlPerH: Number.NaN },
       { ...drip(), dropFactor: 0 },
       { ...drip(), silenced: "no" },
@@ -93,6 +95,13 @@ describe("drip persistence rejects anything unusable", () => {
       "nonsense",
     ];
     expect(deserializeDrips(JSON.stringify(bad), NOW)).toEqual([]);
+  });
+
+  it("gtt <= 0 is rejected the same way mlPerH <= 0 already was (code review 2026-08-02)", () => {
+    // A live-created drip's gtt can never be <= 0 (addDrip() requires
+    // live.gtt > 0), so a record claiming otherwise is corrupt.
+    expect(deserializeDrips(JSON.stringify([drip({ gtt: 0 })]), NOW)).toEqual([]);
+    expect(deserializeDrips(JSON.stringify([drip({ gtt: -1 })]), NOW)).toEqual([]);
   });
 
   it("keeps the good entries and drops only the bad ones", () => {

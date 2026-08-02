@@ -115,7 +115,13 @@ export function deserializeDrips(
     const c = d as Record<string, unknown>;
     if (typeof c.id !== "string" || c.id === "") return false;
     if (typeof c.label !== "string") return false;
-    if (typeof c.gtt !== "number" || !Number.isFinite(c.gtt)) return false;
+    // > 0, not just finite (code review 2026-08-02): a live-created drip's
+    // gtt can never be <= 0 (addDrip() only ever runs with live.gtt > 0) —
+    // same reasoning as mlPerH below. A corrupt record could otherwise
+    // restore as a live drip with a nonsensical pacing rate.
+    if (typeof c.gtt !== "number" || !Number.isFinite(c.gtt) || c.gtt <= 0) {
+      return false;
+    }
     // > 0, not just finite: a live-created drip's rate can never be <= 0
     // (addDrip() only ever runs with live.gtt > 0), and a non-positive rate
     // makes endsAt() below return null, which bypassed the staleness check
