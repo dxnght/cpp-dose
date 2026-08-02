@@ -220,7 +220,17 @@ export function DripScreen() {
       // already fired and been acknowledged came back with warned10 seeded
       // false again (total run time was still well over 10 min), and the
       // very next tick re-fired it. Using actual remaining time as of this
-      // restart — the same formula the tick effect below uses — fixes that.
+      // restart — the same formula the tick effect below uses — fixes that
+      // for warned10/warned5: they're informational heads-ups, so replaying
+      // one the medic already got would be a nuisance, not a safety gain.
+      //
+      // warnedEmpty is deliberately NOT seeded from remMs the same way (code
+      // review 2026-08-02): unlike the heads-ups, "bag empty" is the one
+      // alarm this app must never silently withhold. If the bag ran dry
+      // while the process was dead, the medic never heard it — seeding
+      // warnedEmpty=true here would suppress it forever with nothing left to
+      // correct that. Always false, so a bag already empty at restore still
+      // sounds "empty" on the very next tick.
       const remMs =
         p.bagMl != null && p.mlPerH > 0
           ? dripEndsAt(p.startedAt, p.bagMl, p.mlPerH) - restoredAt
@@ -236,7 +246,7 @@ export function DripScreen() {
         animStart: nowMs(),
         warned10: remMs <= PRE_END_ALARM_MS_10,
         warned5: remMs <= PRE_END_ALARM_MS_5,
-        warnedEmpty: remMs <= 0,
+        warnedEmpty: false,
         silenced: p.silenced,
         sourceRecord: record,
         // displayTag deliberately not restored — never written to disk.
