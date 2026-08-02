@@ -732,6 +732,7 @@ export function DripScreen() {
   }
 
   function retitrate(id: string, delta: number) {
+    const now = Date.now();
     setDrips((p) =>
       p.map((d) => {
         if (d.id !== id) return d;
@@ -739,13 +740,26 @@ export function DripScreen() {
         const mlPerH = (gtt * 60) / d.dropFactor;
         // See calc.ts — keeps the true remaining-volume end time instead of
         // silently re-running the whole original bag at the new rate.
-        const startedAt = retitratedStartedAt(
-          d.startedAt,
-          d.mlPerH,
+        const startedAt = retitratedStartedAt(d.startedAt, d.mlPerH, mlPerH, now);
+        // Retitration can push remaining time back above an already-crossed
+        // threshold (e.g. slowing the drip down) — reset that stage's warned
+        // flag so a later, genuine re-crossing sounds the alarm again (code
+        // review 2026-08-02). Never set a flag *to* true here: the `now`
+        // tick effect below is the only place that plays alarm(), and it
+        // fires naturally on its next 1s tick if the flag isn't already true.
+        const remMs =
+          d.bagMl != null && mlPerH > 0
+            ? dripEndsAt(startedAt, d.bagMl, mlPerH) - now
+            : Infinity;
+        return {
+          ...d,
+          gtt,
           mlPerH,
-          Date.now(),
-        );
-        return { ...d, gtt, mlPerH, startedAt };
+          startedAt,
+          warned10: remMs > PRE_END_ALARM_MS_10 ? false : d.warned10,
+          warned5: remMs > PRE_END_ALARM_MS_5 ? false : d.warned5,
+          warnedEmpty: remMs > 0 ? false : d.warnedEmpty,
+        };
       }),
     );
   }
