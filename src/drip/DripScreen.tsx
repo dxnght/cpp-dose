@@ -453,8 +453,17 @@ export function DripScreen() {
     // schedule-key effect only re-runs on a timing/label change. Setting it
     // here too means the medic tapping "Allow" always resolves it correctly,
     // however that race lands.
+    //
+    // Uses refreshNotifHealth() (code review 2026-08-02), not a bare
+    // `setNotifDenied(!ok)`: ensureNotificationPermission()'s boolean only
+    // reflects the OS permission, not channel importance, so a channel the
+    // OS/user silently downgraded (permission still "granted") read as fine
+    // here — and because this promise can resolve after the schedule-key
+    // effect's own refreshNotifHealth() call below, it could overwrite an
+    // already-correct "degraded" banner back to "fine". Calling the same
+    // full health check here too closes that gap.
     ensureNotificationPermission()
-      .then((ok) => setNotifDenied(!ok))
+      .then(() => refreshNotifHealth())
       .catch(() => {});
     // Sweep alarms armed by a previous, now-dead session (v6, 2026-07-24
     // Owner report: notifications fired for drips that had been deleted,
