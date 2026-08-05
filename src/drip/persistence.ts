@@ -25,6 +25,8 @@
 //   mutable storage, which would be a second, unverifiable copy (Art. I/II).
 // - `animStart` — a `performance.now()` value, meaningless across processes.
 
+import { dripEndsAt, DROP_FACTOR, VOLUME } from "./calc";
+
 /** Shape written to storage. Deliberately a narrow, explicit subset — not a
  * spread of ActiveDrip — so adding a field to ActiveDrip can never silently
  * start persisting it (the `displayTag` rule above depends on that). */
@@ -84,7 +86,7 @@ export function serializeDrips(drips: PersistedDrip[]): string {
 /** Bag run time in ms, or null when the drip has no bag timer. */
 function endsAt(d: PersistedDrip): number | null {
   if (d.bagMl == null || d.mlPerH <= 0) return null;
-  return d.startedAt + (d.bagMl / d.mlPerH) * 3600_000;
+  return dripEndsAt(d.startedAt, d.bagMl, d.mlPerH);
 }
 
 /**
@@ -113,18 +115,48 @@ export function deserializeDrips(
     const c = d as Record<string, unknown>;
     if (typeof c.id !== "string" || c.id === "") return false;
     if (typeof c.label !== "string") return false;
-    if (typeof c.gtt !== "number" || !Number.isFinite(c.gtt)) return false;
-    if (typeof c.mlPerH !== "number" || !Number.isFinite(c.mlPerH)) return false;
+    // > 0, not just finite (code review 2026-08-02): a live-created drip's
+    // gtt can never be <= 0 (addDrip() only ever runs with live.gtt > 0) —
+    // same reasoning as mlPerH below. A corrupt record could otherwise
+    // restore as a live drip with a nonsensical pacing rate.
+    if (typeof c.gtt !== "number" || !Number.isFinite(c.gtt) || c.gtt <= 0) {
+      return false;
+    }
+    // > 0, not just finite: a live-created drip's rate can never be <= 0
+    // (addDrip() only ever runs with live.gtt > 0), and a non-positive rate
+    // makes endsAt() below return null, which bypassed the staleness check
+    // a few lines down — a corrupt record could restore as a live drip
+    // instead of being dropped as long-dead.
     if (
-      typeof c.dropFactor !== "number" ||
-      !Number.isFinite(c.dropFactor) ||
-      c.dropFactor <= 0
+      typeof c.mlPerH !== "number" ||
+      !Number.isFinite(c.mlPerH) ||
+      c.mlPerH <= 0
     ) {
       return false;
     }
+    // Sanity range (calc.ts DROP_FACTOR), not exact membership in the
+    // current DROP_FACTORS UI preset list (code review 2026-08-02): a
+    // live-created drip's dropFactor always was one of those presets *for
+    // the app version that created it*, but rejecting anything outside
+    // today's preset list would silently drop an otherwise-legitimate,
+    // still-running drip — alarms and all — if that list is ever changed in
+    // a later build. Still rejects anything the UI could never produce.
+    if (
+      typeof c.dropFactor !== "number" ||
+      !Number.isFinite(c.dropFactor) ||
+      c.dropFactor < DROP_FACTOR.min ||
+      c.dropFactor > DROP_FACTOR.max
+    ) {
+      return false;
+    }
+    // Same idea for bagMl: within the stepper's clamp range (calc.ts
+    // VOLUME), not just finite — `null` (no bag timer) still passes through.
     if (
       c.bagMl !== null &&
-      (typeof c.bagMl !== "number" || !Number.isFinite(c.bagMl))
+      (typeof c.bagMl !== "number" ||
+        !Number.isFinite(c.bagMl) ||
+        c.bagMl < VOLUME.min ||
+        c.bagMl > VOLUME.max)
     ) {
       return false;
     }

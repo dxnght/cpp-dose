@@ -49,6 +49,11 @@ import { NOTIFICATIONS_ENABLED } from "../config";
 // NotificationManager constants. Not confirmed as the cause of the v3 field
 // report, but a real bug on its own — fixed to the correct constant.
 const CHANNEL_ID = "drip-alarms-v4";
+// Android's scale is 0..4 (NONE/MIN/LOW/DEFAULT/HIGH) — see the v4 note
+// above. Exported so DripScreen.tsx's health-check banner compares against
+// the same value this module actually requests, instead of a second
+// hardcoded `4` that could silently drift from this one.
+export const CHANNEL_IMPORTANCE_HIGH = 4;
 let channelReady = false;
 
 async function ensureChannel(): Promise<void> {
@@ -58,7 +63,7 @@ async function ensureChannel(): Promise<void> {
       id: CHANNEL_ID,
       name: "Будильники дріпів",
       description: "10 хв / 5 хв / порожньо — сигнали про закінчення мішка.",
-      importance: 4,
+      importance: CHANNEL_IMPORTANCE_HIGH,
       visibility: 1,
       vibration: true,
       lights: true,

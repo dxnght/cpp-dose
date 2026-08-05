@@ -68,6 +68,44 @@ export function Chamber({
   );
 }
 
+// Audio/haptic pacing toggles — shared by the focus overlay and the active-
+// drips list, which otherwise carried two copies of the same pair of
+// checkboxes to keep in sync by hand.
+export function PaceToggles({
+  audio,
+  haptic,
+  onAudioChange,
+  onHapticChange,
+  onClick,
+}: {
+  audio: boolean;
+  haptic: boolean;
+  onAudioChange: (v: boolean) => void;
+  onHapticChange: (v: boolean) => void;
+  onClick?: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div className="toggles" onClick={onClick}>
+      <label>
+        <input
+          type="checkbox"
+          checked={audio}
+          onChange={(e) => onAudioChange(e.target.checked)}
+        />{" "}
+        Звук
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={haptic}
+          onChange={(e) => onHapticChange(e.target.checked)}
+        />{" "}
+        Вібрація
+      </label>
+    </div>
+  );
+}
+
 // Press-and-hold mute control (2026-07-22 redesign, Owner decision). Enabling
 // "Без будильника" requires holding for HOLD_MS — silencing the drip's only
 // alarm should be *harder* than the accidental single tap the old checkbox

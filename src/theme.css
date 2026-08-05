@@ -150,6 +150,7 @@ body {
 }
 
 .nav button {
+  position: relative;
   flex: 1;
   min-height: var(--touch);
   padding: 10px 6px;
@@ -165,6 +166,35 @@ body {
 .nav button[aria-current="page"] {
   color: var(--accent);
   border-top-color: var(--accent);
+}
+
+/* Active-drip count on the "Крапельниця" tab (2026-08-02 UX fix). Neutral
+   accent by default — just a count, nothing wrong yet; escalates to the
+   same warn/danger language as .drip-card's alarm stages (theme.css above)
+   once any drip crosses into warn10/warn5/empty, since this badge is the
+   only signal left once the medic has tabbed away from the drip list. */
+.nav-badge {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(6px);
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: var(--fs-badge);
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+}
+.nav-badge.warn10,
+.nav-badge.warn5 {
+  background: var(--warn);
+}
+.nav-badge.empty {
+  background: var(--danger);
 }
 
 /* The 4th nav button (reopen disclaimer) isn't a screen tab — it opens a

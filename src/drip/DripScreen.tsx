@@ -22,6 +22,7 @@ import {
   cancelOrphanedAlarms,
   forgetStaleDrips,
   dripScheduleKey,
+  CHANNEL_IMPORTANCE_HIGH,
 } from "./notifications";
 import {
   clamp,
@@ -32,7 +33,8 @@ import {
   doseToMlPerH,
   mlPerHToGtt,
   secPerDrop,
-  bagRunHours,
+  dripEndsAt,
+  retitratedStartedAt,
   burnRuleOfTenMlPerH,
   doseRangeMg,
   parseConcentrationMgPerMl,
@@ -42,12 +44,11 @@ import {
   DRIPS_STORAGE_KEY,
   deserializeDrips,
   serializeDrips,
-  type PersistedDrip,
 } from "./persistence";
 import { NOTIFICATIONS_ENABLED } from "../config";
 import { nowMs, fmtHours, fmtHM } from "./format";
 import { alarm } from "./alarm-audio";
-import { Stepper, Chamber, SilenceToggle } from "./components";
+import { Stepper, Chamber, SilenceToggle, PaceToggles } from "./components";
 import { unlockAudio } from "./audio";
 
 interface ConcPreset {
@@ -109,6 +110,13 @@ const PRE_END_ALARM_MS_5 = 5 * 60_000;
 // Spec 001 FR-7: concurrent-drip cap (Owner decision 2026-07-21, raised from 3).
 const MAX_DRIPS = 5;
 
+// Module-level, not component state: a plain `Date.now()`-based id has only
+// 1ms resolution, so two addDrip() calls landing in the same millisecond (a
+// fast double-tap) minted the same id — every id-keyed action afterwards
+// (removeDrip, retitrate, notifications.ts's idsFor()) then applied to both
+// drips at once. Counting up guarantees uniqueness regardless of timing.
+let nextDripSeq = 0;
+
 const LS = {
   get(key: string): string | null {
     try {
@@ -127,7 +135,22 @@ const LS = {
 };
 
 
-export function DripScreen() {
+// Reported to the parent (App.tsx) so the bottom nav can badge the
+// "Крапельниця" tab with the active-drip count — since DripScreen now stays
+// mounted (just `hidden`) across tab navigation, a drip's clock keeps
+// running while the medic is on Drugs/About with nothing on that screen to
+// show it. `stage` mirrors alarmStage() below, worst across all drips, so
+// the badge can escalate the same way a card does.
+export interface DripBadgeStatus {
+  count: number;
+  stage: "" | "warn10" | "warn5" | "empty";
+}
+
+export function DripScreen({
+  onStatusChange,
+}: {
+  onStatusChange?: (status: DripBadgeStatus) => void;
+} = {}) {
   const presets: ConcPreset[] = useMemo(() => {
     const list = fieldBundle.drugs
       // Fail-closed (Art. III), quietly excluding rather than throwing
@@ -192,7 +215,8 @@ export function DripScreen() {
   // this runs before the reschedule effect and the restored drips get their
   // alarms re-armed in the same pass that sweeps the old session's.
   const [drips, setDrips] = useState<ActiveDrip[]>(() => {
-    const stored = deserializeDrips(LS.get(DRIPS_STORAGE_KEY), Date.now());
+    const restoredAt = Date.now();
+    const stored = deserializeDrips(LS.get(DRIPS_STORAGE_KEY), restoredAt);
     return stored.map((p) => {
       const record =
         p.sourceRecordId == null
@@ -200,6 +224,32 @@ export function DripScreen() {
           : ((fieldBundle.drugs.find((d) => d.id === p.sourceRecordId) ??
               fieldBundle.formulas.find((f) => f.id === p.sourceRecordId) ??
               null) as Drug | Formula | null);
+      // Recompute rather than persist: which stages already passed follows
+      // from startedAt and the clock, and persisting them would let a stale
+      // flag suppress a warning the medic should still get.
+      //
+      // preSatisfiedAlarmStages is for drip *creation*, where elapsed time is
+      // always 0 — it compares the bag's TOTAL run time against the
+      // thresholds. Using it here ignored however much of the bag had
+      // already run before the restart, so a drip whose 10-min alarm had
+      // already fired and been acknowledged came back with warned10 seeded
+      // false again (total run time was still well over 10 min), and the
+      // very next tick re-fired it. Using actual remaining time as of this
+      // restart — the same formula the tick effect below uses — fixes that
+      // for warned10/warned5: they're informational heads-ups, so replaying
+      // one the medic already got would be a nuisance, not a safety gain.
+      //
+      // warnedEmpty is deliberately NOT seeded from remMs the same way (code
+      // review 2026-08-02): unlike the heads-ups, "bag empty" is the one
+      // alarm this app must never silently withhold. If the bag ran dry
+      // while the process was dead, the medic never heard it — seeding
+      // warnedEmpty=true here would suppress it forever with nothing left to
+      // correct that. Always false, so a bag already empty at restore still
+      // sounds "empty" on the very next tick.
+      const remMs =
+        p.bagMl != null && p.mlPerH > 0
+          ? dripEndsAt(p.startedAt, p.bagMl, p.mlPerH) - restoredAt
+          : Infinity;
       return {
         id: p.id,
         label: p.label,
@@ -209,15 +259,8 @@ export function DripScreen() {
         bagMl: p.bagMl,
         startedAt: p.startedAt,
         animStart: nowMs(),
-        // Recompute rather than persist: which stages already passed follows
-        // from startedAt and the clock, and persisting them would let a stale
-        // flag suppress a warning the medic should still get.
-        ...preSatisfiedAlarmStages(
-          p.bagMl,
-          p.mlPerH,
-          PRE_END_ALARM_MS_10,
-          PRE_END_ALARM_MS_5,
-        ),
+        warned10: remMs <= PRE_END_ALARM_MS_10,
+        warned5: remMs <= PRE_END_ALARM_MS_5,
         warnedEmpty: false,
         silenced: p.silenced,
         sourceRecord: record,
@@ -244,6 +287,21 @@ export function DripScreen() {
   // timing hasn't actually changed, instead of re-cancelling/rescheduling
   // every drip on every unrelated `drips` change.
   const scheduledKeyRef = useRef<Map<string, string>>(new Map());
+
+  // Shared by the mount effect's post-permission-grant recheck, the wake
+  // handler, and the schedule-key effect below — all three need the exact
+  // same "read health, translate to the banner flag" step.
+  function refreshNotifHealth() {
+    checkNotificationHealth()
+      .then((h) =>
+        setNotifDenied(
+          !h.permissionGranted ||
+            (h.channelImportance != null &&
+              h.channelImportance < CHANNEL_IMPORTANCE_HIGH),
+        ),
+      )
+      .catch(() => setNotifDenied(true));
+  }
 
   const preset = presets[presetIdx];
   const conc = preset?.conc ?? 1;
@@ -290,20 +348,34 @@ export function DripScreen() {
   // reach storage (it can hold a callsign — see persistence.ts), and building
   // the record by hand is what guarantees a future field added to ActiveDrip
   // isn't silently written to disk too.
+  //
+  // Snapshotted through useMemo, keyed on the persisted fields' *values* via
+  // the resulting JSON string, rather than writing straight from an effect
+  // keyed on `drips` itself: `drips`' identity also changes for fields never
+  // written here (displayTag on every keystroke, warned10/5/Empty on every
+  // alarm-stage flip), which used to re-serialize and rewrite every drip to
+  // storage each time regardless. A string dependency only actually re-runs
+  // the effect when its *content* changes.
+  const persistedDripsSnapshot = useMemo(
+    () =>
+      serializeDrips(
+        drips.map((d) => ({
+          id: d.id,
+          label: d.label,
+          gtt: d.gtt,
+          mlPerH: d.mlPerH,
+          dropFactor: d.dropFactor,
+          bagMl: d.bagMl,
+          startedAt: d.startedAt,
+          silenced: d.silenced,
+          sourceRecordId: d.sourceRecord?.id ?? null,
+        })),
+      ),
+    [drips],
+  );
   useEffect(() => {
-    const payload: PersistedDrip[] = drips.map((d) => ({
-      id: d.id,
-      label: d.label,
-      gtt: d.gtt,
-      mlPerH: d.mlPerH,
-      dropFactor: d.dropFactor,
-      bagMl: d.bagMl,
-      startedAt: d.startedAt,
-      silenced: d.silenced,
-      sourceRecordId: d.sourceRecord?.id ?? null,
-    }));
-    LS.set(DRIPS_STORAGE_KEY, serializeDrips(payload));
-  }, [drips]);
+    LS.set(DRIPS_STORAGE_KEY, persistedDripsSnapshot);
+  }, [persistedDripsSnapshot]);
   useEffect(() => {
     const m = new Metronome();
     m.setHapticHandler(() => tapHaptic());
@@ -337,9 +409,17 @@ export function DripScreen() {
   // is locked, so `now` can be stale by however long it was locked; this
   // doesn't change when the in-app alarm catches up, just removes a small,
   // avoidable extra delay on top of that.
+  // Also re-checks notification health here (code-review fix): the
+  // schedule-key effect below only re-checks when a drip's own timing/label
+  // changes, so a drip left running untouched for hours never got a second
+  // look even if the OS silently downgraded permission or channel importance
+  // mid-session. Changing either requires leaving the app for Settings, so
+  // foreground is exactly when such a change could just have happened.
   useEffect(() => {
     const onWake = () => {
-      if (document.visibilityState === "visible") setNow(Date.now());
+      if (document.visibilityState !== "visible") return;
+      setNow(Date.now());
+      refreshNotifHealth();
     };
     document.addEventListener("visibilitychange", onWake);
     window.addEventListener("focus", onWake);
@@ -379,13 +459,36 @@ export function DripScreen() {
   }, []);
 
   useEffect(() => {
-    ensureNotificationPermission().catch(() => {});
+    // Drive notifDenied from the actual permission result (code-review fix)
+    // — this used to discard it, relying solely on the schedule-key effect's
+    // checkNotificationHealth() call below. That call can win a race against
+    // the OS permission dialog this promise is awaiting (it reads current
+    // status immediately, before the medic has answered), latching
+    // notifDenied to true with nothing to correct it afterwards since the
+    // schedule-key effect only re-runs on a timing/label change. Setting it
+    // here too means the medic tapping "Allow" always resolves it correctly,
+    // however that race lands.
+    //
+    // Uses refreshNotifHealth() (code review 2026-08-02), not a bare
+    // `setNotifDenied(!ok)`: ensureNotificationPermission()'s boolean only
+    // reflects the OS permission, not channel importance, so a channel the
+    // OS/user silently downgraded (permission still "granted") read as fine
+    // here — and because this promise can resolve after the schedule-key
+    // effect's own refreshNotifHealth() call below, it could overwrite an
+    // already-correct "degraded" banner back to "fine". Calling the same
+    // full health check here too closes that gap.
+    ensureNotificationPermission()
+      .then(() => refreshNotifHealth())
+      .catch(() => {});
     // Sweep alarms armed by a previous, now-dead session (v6, 2026-07-24
     // Owner report: notifications fired for drips that had been deleted,
-    // with the app not even running). Live drips are never restored across
-    // a restart, so anything still pending here belongs to no drip. Safe to
-    // run unconditionally at mount — at this point `drips` is always empty.
-    // See cancelOrphanedAlarms() in notifications.ts for the full account.
+    // with the app not even running). Any drip alarm already pending at this
+    // point predates this process, so it belongs to no drip in memory yet —
+    // including a drip about to be restored (FR-13/AC-6f): the reschedule
+    // effect below awaits this same sweep before scheduling anything, so a
+    // restored drip's alarms are always re-armed fresh afterwards, never
+    // left cancelled. See cancelOrphanedAlarms() in notifications.ts for the
+    // full account.
     cancelOrphanedAlarms().catch(() => {});
   }, []);
 
@@ -460,7 +563,7 @@ export function DripScreen() {
       if (scheduledKeyRef.current.get(d.id) === key) return;
       scheduledKeyRef.current.set(d.id, key);
       scheduleChanged = true;
-      const endAt = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000;
+      const endAt = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH);
       // Explicit field list, not `...d` — deliberate (2026-07-24). `d` also
       // carries `displayTag` (see ActiveDrip), which must never reach the
       // OS notification: that channel is VISIBILITY_PUBLIC (shows on the
@@ -483,17 +586,23 @@ export function DripScreen() {
       }
     }
     void forgetStaleDrips(liveIds);
-    if (scheduleChanged) {
-      checkNotificationHealth()
-        .then((h) =>
-          setNotifDenied(
-            !h.permissionGranted ||
-              (h.channelImportance != null && h.channelImportance < 4),
-          ),
-        )
-        .catch(() => setNotifDenied(true));
-    }
+    if (scheduleChanged) refreshNotifHealth();
   }, [drips]);
+
+  useEffect(() => {
+    if (!onStatusChange) return;
+    let stage: DripBadgeStatus["stage"] = "";
+    for (const d of drips) {
+      const s = alarmStage(d);
+      if (s === "empty") {
+        stage = "empty";
+        break;
+      }
+      if (s === "warn5") stage = "warn5";
+      else if (s === "warn10" && stage === "") stage = "warn10";
+    }
+    onStatusChange({ count: drips.length, stage });
+  }, [drips, onStatusChange]);
 
   useEffect(() => {
     if (drips.length === 0) return;
@@ -530,8 +639,7 @@ export function DripScreen() {
       let changed = false;
       const next = prev.map((d) => {
         if (d.bagMl == null || d.mlPerH <= 0) return d;
-        const remMs =
-          d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+        const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
         if (!d.warned10 && remMs <= PRE_END_ALARM_MS_10 && remMs > 0) {
           if (!d.silenced) alarm("warn10");
           changed = true;
@@ -575,7 +683,7 @@ export function DripScreen() {
 
   function addDrip() {
     if (drips.length >= MAX_DRIPS || live.gtt <= 0) return;
-    const id = `d${Date.now()}`;
+    const id = `d${Date.now()}-${nextDripSeq++}`;
     const base =
       mode === "dose"
         ? preset
@@ -654,11 +762,34 @@ export function DripScreen() {
   }
 
   function retitrate(id: string, delta: number) {
+    const now = Date.now();
     setDrips((p) =>
       p.map((d) => {
         if (d.id !== id) return d;
         const gtt = Math.max(1, Math.min(600, d.gtt + delta));
-        return { ...d, gtt, mlPerH: (gtt * 60) / d.dropFactor };
+        const mlPerH = (gtt * 60) / d.dropFactor;
+        // See calc.ts — keeps the true remaining-volume end time instead of
+        // silently re-running the whole original bag at the new rate.
+        const startedAt = retitratedStartedAt(d.startedAt, d.mlPerH, mlPerH, now);
+        // Retitration can push remaining time back above an already-crossed
+        // threshold (e.g. slowing the drip down) — reset that stage's warned
+        // flag so a later, genuine re-crossing sounds the alarm again (code
+        // review 2026-08-02). Never set a flag *to* true here: the `now`
+        // tick effect below is the only place that plays alarm(), and it
+        // fires naturally on its next 1s tick if the flag isn't already true.
+        const remMs =
+          d.bagMl != null && mlPerH > 0
+            ? dripEndsAt(startedAt, d.bagMl, mlPerH) - now
+            : Infinity;
+        return {
+          ...d,
+          gtt,
+          mlPerH,
+          startedAt,
+          warned10: remMs > PRE_END_ALARM_MS_10 ? false : d.warned10,
+          warned5: remMs > PRE_END_ALARM_MS_5 ? false : d.warned5,
+          warnedEmpty: remMs > 0 ? false : d.warnedEmpty,
+        };
       }),
     );
   }
@@ -710,7 +841,7 @@ export function DripScreen() {
 
   function remaining(d: ActiveDrip): string {
     if (d.bagMl == null || d.mlPerH <= 0) return "—";
-    const remMs = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+    const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
     if (remMs <= 0) return "порожньо";
     const min = Math.floor(remMs / 60_000);
     return min >= 60
@@ -723,7 +854,7 @@ export function DripScreen() {
   // how long "Без будильника" will actually stay quiet. Never drives logic.
   function quietHint(d: ActiveDrip): string | null {
     if (d.bagMl == null || d.mlPerH <= 0) return null;
-    const remMs = d.startedAt + bagRunHours(d.bagMl, d.mlPerH) * 3600_000 - now;
+    const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
     const quietMs = remMs - PRE_END_ALARM_MS_10;
     if (quietMs <= 0) return null;
     const min = Math.floor(quietMs / 60_000);
@@ -807,24 +938,13 @@ export function DripScreen() {
             {focusDrip.id === activeId ? "◼ Метроном" : "▶ Метроном"}
           </button>
           {focusDrip.id === activeId && (
-            <div className="toggles" onClick={(e) => e.stopPropagation()}>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={audio}
-                  onChange={(e) => setAudio(e.target.checked)}
-                />{" "}
-                Звук
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={haptic}
-                  onChange={(e) => setHaptic(e.target.checked)}
-                />{" "}
-                Вібрація
-              </label>
-            </div>
+            <PaceToggles
+              audio={audio}
+              haptic={haptic}
+              onAudioChange={setAudio}
+              onHapticChange={setHaptic}
+              onClick={(e) => e.stopPropagation()}
+            />
           )}
           <div className="focus-hint">Торкніться фону, щоб вийти</div>
         </div>
@@ -986,24 +1106,12 @@ export function DripScreen() {
             );
           })}
           {activeId != null && (
-            <div className="toggles">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={audio}
-                  onChange={(e) => setAudio(e.target.checked)}
-                />{" "}
-                Звук
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={haptic}
-                  onChange={(e) => setHaptic(e.target.checked)}
-                />{" "}
-                Вібрація
-              </label>
-            </div>
+            <PaceToggles
+              audio={audio}
+              haptic={haptic}
+              onAudioChange={setAudio}
+              onHapticChange={setHaptic}
+            />
           )}
           <p className="runtime left">
             {activeId != null

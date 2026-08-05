@@ -19,6 +19,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { Metronome } from "../src/drip/metronome";
 import { __resetAudioForTests } from "../src/drip/audio";
+import { fakeGainNode } from "./fake-gain-node";
 
 interface FakeClock {
   currentTime: number;
@@ -28,10 +29,6 @@ interface FakeClock {
 // oscillator start time (= the metronome's scheduled tick time).
 function installFakeAudio(clock: FakeClock): { ticks: number[]; uninstall: () => void } {
   const ticks: number[] = [];
-  class FakeGain {
-    gain = { setValueAtTime() {}, exponentialRampToValueAtTime() {} };
-    connect() {}
-  }
   class FakeOscillator {
     frequency = { value: 0 };
     connect() {}
@@ -47,7 +44,7 @@ function installFakeAudio(clock: FakeClock): { ticks: number[]; uninstall: () =>
       return clock.currentTime;
     }
     createGain() {
-      return new FakeGain();
+      return fakeGainNode();
     }
     createOscillator() {
       return new FakeOscillator();

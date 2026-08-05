@@ -61,6 +61,58 @@ export function bagRunHours(volumeMl: number, mlPerH: number): number {
 }
 
 /**
+ * Re-anchor a running drip's `startedAt` after its rate changes (retitration
+ * in Focus mode), so the existing `startedAt + bagRunHours(bagMl, mlPerH) *
+ * 3600_000` end-time formula — used everywhere: in-app alarms, the OS
+ * notification reschedule, `remaining()`, `quietHint()` — keeps landing on
+ * the true remaining-volume end time.
+ *
+ * Retitration only ever changes the rate; `bagMl` (the original bag size)
+ * and the formula above stay untouched. Without re-anchoring `startedAt`,
+ * that formula silently re-ran the WHOLE original bag at the NEW rate from
+ * the ORIGINAL start — e.g. dropping a 500 ml/200 ml-h bag to 100 ml/h an
+ * hour in computed an end time a full hour after the bag actually runs dry
+ * (bug found in code review 2026-08-01).
+ *
+ * Solving `startedAt' + bagMl/newRate = now + (bagMl - infused)/newRate` for
+ * `startedAt'`, where `infused = (now - startedAt) * oldRate`, cancels
+ * `bagMl` out entirely: the new anchor only needs how much time has elapsed
+ * at the OLD rate, scaled by how much the rate just changed. That also makes
+ * this correct across repeated retitrations — each call re-anchors from
+ * whatever the previous call (or the original creation) left behind.
+ */
+export function retitratedStartedAt(
+  startedAt: number,
+  oldMlPerH: number,
+  newMlPerH: number,
+  now: number,
+): number {
+  // Clamp to 0 (code review 2026-08-02): a backward device-clock jump
+  // between the drip's last anchor and this call would otherwise make
+  // `now - startedAt` negative, pushing the new anchor into the future.
+  // deserializeDrips() rejects any persisted startedAt > now, so that drip
+  // would vanish entirely on the next restart instead of just showing a
+  // temporarily wrong remaining time.
+  const elapsed = Math.max(0, now - startedAt);
+  return now - elapsed * (oldMlPerH / newMlPerH);
+}
+
+/** Absolute epoch-ms a bag started at `startedAt` and running at `mlPerH`
+ * will run dry. The single source for this formula — used at drip creation,
+ * restore, retitration, the OS-notification reschedule, and both in-app
+ * remaining-time displays — so it can't drift out of sync between them
+ * (code review 2026-08-02). Callers own their own "no bag timer"/"rate not
+ * positive" guard, since what that case means differs by call site
+ * (Infinity vs. null vs. "—"). */
+export function dripEndsAt(
+  startedAt: number,
+  bagMl: number,
+  mlPerH: number,
+): number {
+  return startedAt + bagRunHours(bagMl, mlPerH) * 3600_000;
+}
+
+/**
  * Whether a bag's total run time is already at/under a pre-end warning
  * threshold from the moment it starts — i.e. there is no point during this
  * drip where "more than N ms remain" was ever true, so crossing down
