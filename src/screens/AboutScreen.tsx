@@ -15,6 +15,8 @@ export function AboutScreen() {
       </p>
       <h2>{t("about.credits")}</h2>
       <p className="about-credits">{t("about.creditsBody")}</p>
+      <h2>{t("about.creditsSupport")}</h2>
+      <p className="about-credits">{t("about.creditsSupportBody")}</p>
 
       <h2>{t("about.sources")}</h2>
       {clinicalSources.length === 0 ? (
