@@ -12,7 +12,7 @@ animation — all fully offline, at night, with gloves.
 
 Ukrainian UI · offline (zero network at runtime) · light + dark themes · Android + iOS.
 
-> **Створено інструкторами 151 НЦ, за підтримки Тактичної Медицини «ПІВНІЧ».**
+> **Створено інструкторами 151 НЦ.**
 
 ---
 
@@ -43,7 +43,7 @@ A wrong number can kill, so the app is **fail-closed by construction**:
    promotes them to `VERIFIED:<name>:<date>`. Agents/code can never write a `VERIFIED`
    status.
 3. **Only verified content ships.** A build compiles a `field-bundle.json` containing
-   *only* verified + archived records; the app can't render anything else.
+   _only_ verified + archived records; the app can't render anything else.
 
 See [`memory/constitution.md`](memory/constitution.md) and
 [`specs/005-clinical-content-pipeline`](specs/005-clinical-content-pipeline/spec.md).
