@@ -164,7 +164,7 @@
     {
       "id": "tccc_ceftriaxone_unable_po",
       "drug": "Ceftriaxone",
-      "indication": "Antibiotics for open combat wounds when unable to take PO (shock, unconsciousness)",
+      "indication": "Антибіотики для відкритих бойових поранень, якщо неможливо приймати перорально (шок, непритомність)",
       "route": "IV/IO/IM",
       "fixed_dose": "2 g",
       "rate": "once a day",
@@ -176,7 +176,7 @@
     {
       "id": "tccc_cefadroxil_po",
       "drug": "Cefadroxil",
-      "indication": "Antibiotics for open combat wounds — able to take PO",
+      "indication": "Антибіотики для відкритих бойових поранень — може приймати перорально",
       "route": "PO",
       "fixed_dose": "1 g",
       "rate": "once a day",
@@ -188,7 +188,7 @@
     {
       "id": "tccc_cephalexin_po",
       "drug": "Cephalexin",
-      "indication": "Antibiotics for open combat wounds — able to take PO (alternative)",
+      "indication": "Антибіотики для відкритих бойових поранень — може приймати перорально (альтернатива)",
       "route": "PO",
       "fixed_dose": "500 mg",
       "rate": "every 6 hours",
@@ -200,7 +200,7 @@
     {
       "id": "tccc_ceftriaxone_eye",
       "drug": "Ceftriaxone",
-      "indication": "Penetrating eye injury (suspected or noted)",
+      "indication": "Проникаюче поранення ока (підозрюване або підтверджене)",
       "route": "IV/IM",
       "fixed_dose": "2 g",
       "rate": "as soon as possible",
