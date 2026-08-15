@@ -22,7 +22,7 @@ export function AboutScreen() {
       {clinicalSources.length === 0 ? (
         <p>{t("about.noVerifiedSources")}</p>
       ) : (
-        <ul>
+        <ul className="card-list">
           {clinicalSources.map((s) => (
             <li key={s.id}>
               {s.title} — {s.version}

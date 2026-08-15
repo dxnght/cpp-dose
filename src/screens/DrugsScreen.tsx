@@ -34,7 +34,7 @@ function drugById(id: string): Drug | undefined {
 function DrugCard({ d }: { d: Drug }) {
   assertRenderable(d);
   return (
-    <article>
+    <article className="drug-card">
       <h3>
         {d.drug} — {d.route}
       </h3>
@@ -68,10 +68,10 @@ function DrugRef({ id }: { id: string }) {
 function ProphylaxisCard({ p }: { p: Prophylaxis }) {
   assertRenderable(p);
   return (
-    <article>
+    <article className="drug-card">
       <h3>{p.injury_type}</h3>
       <p className="fieldlabel">{t("drugs.moz.drugOfChoice")}</p>
-      <ul>
+      <ul className="card-list">
         {p.drug_of_choice.map((id) => (
           <DrugRef key={id} id={id} />
         ))}
@@ -79,7 +79,7 @@ function ProphylaxisCard({ p }: { p: Prophylaxis }) {
       {p.alternative && p.alternative.length > 0 && (
         <>
           <p className="fieldlabel">{t("drugs.moz.alternative")}</p>
-          <ul>
+          <ul className="card-list">
             {p.alternative.map((id) => (
               <DrugRef key={id} id={id} />
             ))}

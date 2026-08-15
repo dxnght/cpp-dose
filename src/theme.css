@@ -273,6 +273,37 @@ h2 {
   font-style: italic;
 }
 
+/* Drug/prophylaxis entries and the About screen's sources list used to be
+   bare <article>/<h3>/<p> and default-bullet <ul>s — no visual grouping at
+   all, unlike every other surface in the app (.drip-card etc.). Flagged in
+   the 2026-07-22 UX review, not actioned then; reusing the same tokens
+   .drip-card already uses rather than inventing a new look. */
+.drug-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 12px 14px;
+  margin-top: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.drug-card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+}
+.card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.card-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.card-list li:last-child {
+  border-bottom: none;
+}
+
 .source-badge {
   display: inline-flex;
   flex-wrap: wrap;
