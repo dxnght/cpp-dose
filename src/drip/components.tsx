@@ -4,6 +4,16 @@
 import { useRef, useState } from "react";
 import { dur, nowMs } from "./format";
 
+// Hold-to-repeat tuning for the ± buttons: a quick tap still does exactly one
+// onClick step (unchanged); holding past STEP_REPEAT_DELAY_MS starts
+// auto-repeat, ramping from STEP_REPEAT_START_MS down to STEP_REPEAT_MIN_MS
+// so a full range sweep (e.g. dose 0.1-2 mg/kg/h at a 0.05 step, ~38 taps)
+// doesn't require dozens of taps.
+const STEP_REPEAT_DELAY_MS = 350;
+const STEP_REPEAT_START_MS = 180;
+const STEP_REPEAT_MIN_MS = 45;
+const STEP_REPEAT_RAMP_MS = 1200;
+
 export function Stepper(props: {
   label: string;
   value: number;
@@ -13,13 +23,72 @@ export function Stepper(props: {
   max: number;
   onChange: (v: number) => void;
 }) {
+  // Mirrors the latest props on every render so the repeat loop below (which
+  // outlives any single render) always steps from the current value instead
+  // of the one captured when the hold started.
+  const propsRef = useRef(props);
+  propsRef.current = props;
+
+  const repeatTimer = useRef<number | null>(null);
+  const justRepeatedRef = useRef(false);
+  const holdStart = useRef(0);
+
+  function clearRepeat() {
+    if (repeatTimer.current != null) {
+      window.clearTimeout(repeatTimer.current);
+      repeatTimer.current = null;
+    }
+  }
+
+  function step(dir: 1 | -1) {
+    const p = propsRef.current;
+    p.onChange(
+      dir > 0
+        ? Math.min(p.max, p.value + p.step)
+        : Math.max(p.min, p.value - p.step),
+    );
+  }
+
+  function scheduleRepeat(dir: 1 | -1) {
+    const ramp = Math.min(
+      1,
+      (nowMs() - holdStart.current) / STEP_REPEAT_RAMP_MS,
+    );
+    const interval =
+      STEP_REPEAT_START_MS - ramp * (STEP_REPEAT_START_MS - STEP_REPEAT_MIN_MS);
+    repeatTimer.current = window.setTimeout(() => {
+      step(dir);
+      scheduleRepeat(dir);
+    }, interval);
+  }
+
+  function onHoldStart(dir: 1 | -1) {
+    justRepeatedRef.current = false;
+    holdStart.current = nowMs();
+    repeatTimer.current = window.setTimeout(() => {
+      justRepeatedRef.current = true; // swallow the click that follows a completed hold
+      step(dir);
+      scheduleRepeat(dir);
+    }, STEP_REPEAT_DELAY_MS);
+  }
+
+  function onClick(dir: 1 | -1) {
+    if (justRepeatedRef.current) {
+      justRepeatedRef.current = false;
+      return;
+    }
+    step(dir);
+  }
+
   return (
     <div className="stepper">
       <button
         aria-label={`${props.label} −`}
-        onClick={() =>
-          props.onChange(Math.max(props.min, props.value - props.step))
-        }
+        onPointerDown={() => onHoldStart(-1)}
+        onPointerUp={clearRepeat}
+        onPointerLeave={clearRepeat}
+        onPointerCancel={clearRepeat}
+        onClick={() => onClick(-1)}
       >
         −
       </button>
@@ -29,9 +98,11 @@ export function Stepper(props: {
       </div>
       <button
         aria-label={`${props.label} +`}
-        onClick={() =>
-          props.onChange(Math.min(props.max, props.value + props.step))
-        }
+        onPointerDown={() => onHoldStart(1)}
+        onPointerUp={clearRepeat}
+        onPointerLeave={clearRepeat}
+        onPointerCancel={clearRepeat}
+        onClick={() => onClick(1)}
       >
         +
       </button>
