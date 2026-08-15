@@ -10,6 +10,7 @@
 // Each section has its own empty state, independent of the "nothing at all
 // verified" seed state (AC-0.2 / SC-4), so a medic isn't confused when e.g. the
 // drip content is verified but antibiotics aren't yet.
+import { useState } from "react";
 import { fieldBundle, hasNoVerifiedClinicalContent } from "../clinical/loader";
 import { assertRenderable, isRenderable } from "../clinical/guard";
 import { SourceBadge } from "../components/SourceBadge";
@@ -29,6 +30,23 @@ const TCCC_ANTIBIOTIC_IDS = [
 
 function drugById(id: string): Drug | undefined {
   return fieldBundle.drugs.find((d) => d.id === id);
+}
+
+// Free-text search across name, description and (for prophylaxis) the
+// body-part/injury-type label — a query like "нога" or "око" should surface
+// the matching MOZ by-injury-type card even though "нога" never appears in
+// any drug name.
+function drugMatches(d: Drug, q: string): boolean {
+  return d.drug.toLowerCase().includes(q) || d.indication.toLowerCase().includes(q);
+}
+
+function prophylaxisMatches(p: Prophylaxis, q: string): boolean {
+  if (p.injury_type.toLowerCase().includes(q)) return true;
+  const ids = [...p.drug_of_choice, ...(p.alternative ?? [])];
+  return ids.some((id) => {
+    const d = drugById(id);
+    return d != null && drugMatches(d, q);
+  });
 }
 
 function DrugCard({ d }: { d: Drug }) {
@@ -95,6 +113,8 @@ function ProphylaxisCard({ p }: { p: Prophylaxis }) {
 }
 
 export function DrugsScreen() {
+  const [query, setQuery] = useState("");
+
   if (hasNoVerifiedClinicalContent()) {
     return (
       <section>
@@ -107,18 +127,37 @@ export function DrugsScreen() {
     );
   }
 
-  const tcccAntibiotics = fieldBundle.drugs.filter((d) => TCCC_ANTIBIOTIC_IDS.includes(d.id));
-  const otherDrugs = fieldBundle.drugs.filter((d) => !TCCC_ANTIBIOTIC_IDS.includes(d.id));
-  const mozGroups = fieldBundle.antibiotic_prophylaxis;
+  const allTccc = fieldBundle.drugs.filter((d) => TCCC_ANTIBIOTIC_IDS.includes(d.id));
+  const allOther = fieldBundle.drugs.filter((d) => !TCCC_ANTIBIOTIC_IDS.includes(d.id));
+  const allMoz = fieldBundle.antibiotic_prophylaxis;
+
+  const q = query.trim().toLowerCase();
+
+  const tcccAntibiotics = q ? allTccc.filter((d) => drugMatches(d, q)) : allTccc;
+  const otherDrugs = q ? allOther.filter((d) => drugMatches(d, q)) : allOther;
+  const mozGroups = q ? allMoz.filter((p) => prophylaxisMatches(p, q)) : allMoz;
 
   return (
     <section>
       <h1>{t("drugs.heading")}</h1>
 
+      <input
+        type="search"
+        className="drugs-search"
+        placeholder={t("drugs.search.placeholder")}
+        aria-label={t("drugs.search.placeholder")}
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+
       <h2>{t("drugs.tccc.heading")}</h2>
-      {tcccAntibiotics.length === 0 ? (
+      {allTccc.length === 0 ? (
         <div className="empty-state" role="status">
           <p>{t("drugs.tccc.empty")}</p>
+        </div>
+      ) : tcccAntibiotics.length === 0 ? (
+        <div className="empty-state" role="status">
+          <p>{t("drugs.search.noMatches")}</p>
         </div>
       ) : (
         tcccAntibiotics.map((d) => (
@@ -129,9 +168,13 @@ export function DrugsScreen() {
       )}
 
       <h2>{t("drugs.moz.heading")}</h2>
-      {mozGroups.length === 0 ? (
+      {allMoz.length === 0 ? (
         <div className="empty-state" role="status">
           <p>{t("drugs.moz.empty")}</p>
+        </div>
+      ) : mozGroups.length === 0 ? (
+        <div className="empty-state" role="status">
+          <p>{t("drugs.search.noMatches")}</p>
         </div>
       ) : (
         mozGroups.map((p) => (
@@ -142,9 +185,13 @@ export function DrugsScreen() {
       )}
 
       <h2>{t("drugs.other.heading")}</h2>
-      {otherDrugs.length === 0 ? (
+      {allOther.length === 0 ? (
         <div className="empty-state" role="status">
           <p>{t("drugs.other.empty")}</p>
+        </div>
+      ) : otherDrugs.length === 0 ? (
+        <div className="empty-state" role="status">
+          <p>{t("drugs.search.noMatches")}</p>
         </div>
       ) : (
         otherDrugs.map((d) => (

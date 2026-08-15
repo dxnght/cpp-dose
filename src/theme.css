@@ -240,6 +240,18 @@ h2 {
   font-weight: 600;
 }
 
+.drugs-search {
+  width: 100%;
+  min-height: var(--touch);
+  background: var(--surface);
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 16px;
+  margin-bottom: 4px;
+}
+
 .empty-state {
   border: 1px solid var(--line);
   background: var(--surface);
