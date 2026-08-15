@@ -392,6 +392,15 @@ h2 {
   font-size: 26px;
   font-weight: 500;
   background: var(--surface-2);
+  /* A long-press on the bare +/- glyph reads to mobile WebViews as "select
+     this text" and raises native selection handles / the copy-lookup
+     callout (iPhone X field report 2026-08-15) — same class of issue
+     .silence-btn already guards against below. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .stepper > button:active {
   background: var(--accent-tint);
