@@ -24,12 +24,16 @@ export interface Drug extends Sourced {
   id: string;
   drug: string;
   indication: string;
+  // English original of `indication`/`rate`, kept for a future English UI —
+  // not rendered anywhere today.
+  indication_en?: string;
   route: string;
   fixed_dose?: string;
   dose_per_kg?: string;
   max_dose?: string;
   dilution?: string;
   rate?: string;
+  rate_en?: string;
   min_max?: { min?: string; max?: string };
   notes?: string;
   bolus_for?: string;
