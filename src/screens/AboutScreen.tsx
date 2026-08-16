@@ -11,7 +11,7 @@ export function AboutScreen() {
       <h1>{t("about.heading")}</h1>
       <p>
         {t("about.protocolVersion")}:{" "}
-        <strong>{fieldBundle.meta.protocol_version}</strong>
+        <strong>{fieldBundle.meta.protocol_version.slice(7)}</strong>
       </p>
       <h2>{t("about.credits")}</h2>
       <p className="about-credits">{t("about.creditsBody")}</p>
