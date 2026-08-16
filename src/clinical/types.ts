@@ -28,6 +28,9 @@ export interface Drug extends Sourced {
   // not rendered anywhere today.
   indication_en?: string;
   route: string;
+  // English original of `route`, kept for a future English UI — not rendered
+  // anywhere today.
+  route_en?: string;
   fixed_dose?: string;
   dose_per_kg?: string;
   max_dose?: string;

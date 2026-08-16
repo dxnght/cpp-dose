@@ -76,6 +76,7 @@
         "indication": { "type": "string" },
         "indication_en": { "type": "string", "description": "English original of `indication`, kept for a future English UI (not rendered today)." },
         "route": { "type": "string", "description": "e.g. IV, IO, IM, IN, PO, topical" },
+        "route_en": { "type": "string", "description": "English original of `route`, kept for a future English UI (not rendered today)." },
         "fixed_dose": { "type": "string", "description": "as written in source, e.g. '2 g'" },
         "dose_per_kg": { "type": "string", "description": "as written, e.g. '15-20 mg/kg'" },
         "max_dose": { "type": "string" },
