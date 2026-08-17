@@ -32,7 +32,12 @@ export interface Drug extends Sourced {
   // anywhere today.
   route_en?: string;
   fixed_dose?: string;
+  // English original of `fixed_dose`/`dose_per_kg` (units translated,
+  // mg/g/kg -> мг/г/кг), kept for a future English UI — not rendered
+  // anywhere today.
+  fixed_dose_en?: string;
   dose_per_kg?: string;
+  dose_per_kg_en?: string;
   max_dose?: string;
   dilution?: string;
   rate?: string;
