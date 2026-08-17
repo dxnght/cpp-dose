@@ -134,7 +134,6 @@ const LS = {
   },
 };
 
-
 // Reported to the parent (App.tsx) so the bottom nav can badge the
 // "Крапельниця" tab with the active-drip count — since DripScreen now stays
 // mounted (just `hidden`) across tab navigation, a drip's clock keeps
@@ -770,7 +769,12 @@ export function DripScreen({
         const mlPerH = (gtt * 60) / d.dropFactor;
         // See calc.ts — keeps the true remaining-volume end time instead of
         // silently re-running the whole original bag at the new rate.
-        const startedAt = retitratedStartedAt(d.startedAt, d.mlPerH, mlPerH, now);
+        const startedAt = retitratedStartedAt(
+          d.startedAt,
+          d.mlPerH,
+          mlPerH,
+          now,
+        );
         // Retitration can push remaining time back above an already-crossed
         // threshold (e.g. slowing the drip down) — reset that stage's warned
         // flag so a later, genuine re-crossing sounds the alarm again (code
@@ -1010,8 +1014,8 @@ export function DripScreen({
               Тримай телефон розблокованим під час дріпу.
               <br />
               <strong>На iPhone у веб-версії:</strong> вібрації немає (Safari її
-              не підтримує), а бічний перемикач «без звуку» глушить сигнал. Тобто
-              з вимкненим звуком лишиться <em>лише</em> підсвітка картки —
+              не підтримує), а бічний перемикач «без звуку» глушить сигнал.
+              Тобто з вимкненим звуком лишиться <em>лише</em> підсвітка картки —
               перевір, що перемикач у положенні дзвінка. Для вібрації потрібна
               Android-збірка (APK).
             </div>
@@ -1202,11 +1206,11 @@ export function DripScreen({
               Болюс перед дріпом:{" "}
               <b>
                 {doseRangeMg(bolus.dose_per_kg, weight) ?? bolus.dose_per_kg}
-              </b>{" "}
-              - або -
+              </b>
               <span className="bolus-sub">
                 {" "}
-                <b>{bolus.dose_per_kg}</b> {bolus.route}
+                <div>{"\n"}</div>
+                або <b>{bolus.dose_per_kg}</b> - {bolus.route}
               </span>
             </div>
           )}
