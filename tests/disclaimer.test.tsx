@@ -23,9 +23,9 @@ describe("safety interlocks (Art. IV) and fail-closed UI (Art. III)", () => {
   it("disclaimer is reachable again from every screen via the nav button", () => {
     render(<App />);
     fireEvent.click(screen.getByRole("button", { name: "Я зрозумів(-ла)" })); // dismiss first-run
-    for (const scr of ["Крапельниця", "Препарати", "Про застосунок / джерела"]) {
+    for (const scr of ["Крапельниця", "Препарати", "Про застосунок"]) {
       fireEvent.click(screen.getByRole("button", { name: scr }));
-      fireEvent.click(screen.getByRole("button", { name: "Показати повне застереження" }));
+      fireEvent.click(screen.getByRole("button", { name: "Застереження" }));
       expect(screen.getByRole("dialog")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Я зрозумів(-ла)" }));
     }

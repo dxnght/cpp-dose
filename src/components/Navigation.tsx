@@ -61,12 +61,12 @@ export function Navigation({
           </button>
         );
       })}
-      {/* Uses disclaimer.reopen ("Показати повне застереження"), not
-          nav.disclaimer — that string already existed but was unused; it's
-          clearer that this button opens a modal rather than switching
-          screens (2026-07-22 UX review). .nav-aux gives it a visually
-          distinct, quieter treatment from the 3 real tabs for the same
-          reason. */}
+      {/* Uses the disclaimer.reopen key (kept distinct from nav.disclaimer
+          even though both read "Застереження") so wording can diverge again
+          later without touching call sites. Shortened from "Показати повне
+          застереження" (2026-08-17 UX review — wrapped to 2 lines next to
+          the short tab labels). .nav-aux + the ⓘ prefix still mark this as a
+          modal trigger rather than a 4th screen tab. */}
       <button
         className="nav-aux"
         aria-label={t("disclaimer.reopen")}
