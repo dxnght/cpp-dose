@@ -106,7 +106,15 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: var(--warn-bg);
+  /* --warn-bg alone is only 16-18% opaque (it's designed to sit as a tint on
+     top of non-sticky inline banners). Sticky at the top of a scrolling
+     screen, that let content scrolling up show through and overlap the text
+     (2026-08-17 UX review). Layer the same tint over an opaque --bg, plus the
+     same blur(12px) the sticky .nav bar already uses, so it reads identically
+     at rest but never lets scrolled content bleed through. */
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--warn-bg), var(--warn-bg));
+  backdrop-filter: blur(12px);
   color: var(--warn);
   border-bottom: 1px solid var(--line);
   padding: 8px 12px;
