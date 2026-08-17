@@ -61,7 +61,7 @@ function DrugCard({ d }: { d: Drug }) {
         {d.fixed_dose ?? d.dose_per_kg}
         {d.rate ? ` · ${d.rate}` : ""}
       </p>
-      <SourceBadge record={d} />
+      <SourceBadge record={d} collapsible />
     </article>
   );
 }
@@ -107,7 +107,7 @@ function ProphylaxisCard({ p }: { p: Prophylaxis }) {
       <p className="drugs-duration">
         {t("drugs.moz.duration")}: {p.duration}
       </p>
-      <SourceBadge record={p} />
+      <SourceBadge record={p} collapsible />
     </article>
   );
 }

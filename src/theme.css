@@ -349,6 +349,34 @@ h2 {
 .source-badge-compact {
   margin-top: 6px;
 }
+.source-badge-collapsible {
+  display: block;
+}
+.source-badge-collapsible summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--touch);
+  cursor: pointer;
+  list-style: none;
+}
+.source-badge-collapsible summary::-webkit-details-marker {
+  display: none;
+}
+.source-badge-collapsible .source-badge-toggle {
+  color: var(--fg-muted);
+}
+.source-badge-collapsible .source-badge-toggle::after {
+  content: " \203A";
+}
+.source-badge-collapsible[open] .source-badge-toggle::after {
+  content: " \2304";
+}
+.source-badge-collapsible > .tag {
+  display: block;
+  margin-top: 4px;
+}
 
 /* ---- Drip engine (Spec 001) ---- */
 .fieldlabel {
