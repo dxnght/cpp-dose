@@ -163,17 +163,20 @@ export function burnRuleOfTenMlPerH(tbsaPct: number, weightKg: number): number {
   return r;
 }
 
-/** Weight-scale a "0.2-0.3 mg/kg" or "1 mg/kg" bolus string to a mg (range). */
+/** Weight-scale a "0.2-0.3 mg/kg"/"0.2-0.3 мг/кг" or "1 mg/kg"/"1 мг/кг" bolus
+    string to a mg (range). Matches both unit scripts (2026-08-17: dose_per_kg
+    is now stored translated, mg/kg -> мг/кг, with the Latin original kept in
+    dose_per_kg_en) so this keeps working on either. */
 export function doseRangeMg(
   dosePerKg: string,
   weightKg: number,
 ): string | null {
   const range = dosePerKg.match(
-    /([\d.]+)\s*(?:-|–|to)\s*([\d.]+)\s*mg\s*\/\s*kg/i,
+    /([\d.]+)\s*(?:-|–|to)\s*([\d.]+)\s*(?:mg|мг)\s*\/\s*(?:kg|кг)/i,
   );
   if (range)
     return `${Math.round(Number(range[1]) * weightKg)}–${Math.round(Number(range[2]) * weightKg)} мг`;
-  const single = dosePerKg.match(/([\d.]+)\s*mg\s*\/\s*kg/i);
+  const single = dosePerKg.match(/([\d.]+)\s*(?:mg|мг)\s*\/\s*(?:kg|кг)/i);
   if (single) return `${Math.round(Number(single[1]) * weightKg)} мг`;
   return null;
 }

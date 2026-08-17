@@ -37,6 +37,11 @@ describe("bolus mg from mg/kg string", () => {
     expect(doseRangeMg("0.2-0.3 mg/kg", 80)).toBe("16–24 мг");
     expect(doseRangeMg("1 mg/kg", 80)).toBe("80 мг");
   });
+
+  it("also parses the Cyrillic unit form now stored in dose_per_kg (2026-08-17 i18n pass)", () => {
+    expect(doseRangeMg("0.2-0.3 мг/кг", 80)).toBe("16–24 мг");
+    expect(doseRangeMg("1 мг/кг", 80)).toBe("80 мг");
+  });
 });
 
 describe("bag-volume stepper stays on the 50 ml grid (Owner-reported regression, 2026-07-21)", () => {
