@@ -3,7 +3,7 @@
 // behaviour unchanged.
 import { Chamber, SilenceToggle } from "./components";
 import { SourceBadge } from "../components/SourceBadge";
-import type { ActiveDrip } from "./types";
+import type { DripScreenProps } from "./types";
 
 export function DripCard({
   drip: d,
@@ -17,19 +17,7 @@ export function DripCard({
   onTogglePacing,
   onRemoveClick,
   onSetSilenced,
-}: {
-  drip: ActiveDrip;
-  isActive: boolean;
-  confirmId: string | null;
-  remaining: (d: ActiveDrip) => string;
-  quietHint: (d: ActiveDrip) => string | null;
-  alarmStage: (d: ActiveDrip) => "" | "warn10" | "warn5" | "empty";
-  onConfirm: (id: string) => void;
-  onEnterFocus: (id: string) => void;
-  onTogglePacing: (id: string) => void;
-  onRemoveClick: (id: string) => void;
-  onSetSilenced: (id: string, val: boolean) => void;
-}) {
+}: DripScreenProps) {
   const stage = alarmStage(d);
   return (
     <article
@@ -58,8 +46,7 @@ export function DripCard({
         </div>
         <Chamber gtt={d.gtt} animStart={d.animStart} muted={!isActive} />
         <div className="drip-mini-meta">
-          {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год ·{" "}
-          {remaining(d)}
+          {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год · {remaining(d)}
         </div>
         <div className="tap-hint">Тап — на весь екран</div>
         {d.sourceRecord && <SourceBadge record={d.sourceRecord} compact />}

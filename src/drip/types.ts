@@ -62,3 +62,17 @@ export interface DripBadgeStatus {
   count: number;
   stage: "" | "warn10" | "warn5" | "empty";
 }
+
+export interface DripScreenProps {
+  drip: ActiveDrip;
+  isActive: boolean;
+  confirmId: string | null;
+  remaining: (d: ActiveDrip) => string;
+  quietHint: (d: ActiveDrip) => string | null;
+  alarmStage: (d: ActiveDrip) => "" | "warn10" | "warn5" | "empty";
+  onConfirm: (id: string) => void;
+  onEnterFocus: (id: string) => void;
+  onTogglePacing: (id: string) => void;
+  onRemoveClick: (id: string) => void;
+  onSetSilenced: (id: string, val: boolean) => void;
+}
