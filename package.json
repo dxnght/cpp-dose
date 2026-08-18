@@ -5,6 +5,7 @@
   "type": "module",
   "description": "CPP-DOSE — offline IV drip-rate & dosing support for Prolonged Casualty Care (CPP). Android / iOS / PWA, fully offline, fail-closed clinical content.",
   "scripts": {
+    "postinstall": "patch-package",
     "predev": "npm run compile:field",
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -22,7 +23,9 @@
     "cap:sync": "cap sync android && npm run android:patch",
     "android:patch": "node scripts/patch-android-manifest.mjs",
     "ios:sync": "cap sync ios",
-    "ios:open": "npm run build && cap sync ios && cap open ios"
+    "ios:open": "npm run build && cap sync ios && cap open ios",
+    "build:play": "VITE_VARIANT=play npm run build",
+    "apk:play": "VITE_VARIANT=play npm run build && VITE_VARIANT=play npx cap sync android && VITE_VARIANT=play node scripts/patch-android-manifest.mjs && cd android && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@capacitor/core": "^6.1.2",
@@ -47,6 +50,7 @@
     "ajv-formats": "^3.0.1",
     "eslint": "^9.9.1",
     "jsdom": "^25.0.0",
+    "patch-package": "^8.0.1",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2",

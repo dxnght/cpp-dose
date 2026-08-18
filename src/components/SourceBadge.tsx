@@ -4,12 +4,54 @@ import type { ClinicalRecord, Formula } from "../clinical/types";
 import { isVerified } from "../clinical/guard";
 import { t } from "../i18n";
 
-export function SourceBadge({ record }: { record: ClinicalRecord }) {
+export function SourceBadge({
+  record,
+  compact,
+  collapsible,
+}: {
+  record: ClinicalRecord;
+  /** Compact form (2026-07-22, UX review): status tag + version only, no full
+   * citation text — for showing provenance on a running drip card / Focus
+   * mode for the drip's whole lifetime, where the full 3-tag badge would be
+   * too much clutter next to the pacing UI. */
+  compact?: boolean;
+  /** Status + version always visible (Constitution Art. IV.4 minimum); the
+   * full source_document/source_citation text sits behind a tap-to-expand
+   * disclosure instead of always rendering inline (2026-08-17 UX review) —
+   * for long repeated lists (drug cards) the full citation text roughly
+   * doubled each card's height. Nothing is hidden, just collapsed by
+   * default. */
+  collapsible?: boolean;
+}) {
   const engineering = "kind" in record && (record as Formula).kind === "engineering";
   const verified = isVerified(record.review_status);
 
   const label = engineering ? t("badge.engineering") : verified ? t("badge.verified") : t("badge.unverified");
   const cls = verified || engineering ? "tag verified" : "tag unverified";
+
+  if (compact) {
+    return (
+      <span className="source-badge source-badge-compact">
+        <span className={cls}>{label}</span>
+        <span className="tag">{record.source_version}</span>
+      </span>
+    );
+  }
+
+  if (collapsible) {
+    return (
+      <details className="source-badge source-badge-collapsible">
+        <summary>
+          <span className={cls}>{label}</span>
+          <span className="tag">{record.source_version}</span>
+          <span className="tag source-badge-toggle">{t("badge.source")}</span>
+        </summary>
+        <span className="tag">
+          {record.source_document} · {record.source_citation}
+        </span>
+      </details>
+    );
+  }
 
   return (
     <span className="source-badge">

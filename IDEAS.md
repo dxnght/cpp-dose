@@ -87,9 +87,31 @@ value still enters via the pipeline, source-tagged and Owner-verified.
 - **Auto-dim in night focus** — via the Capacitor screen-brightness plugin (native
   build); tracked as Spec 001 FR-3i.
 - Larger accessibility options (color-blind-safe night palette variants).
+- **Distinct badge color for engineering formulas vs. Owner-verified clinical
+  records** — `SourceBadge` currently renders both "МАТЕМАТИКА" (engineering,
+  exempt from verification) and "ПІДТВЕРДЖЕНО" (Owner-signed VERIFIED) in the
+  same green. Raised in the 2026-07-22 UX review; not picked for that pass —
+  revisit if it's ever found to cause real confusion, not just in theory.
+- **Patient-linked identifier on concurrent drips** — the 2026-07-22 UX review
+  flagged that same-category concurrent drips are hard to tell apart (now
+  mitigated with auto-numbering, e.g. "Крапельниця 1"/"Крапельниця 2", no
+  patient data involved). A *named* patient tag was explicitly not pursued —
+  conflicts with the no-patient-data-on-a-capturable-device posture; would
+  need a deliberate Owner call, not a UX-pass default.
 
 ## Explicitly excluded (MVP red lines — need a Constitution amendment, not just a
 ## scope amendment)
 
 - Accounts, cloud sync, analytics/telemetry, patient records, any data
   transmission, AI-generated clinical content. (Constitution Art. V.)
+
+- **Silent screen-flash metronome channel** — a full-screen tint pulsing on
+  each drop, for pacing under sound *and* vibration discipline. Built, shipped,
+  then **removed 2026-07-25** at the Owner's call ("не потрібен наразі"). Taken
+  out rather than left behind a setting: an unused toggle on a safety-critical
+  night screen is one a medic can hit by accident. Restoring it is small — the
+  metronome's `setTickHandler` already exists for exactly this kind of channel,
+  and the removal is one commit to revert. Revisit only if a medic asks for a
+  fully silent pacing mode; note that on an iPhone PWA there is no vibration
+  either (WebKit has no Vibration API), so for that platform a visual channel
+  is the *only* silent option there could be.

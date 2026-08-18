@@ -1,142 +1,246 @@
-# CPP-DOSE — Roadmap & Milestones
+# CPP-DOSE — Roadmap
 
-Proposed. This is the "how deep do we go" map: what's the **minimum** that makes a
-genuinely useful, safe field tool, and the **maximum** we could grow into. Refine
-with the Owner. Nothing here changes the constitution or the fail-closed model.
+**Переписано 2026-07-24.** Попередня версія (M0-M3, липень 2026) описувала шлях
+до MVP і його зміст — і цю задачу проєкт **уже виконав**. Власник зазначив, що
+проєкт переріс ідеї й цілі старої мапи. Нова мапа побудована навколо іншого
+питання: не «що ще додати», а **«як довести готовий продукт до медиків і не дати
+йому померти»**.
 
-## Scope boundary (what this is, and isn't)
+Стара мапа збережена в git-історії; ключові рішення з неї перенесені в
+Додаток A нижче, щоб не втратити контекст.
 
-- **Is:** a focused, offline **drip-setup** tool — a small curated set of verified
-  drip medications/fluids, drop-rate math, pacing (metronome + chamber + timers),
-  and burn fluid. A "good analog of Goterum, aligned with TCCC/PCC."
-- **Isn't:** a full drug database / formulary, an EHR, or a protocol reader. Content
-  grows slowly and deliberately, always source-tagged and Owner-verified.
-
-## Current state (updated 2026-07-21)
-
-MVP is **feature-complete**: drip engine (drop-factor, steppers, gtt/min hero, up to 5
-concurrent drips + two-stage 10-min/5-min pre-end alarms, louder square-wave tone,
-per-drip mute opt-out, locked-screen delivery via OS-level local notifications),
-by-drug mode, "Час мішка", burn (Rule of Ten), focus
-mode, tap-calibrator, light/dark themes, wake-lock, Capacitor Haptics. Governance +
-CI + GitHub-ready (`github.com/dxnght/cpp-dose`, `master` branch). **Android APK
-field-tested by the Owner on a real device — no issues reported.** iOS scaffold in
-place, currently blocked on a device/OS mismatch (not a v1.0 blocker, Android-first
-per Owner decision). **43 clinical records + 2 engineering formulas verified**: the
-full v1.0 focused drip set, all 25 MOZ-ATB-2023 antibiotic records, and 3/4 of the
-TCCC-2026 general antibiotics (`feature/antibiotics-reference` merged to `master`,
-Spec 004 / ADR-0007 / Sprint 4).
+> Нічого тут не змінює конституцію проєкту й fail-closed модель.
+> Джерельний замок (TCCC-2026, MOZ-ATB-2023, JTS-CPG-61/91, PCC-BURN) чинний.
 
 ---
 
-## Milestones
+## Де ми зараз (чесно, станом на 2026-07-24)
 
-### M0 — Foundation & MVP build ✅ DONE
-Governance (constitution, specs, ADRs), fail-closed pipeline, drip engine + all
-modules, themes, both native shells scaffolded, CI, repo prepared for GitHub.
+### ✅ Зроблено
 
-### M1 — Clinical content complete & verified  *(gates any field use — mostly Owner)*
-- Archive every source with checksum (TCCC-2026 ✔, MOZ ✔, CPG-61 ✔, CPG-91 ✔;
-  confirm PCC-BURN edition; archive JTS originals where only UA translations exist).
-- Verify the full **curated drip set**: analgesia drip + priming bolus, sedation drip
-  + loading, burn fluid, `burn_rule_of_ten`, analgesia/sedation boluses.
-- Resolve `clinical/OPEN-CLINICAL-QUESTIONS.md`: IM ketamine doses, esketamine (needs
-  its own source), Appendix B numeric drip tables (transcribe carefully), weight
-  bounds / sub-40 kg behavior. Park pediatric + antibiotic-by-injury.
-- **DoD:** `npm run gate:release` green with the intended field content; Owner sign-off
-  logged in `VERIFICATION-LOG.md`.
+- **MVP feature-complete:** дріп-рушій (до 5 одночасних дріпів, двоступеневий
+  будильник 10/5 хв + порожня мішка, метроном без дрейфу, per-drip мут
+  press-and-hold), режим «за дозою», «Час мішка», опіки (Rule of Ten),
+  фокус-режим, калібратор, світла/темна теми.
+- **Клінічний контент: 43 верифіковані записи** (31 препарат + 12 схем
+  антибіотикопрофілактики) + 2 інженерні формули. 8 записів `UNVERIFIED` і
+  свідомо не показуються.
+- **Governance:** конституція, 6 специфікацій, ADR-0001…0007, спринт-звіти,
+  CI, 50 автотестів (включно з offline zero-network).
+- **Android:** APK зібрано, польове тестування Власником на реальному пристрої,
+  5 ітерацій виправлень будильників за польовими звітами.
+- **UX-рев'ю** (4 паралельні експертні проходи) впроваджено; окремий код-рев'ю
+  Власника пройдено.
+- **Іконка застосунку** — реальна, на всіх платформах.
+- **Грантова стратегія** — ландшафт, цільовий список, кошторис, pitch-повідомлення
+  (папка `outreach/`).
 
-### M2 — Field-release hardening → **v1.0**  *(first real field pilot)*
-- Lighthouse PWA installability pass; on-device airplane-mode soak of every module.
-- Metronome drift test on-device (SC-2, ≥10 min); 48 px audit ✔.
-- Signed **Android APK** (+ PWA) running on the Owner's device; icons/splash.
-  *(iOS parity is a follow-on — M2b — not a v1.0 blocker.)*
-- First-run disclaimer + "about/sources" screen final.
-- **DoD:** all Spec-000 success criteria (SC-1…SC-9) green + Owner release sign-off.
-- **Outcome:** hand v1.0 to a small group of medics for real feedback.
+### ❌ Не зроблено — і це головне
 
-### M3 — Post-MVP growth  *(from `IDEAS.md`, each source-gated & opt-in)*
-- More drip drugs/fluids via the pipeline; **esketamine** once sourced; Appendix B
-  numeric tables in-app.
-- Pediatric mode; antibiotic-by-injury browser — **DONE and merged to `master`**
-  (Spec 004 / ADR-0007 / Sprint 4): read-only, source-separated TCCC 2026 + MOZ 2023
-  reference in "Препарати". Content-complete (25/25 MOZ + 3/4 TCCC verified); the
-  duration-escalation logic originally imagined for this feature (in
-  `TACMED-POC-MASTER-BRIEF.md` §5.2 item 8) was **not found in the archived source**
-  and was **not built** — flagged for the Owner, not guessed at (Art. I).
-- TQ-timer + PFC care-timer modules (reminders only, never clinical decisions) —
-  **in spec** (Spec 006 / Spec 007 / Sprint 5), see "Development vectors" below.
-- Night-vision red theme toggle; auto-dim in focus (Capacitor Brightness); drip
-  start-time + handover notes.
+| Що | Стан |
+|---|---|
+| **Google Play** | **Нічого не почато.** Немає політики приватності, Data safety, Health declaration, лістингу, підпису релізу. `targetSdkVersion 34` — нижче вимог Play. |
+| **App Store** | **Нічого не почато.** |
+| **iOS на пристрої** | **Жодного разу не запускалось.** Каркас є, реальність не перевірена. |
+| ~~Юрособа~~ | ✅ **Не проблема** — активний ФОП 3-ї групи зі стандартними КВЕДами розробника ПЗ. Brave1 і USF відкриті для подачі просто зараз. |
+| **Тестовий парк** | 2 телефони (iPhone X на стелі iOS 16, realme GT2). Для застосунку, чия головна функція — будильник, це найбільший ризик. |
+| **Фінансування** | Нуль. 575 годин вкладено безкоштовно. |
+
+**Висновок:** інженерна частина в доброму стані, **дистрибуція — в нулі**. Уся
+мапа нижче — про це.
 
 ---
 
-## Development vectors (Owner review, 2026-07-18)
+## ⚡ Оновлення 2026-07-24 (вечір): PWA працює — стори більше не пріоритет №1
 
-Four directions were proposed for what comes next, all constrained to the existing
-**source lock** (TCCC-2026, MOZ-ATB-2023, JTS-CPG-61/91, PCC-BURN — no new source
-without Owner approval) and the project's minimalist stance: grow *verified content
-and precision*, not app surface area. Owner picked **(B) v1.0 tails** and **(C)
-timer modules** to work first; (A) and (D) stay queued.
+PWA піднято на `https://cpp-dose.probleminu.workers.dev/`, перевірено на
+iPhone: ставиться, працює офлайн. **Проєкт більше не «нуль користувачів»** —
+його можна давати медикам сьогодні.
 
-**(A) Fixed-dose reference screen** — `TACMED-POC-MASTER-BRIEF.md` §5.2 item 1
-(TXA, esketamine, ondansetron, calcium, hypertonic saline, meloxicam/paracetamol,
-midazolam). Cheapest of the four: all ~14 records are **already transcribed and
-seeded** in `uk-cpp.v1.json` as `UNVERIFIED` TCCC-2026 drugs — needs a small
-read-only screen (same shape as the antibiotics reference) + Owner verification,
-no new sourcing. Queued.
+Це змінює пріоритети, але **не скасовує стори повністю**. Різниця між
+каналами зводиться рівно до одного: **чи спрацює будильник, коли застосунок
+закритий.**
 
-**(B) Close the [v1.0] tails** — ✅ mostly done. Checklist in
-`clinical/OPEN-CLINICAL-QUESTIONS.md` §A: PCC-BURN's exact JTS CPG ID **resolved**
-(CPG ID 57, 13 Jan 2017, confirmed against jts.health.mil); JTS-CPG-61 cross-check
-against the English original **resolved** — all 4 verified ketamine drip records
-match the EN source exactly, no discrepancies. TCCC-2026 edition is corroborated
-(low residual risk, optional). The one remaining item is Owner-only:
-`tccc_cephalexin_po` verification (one command, in the checklist).
-
-**(C) Timer modules — resolved same day, smaller than proposed.** Owner reviewed
-`specs/006-tq-timer` / `specs/007-pfc-nursing-timer` and decided: **TQ-timer
-withdrawn** — no separate tourniquet-timer subsystem; the whole "timer module"
-ask turned out to be **the existing drip end-of-bag pre-end alarm, with its lead
-time changed from 5 → 10 min** (done — `PRE_END_ALARM_MS` in `DripScreen.tsx`,
-logged in `CHANGELOG.md`). **PFC nursing-timer stays on hold** — Owner still
-deciding whether it's needed at all; spec drafted (JTS-CPG-91 Table 17 q2h
-subset) but not approved for work. `sprints/sprint-05-timer-modules.md` has no
-active backlog right now.
-
-**(D) Field-hardening (M2 close-out)** — `CHANGELOG.md` (missing, flagged),
-Lighthouse PWA-installability pass, on-device airplane-mode soak log, signed
-release APK, and a decision on whether the red night theme is still wanted (the
-app currently has light/dark Apple-style themes instead). No new clinical content.
-Queued.
-
----
-
-## Minimum vs Maximum
-
-| | **Minimum viable field tool (v1.0)** | **Maximum (v2+)** |
+| Канал | Будильник при закритому застосунку | Ціна |
 |---|---|---|
-| Content | Ketamine analgesia + sedation drips, burn fluid + boluses (verified) | Full CPP infusion set, pediatric, antibiotics-by-injury |
-| Features | Drip engine, by-drug, bag-time, burn, focus, timers, calibrator | + timer modules, multi-casualty, handover/export |
-| Platforms | Android APK + PWA | + polished iOS (TestFlight for other medics) |
-| Effort | Owner verification + M2 hardening | ongoing, incremental |
+| **PWA** | ❌ немає (ні iOS, ні Android) | 0 |
+| **Прямий APK** | ✅ точний (`USE_EXACT_ALARM`) | 0, роздача вручну |
+| **Google Play** | ⚠️ є, але приблизний під Doze | $25 + 12 тестерів × 14 днів + щорічний SDK |
+| **App Store** | ✅ є (локальні сповіщення) | $99/рік + 166 год + щорічний SDK |
 
-**Recommendation:** ship the **focused v1.0** (the drip set above) as soon as M1+M2
-are green — it's already a genuinely useful, safe field tool — then grow content
-incrementally through the pipeline. Depth is bounded by "what's verified," not by code.
+Усе інше — офлайн, розрахунки, fail-closed, контент — **однакове скрізь**.
 
-## Decisions (Owner, 2026-07-15)
+**Рішення: не вирішувати зараз, а зібрати дані.** Роздай PWA медикам і
+став одне питання: «чи бракувало тобі сигналу, коли застосунок був
+закритий?». Якщо так — стори потрібні. Якщо ні (медик і так дивиться на
+крапельницю) — заощадиш $99/рік і 166 годин на iOS.
 
-1. **v1.0 depth = focused minimum** — ketamine analgesia + sedation drips, burn
-   fluid, and the priming/loading boluses. Broader content (TXA, antibiotics,
-   Appendix B numeric tables, esketamine, pediatric) grows *after* v1.0 via the
-   pipeline (M3).
-2. **Platform = Android-first** — v1.0 ships as **Android APK + PWA**; iOS parity is
-   a follow-on (**M2b**), not a v1.0 blocker.
-3. **M3 content ambition** — still open; decide per-item when we get there.
+**Що робити зараз замість Треку 1:**
+1. Власний домен замість `*.workers.dev` (~30 хв, для довіри у листах).
+2. Роздати PWA медикам через тактмед-контакти.
+3. **Прямий APK** для тих, кому потрібен будильник — безкоштовно й одразу,
+   без жодного стору. Discord, як ти й планував.
+4. Подача на гранти — тепер із живим посиланням.
 
-### What "v1.0 content complete" now means (the short list)
-`pcc_ketamine_analgesia_infusion` (+ `pcc_ketamine_analgesia_priming`),
-`pcc_ketamine_sedation_infusion` (+ `pcc_ketamine_sedation_loading`),
-`pcc_burn_fluid`, `burn_rule_of_ten` — all `VERIFIED` + sources archived. Everything
-else in the protocol file stays parked (excluded by the gate) until M3.
+Треки 1 і 2 нижче лишаються актуальними технічно, але **чекають на дані
+з поля**, а не на календар.
+
+---
+
+## Трек 1 — Google Play (тепер: за потреби, не за замовчуванням)
+
+*Мета: застосунок доступний медикам за посиланням, а не через передачу APK.*
+*Оцінка: ~100 год. Календарно — мінімум 3-4 тижні через вимогу закритого тесту.*
+
+### 1.1 Технічні блокери
+- [ ] Підняти `targetSdkVersion` 34 → 35/36 (без цього Play не прийме).
+- [ ] Зібрати release-варіант, keystore, підпис.
+- [ ] Рішення по гілці: `variant/play-store` (без `USE_EXACT_ALARM`) — саме вона
+      йде в стор. Повнофункціональна лишається для прямої роздачі APK.
+
+### 1.2 Юридично-адміністративне
+- [ ] Публічна політика приватності (URL, не PDF — вимога Play).
+- [ ] Data safety form (заповнити навіть при нульовому збиранні даних).
+- [ ] **Health apps declaration** — CPP-DOSE підпадає під Clinical Decision
+      Support («includes drug dosage calculators» — формулювання Google).
+- [ ] Медичний дисклеймер у описі стору.
+- [ ] Акаунт розробника ($25) + верифікація особи.
+
+### 1.3 Закритий тест — календарний блокер
+- [ ] **12 тестерів, 14 днів поспіль** (вимога для нових персональних акаунтів).
+      Тут допоможе тактмед-партнер — у них є медики.
+- [ ] Виправлення за підсумками.
+
+**DoD:** застосунок у Play, встановлюється з посилання, будильник підтверджено
+щонайменше на 3 різних вендорах Android.
+
+---
+
+## Трек 2 — iOS (найбільший технічний ризик)
+
+*Оцінка: ~166 год. Ризик оцінки — високий, бо реальність ще не бачили.*
+
+### 2.1 Розблокувати середовище
+- [ ] Оновити macOS 14.7 → **Tahoe 26** (M1 підтримується, **безкоштовно** —
+      купувати нічого не треба).
+- [ ] Xcode 26 (з 28.04.2026 обов'язковий для App Store: збірка з iOS 26 SDK).
+- [ ] Підняти deployment target 13.0 → 15.0 (офіційний діапазон Xcode 26).
+      iPhone X (iOS 16.x) для тестування придатний ✅
+
+### 2.2 Перша зустріч із реальністю
+- [ ] Зібрати й запустити на iPhone X.
+- [ ] **AudioContext** — політика autoplay на iOS жорсткіша; метроном і будильник
+      можуть не звучати без явної взаємодії.
+- [ ] **Haptics / Wake Lock** — поведінка відрізняється від Android.
+- [ ] **Фонові будильники** — iOS обмежує фонові таймери значно жорсткіше.
+      ⚠️ Ймовірно, доведеться проєктувати інакше, ніж на Android. Це не «порт»,
+      а окрема інженерна задача.
+
+### 2.3 App Store
+- [ ] Apple Developer Program ($99/рік — **або безкоштовно через НГО-партнера**).
+- [ ] Лістинг, скриншоти, приватність, дисклеймер.
+- [ ] Рев'ю Apple (медичні застосунки перевіряють прискіпливо).
+
+**DoD:** застосунок в App Store; будильник на iOS або працює надійно, або його
+обмеження **чесно описані в самому застосунку** (fail-closed підхід поширюється
+й на обіцянки користувачу).
+
+---
+
+## Трек 3 — Фінансування (паралельно, не після)
+
+*Детально: `outreach/FUNDING-TARGETS-2026-07-24.md`, `outreach/BUDGET-2026-07-24.md`.*
+
+- [x] ~~Визначити юридичну оболонку~~ — **закрито**: активний ФОП 3-ї групи.
+- [ ] **Консультація з Brave1** до формальної подачі (питання про «військову
+      медицину» + як виконуються випробування для софту). Єдине, що лишилось
+      з'ясувати перед подачею.
+- [ ] **Спитати бухгалтера** про оподаткування гранту для ФОП 3-ї групи —
+      до підписання договору, не після.
+- [ ] **Перевести розмови з фондами** на «дайте медиків на тестування»
+      (потрібніше за юрособу; заодно закриває вимогу Play про 12 тестерів).
+- [ ] Подача: Brave1 (≈350 тис. грн) → USF (≈$17 тис.).
+- [ ] **Рішення по open-source** — від нього залежить доступність NLnet.
+
+**Чому паралельно:** розгляд гранту займає місяці. Якщо чекати релізу —
+втрачаємо цикл подачі. Якщо чекати гранту — не релізимось. Юрособа більше не
+блокує, тож подаватись можна вже зараз.
+
+---
+
+## Трек 4 — Надійність у полі (безперервно)
+
+- [ ] **Розширити тестовий парк** — 2 б/в пристрої ($250-400): сучасний iPhone
+      + дешевий Android від «агресивного до енергії» вендора (Xiaomi/Samsung).
+      Найдешевша страховка в кошторисі.
+- [ ] Канал зворотного зв'язку від медиків (Discord — ідея Власника: закрита
+      група, кілька актуальних APK, чат проблем).
+- [ ] Lighthouse-прохід + airplane-mode soak на пристрої.
+- [ ] Продовжити цикл «польовий звіт → виправлення» (працює добре: так знайшли
+      і баг самоскасування нотифікацій, і хибний будильник коротких мішок).
+
+---
+
+## Трек 5 — Контент і функції (тільки після Треків 1-2)
+
+*Свідомо в кінці. Застосунок, яким ніхто не користується, не стає кращим від
+нових функцій.*
+
+**Готове до роботи (контент уже перенесений, чекає верифікації):**
+- [ ] **Екран фіксованих доз** — ~14 записів TCCC-2026 (TXA, ескетамін,
+      ондансетрон, кальцій, гіпертонічний розчин, мелоксикам/парацетамол,
+      мідазолам) вже засіяні в `uk-cpp.v1.json` як `UNVERIFIED`. Потрібен
+      невеликий read-only екран + верифікація Власника. **Найдешевша фіча з усіх.**
+
+**Потребує рішення Власника:**
+- [ ] PFC nursing-timer (спека 007 чернетка, не затверджена — Власник ще вирішує,
+      чи потрібно взагалі).
+- [ ] Педіатричний режим.
+- [ ] Числові таблиці Appendix B.
+
+**З `IDEAS.md` (свідомо відкладене):**
+- Нічна червона тема / авто-затемнення у фокусі.
+- Окремий колір бейджа для інженерних формул.
+
+---
+
+## Що НЕ робимо (щоб не розповзалось)
+
+- ❌ Акаунти, хмара, синхронізація, телеметрія, будь-яка передача даних
+      (конституція, Art. V — потребує поправки до конституції, не до скоупу).
+- ❌ Внутрішні покупки / преміум — потребують мережі під час роботи, конфлікт
+      з Art. V. Модель «платний застосунок у сторі» конфліктів не має, але
+      Власник ухвалив: **застосунок лишається безкоштовним**.
+- ❌ Повна фармдовідка, EHR, читалка протоколів.
+- ❌ ШІ-генерований клінічний контент (Art. I).
+
+---
+
+## Порядок на найближчий місяць (переглянуто 2026-07-24 після запуску PWA)
+
+1. **Роздати PWA медикам** — власний домен, посилання в тактмед-контакти,
+   зібрати відповідь на одне питання: *чи бракує будильника при закритому
+   застосунку?* Це визначає, чи потрібні стори взагалі.
+2. **Трек 3** — консультація Brave1 + питання до бухгалтера *(найдовші строки
+   очікування не від нас; юрособа вже є, посилання вже є)*.
+3. **Прямий APK** для тих, кому будильник потрібен — нуль витрат, нуль
+   очікування, повний функціонал.
+4. **Трек 4** — тестові пристрої, щойно зʼявиться бюджет.
+5. **Треки 1-2 (стори)** — тільки якщо польові дані покажуть, що будильник
+   при закритому застосунку справді потрібен. Не раніше.
+
+---
+
+# Додаток A — рішення Власника, перенесені зі старої мапи
+
+1. **v1.0 = сфокусований мінімум** (кетамін аналгезія + седація, опікова рідина,
+   болюси). Ширший контент росте після v1.0 через пайплайн. ✅ *Виконано й
+   перевиконано: 43 записи замість запланованих 6.*
+2. **Android-first**; iOS — наступний крок, не блокер v1.0. ✅ *Чинне.*
+3. **TQ-timer знято** (2026-07-18): окремої підсистеми таймера турнікета немає;
+   уся задача звелася до зміни lead time будильника 5 → 10 хв. ✅ *Виконано.*
+4. **Джерельний замок** — жодного нового джерела без затвердження Власника.
+   ✅ *Чинне.*
+5. **Логіка ескалації за тривалістю** для антибіотиків **не побудована** — її не
+   знайдено в архівованому джерелі, тож не вгадували (Art. I). *Лишається
+   відкритим питанням до Власника.*

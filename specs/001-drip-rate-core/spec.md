@@ -3,10 +3,34 @@
 - **Feature ID:** 001-drip-rate-core
 - **Status:** Draft → pending Owner approval
 - **Priority:** P0 (Sprint 1)
-- **Version:** 1.4 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
+- **Version:** 1.14 (5 concurrent drips, up from 3; two-stage 10-min + 5-min
   pre-end alarm, up from the single 10-min alarm; per-drip alarm mute
   opt-out; louder/longer alarm tone; OS-level local-notification backstop so
-  alarms fire with the screen locked — Owner decisions 2026-07-21)
+  alarms fire with the screen locked, on a dedicated HIGH-importance channel,
+  with a `patch-package` fix for a plugin bug that forced every notification
+  private regardless of channel config, a fixed out-of-range importance
+  value, a live permission/channel health check, and a battery-optimization
+  exemption tip — Owner decisions 2026-07-21/22; plus a fix for the OS
+  notification and in-app alarm silently fighting each other (see FR-12) —
+  Owner-reported 2026-07-22; plus a 2026-07-22 UX-review batch: press-and-hold
+  to enable the alarm mute (FR-7a), visual alarm-stage escalation (AC-6b),
+  a persistent source/verification badge on running drips (AC-6c), drug names
+  in labels + auto-numbering for duplicate concurrent drips (FR-8) — see
+  `plan/architecture.md` §4a/§4a.1/§4a.2/§4a.3/§4a.4; plus (1.10) an optional
+  in-app-only per-drip display tag (FR-8a, e.g. a bed/litter number),
+  deliberately excluded from the OS notification channel since FR-12's
+  notifications are `VISIBILITY_PUBLIC`/lock-screen-visible by design —
+  Owner decision 2026-07-24, see AC-6d; plus (1.11) a drip whose bag is
+  already ≤10/≤5 min total no longer immediately fires that stage's alarm
+  at creation — Owner report 2026-07-24, see FR-6/AC-5a; plus (1.12)
+  startup cleanup of alarms orphaned by a killed session, which were firing
+  with no drips on screen — Owner report 2026-07-24, see FR-12/AC-6e; plus
+  (1.13) live drips now persist across a restart and return `unconfirmed`,
+  superseding §6's "MVP does not persist live drips" — Owner decision
+  2026-07-24, see FR-13/AC-6f; plus (1.14) the silent screen-flash metronome
+  channel removed (FR-3l) and the iOS platform limits on audio/vibration
+  stated in-app rather than implied — Owner decision + field report
+  2026-07-25)
 - **Depends on:** 005-clinical-content-pipeline (for the `drip_rate` engineering formula).
 
 ## Constitution Check
@@ -72,9 +96,19 @@ unambiguous, usable one-handed with gloves at night.
   drops/min with live **retitration** (±1 gtt/min), and a large chamber. The chamber
   shares the card's phase via a per-drip `animStart` anchor, so opening focus
   **continues the phase — it never restarts**.
-- **FR-3f Phase sync.** The audio metronome, the optional silent **screen flash**,
-  and the chamber animation are all anchored to the active drip's `animStart` (ticks
-  at `animStart + n·period`) so sound, flash and drop share one phase. (ADR-0005.)
+- **FR-3f Phase sync.** The audio metronome and the chamber animation are both
+  anchored to the active drip's `animStart` (ticks at `animStart + n·period`) so
+  sound and drop share one phase. (ADR-0005.)
+  *~~The optional silent **screen flash** was a third channel on this anchor;
+  removed 2026-07-25 by Owner decision — see FR-3l.~~*
+- **FR-3l Silent screen flash — removed (Owner decision 2026-07-25).** The
+  metronome previously had a third, fully silent channel: a full-screen tint
+  pulsing on each drop, for pacing under sound and vibration discipline. Owner
+  judged it unnecessary in practice and asked for it to be dropped. Removed
+  rather than hidden behind a setting, because an unused option on a
+  safety-critical screen is still something a medic can switch on by accident
+  at night. The chamber animation remains as the visual channel.
+  *Restoring it is straightforward if a medic ever asks — logged in `IDEAS.md`.*
 - **FR-3g Tap calibrator.** Tapping in time with the real chamber (≥3 taps) measures
   the actual gtt/min being run + its bag run-time; applies to the "Час мішка" calc.
 - **FR-3h** Confirm-to-remove (two-tap) for a running drip; remembered last drop
@@ -84,11 +118,11 @@ unambiguous, usable one-handed with gloves at night.
   tone at near-max gain, ~0.45 s each** (louder/longer than the original soft
   sine beeps — Owner decision 2026-07-21, field feedback that the original was
   too quiet to trust).
-- **FR-3i** Auto-dim the screen in night focus — *needs the Capacitor screen-brightness
-  plugin + native build; deferred to the APK step.*
+- **FR-3i** Auto-dim the screen in night focus — _needs the Capacitor screen-brightness
+  plugin + native build; deferred to the APK step._
 - **FR-3j Pacing model (UX).** Exactly one drip paces at a time (its metronome runs).
   Pacing is an explicit play/pause control on the card **and** in focus; **opening
-  focus never starts or stops pacing**. The audio/haptic/flash channel toggles are
+  focus never starts or stops pacing**. The audio/haptic channel toggles are
   shown **only while a drip is pacing** (they only describe how the metronome
   signals) — so there is no "sound is on but nothing plays" state. (Fixed 2026-07-15.)
 - **FR-3k** The drip-chamber drop is **muted/grey when that drip is not pacing** (its
@@ -104,19 +138,76 @@ unambiguous, usable one-handed with gloves at night.
   wall-clock time; fire **two local pre-end alarms — at 10 min and at 5 min
   before empty** (lead times, Owner decision 2026-07-21; supersedes the single
   10-min-only alarm from 2026-07-18) and a third alarm **at empty**. No network.
+  **A stage only fires if the drip's total run time genuinely crosses down
+  through it** (Owner report 2026-07-24): a bag whose whole run time is
+  already ≤10 min (or ≤5 min) starts out past that threshold rather than
+  crossing it, so that stage is pre-satisfied silently at creation instead
+  of alarming the instant the drip is added — see AC-5a.
 - **FR-7 (concurrency)** Support **1–5 concurrent drips** (raised from 3, Owner
   decision 2026-07-21). Each drip is an independent unit (its own volume, rate,
   drop factor, timer, alarms). Adding a 6th is blocked with a message.
   Removing/finishing one frees a slot.
 - **FR-7a (alarm opt-out)** Each drip with an end-of-bag timer configured shows
-  a **"Без будильника"** checkbox, **off by default**. When checked, all three
+  a **"Без будильника"** control, **off by default**. When enabled, all three
   of that drip's alarms (10-min, 5-min, at-empty) are muted; every other
   concurrent drip's alarms are unaffected. Scoped to one drip only — never a
-  global setting, never on by default. A live, informational-only hint next to
-  the checkbox shows how much of the remaining run time is still ahead of the
-  10-min alarm window (does not drive any logic). (Owner decision 2026-07-21.)
+  global setting, never on by default. A live, informational-only hint (shown
+  only while not muted) shows how much of the remaining run time is still
+  ahead of the 10-min alarm window (does not drive any logic). (Owner decision
+  2026-07-21.) **Updated 2026-07-22 (UX review, Owner decision):** enabling
+  the mute now requires a **~600 ms press-and-hold**, not a single tap —
+  silencing the drip's only alarm should be harder than the accidental tap
+  the old checkbox allowed. Disabling stays a single, instant tap (turning
+  the alarm back on is the safe direction, mirroring the confirm-only-the-
+  destructive-direction pattern already used for removing a drip, FR-3h).
+  The enabled state is now the visually prominent one (a red-bordered pill),
+  not dim — a stressed medic scanning cards shouldn't be able to miss that
+  one is silenced.
 - **FR-8 (concurrency UX)** All active drips are visible together (name/label,
-  gtt/min, time remaining). The medic can tell them apart at a glance under stress.
+  gtt/min, time remaining). The medic can tell them apart at a glance under
+  stress. **Strengthened 2026-07-22 (UX review):** the drug's actual name is
+  now part of a dose-mode drip's label (previously only category +
+  concentration, e.g. "Знеболення · 1 мг/мл", with no way to tell _which_
+  drug from the card alone); when two concurrent drips would otherwise share
+  an identical label, both are auto-numbered ("Дріп 1"/"Дріп 2") so they're
+  distinguishable without any patient data being entered.
+- **FR-8a (in-app display tag, 2026-07-24 Owner decision)** Each active drip
+  can optionally carry a free-text `displayTag` (e.g. a bed/litter number) —
+  entered/edited in Focus mode, shown next to `label` on the card and in
+  Focus. Purely in-memory, like the rest of `drips`: not written to
+  `localStorage` or any file, gone when the drip is removed or the app
+  restarts (MVP does not persist live drips at all — §6). **Must never
+  reach `label`, `dripScheduleKey()`, or `rescheduleDripAlarms()` /
+  notifications.ts** — FR-12's OS notifications are `VISIBILITY_PUBLIC` by
+  design (so they show on a locked screen), so anything potentially
+  identifying has to stay in-app-only, visible only while the phone is
+  unlocked with the app open. No content validation (not blocked from
+  holding a name) — the field's placeholder nudges toward a positional tag
+  (bed/litter number) rather than a personal one (callsign, name), as a
+  suggestion rather than an enforced rule.
+- **FR-13 (drip state survives an app restart, 2026-07-24 Owner decision —
+  supersedes the "MVP does not persist live drips" line in §6)** Active drips
+  are persisted on-device (`localStorage`, no network — Art. V unaffected) and
+  restored on launch. **Restored drips come back `unconfirmed`:** visibly
+  un-trusted (dashed border, dimmed) with an explicit "підтвердь, що ще
+  крапає" action, and a warning banner above the list. They still run their
+  countdown and still arm their alarms — a spurious alarm is far safer than a
+  missed one — but the medic must acknowledge each before it reads as
+  verified. *Rationale:* previously drip state died with the process while the
+  OS alarms (FR-12) survived it, so an alarm could fire for a drip the app
+  could no longer show, and the AC-6e sweep could cancel the remaining alarms
+  of a bag that was still physically running. Persisting is what makes state
+  and alarms share one lifetime; `unconfirmed` is what preserves §6's original
+  concern ("no false sense of a still-running countdown") without discarding
+  the state that keeps the medic warned.
+  **Never persisted:** `displayTag` (may hold a callsign — the 2026-07-24
+  threat model keeps it in memory only; enforced structurally in
+  `serializeDrips`, not just by types), the `sourceRecord` snapshot (re-resolved
+  by id from the field bundle, so verified content is never duplicated into
+  mutable storage — Art. I/II), and the `warned10/5` flags (recomputed from
+  the clock, so a stale flag can't suppress a warning that's still due).
+  Storage that is missing, malformed, or describes a drip that ran dry over an
+  hour ago is discarded silently — the app must always start.
 - **FR-9 (metronome + concurrency)** Define audible behavior with multiple drips:
   the medic selects **one "active" drip** whose metronome sounds/vibrates at a time
   (others show visual countdown only), OR distinct cues per drip — **Owner to pick**
@@ -134,7 +225,58 @@ unambiguous, usable one-handed with gloves at night.
   unaffected) as a backstop; muted via "Без будильника" (FR-7a) exactly like
   the in-app alarm. Notification permission is requested once per session; if
   denied, a visible warning tells the medic rather than failing silently.
-  (Owner decision 2026-07-21; see `plan/architecture.md` §4a.)
+  Notifications post to a dedicated HIGH-importance, public-visibility,
+  vibrating channel (not the plugin's implicit default) — the first version
+  posted the text on time but with no audible/vibration signal, which
+  defeats the purpose (Owner-reported same day). The public-visibility part
+  needed a `patch-package` fix too: the plugin hardcodes every notification
+  to `VISIBILITY_PRIVATE` regardless of channel config (found in its Android
+  source) — patched to `VISIBILITY_PUBLIC`. `autoCancel: true` so it clears
+  on tap; `ongoing: true` was tried and then removed (likely cause of a
+  lock-screen-visibility regression on some OEM skins). No `fullScreenIntent`
+  support in this plugin — that's the real mechanism for "breaks through a
+  fully locked screen" (alarm-clock/incoming-call style), a separate, bigger
+  native-plugin item if still needed after on-device testing. A subsequent
+  inconsistent field report (works fully screen-off, nothing at all
+  screen-on-but-locked) led to two more fixes: an out-of-range channel
+  `importance: 5` (Android's real max is `4`, HIGH — corrected) found by
+  re-checking against actual Android constants, and a live
+  `checkNotificationHealth()` re-check (permission + actual channel
+  importance) on every drip change instead of a one-time mount snapshot, so
+  the in-app warning reflects current state. The pattern is most likely
+  explained by Android's App Standby/battery-optimization bucketing (outside
+  any notification config this app controls) — a permanent, calm in-app tip
+  now recommends the medic exempt CPP-DOSE from battery optimization.
+  (Owner decisions 2026-07-21/22; see `plan/architecture.md`
+  §4a/§4a.1/§4a.2/§4a.3.)
+  **Orphan cleanup (2026-07-24 Owner report, see AC-6e):** notifications are
+  armed in Android's AlarmManager, which outlives the app process, while the
+  module's notification-id bookkeeping is in-memory and dies with it. A killed
+  session therefore left alarms armed that nothing could name, let alone
+  cancel — they fired later with no drips on screen and the app not running.
+  On launch the app now cancels every pending notification and clears
+  delivered ones; scheduling is gated behind that sweep, since session-local
+  ids restart at 1 and would otherwise collide with the orphans being swept.
+
+  **v5 fix (2026-07-22, three more Owner field reports):** the empty-bag
+  notification's text ("дріп порожній" alone, no lead-in) read as a
+  context-free glitch; the notification consistently appeared ~1 min before
+  the in-app alarm sounded; and with the drip's sound toggle off + screen
+  locked, no notification arrived at all, though it was "fully correct" with
+  sound on. Root cause: the reschedule effect gated each stage's OS
+  notification on that stage's in-app `warned10/5/Empty` flag, and
+  rescheduling always _cancels_ a drip's notification ids first — so the
+  moment the in-app tick (a separate, independent 1s poll) caught up and
+  flipped a flag, it silently dismissed a notification the OS had already
+  delivered. Because the WebView's timers suspend while the screen is
+  locked and only catch up on unlock, this self-cancel fired right as the
+  medic looked at the phone — explaining all three reports as one bug, not
+  three. Fixed: the OS notification and the in-app alarm are now fully
+  independent channels (`warned10/5/Empty` gate only the in-app alarm,
+  never the OS notification); rescheduling now happens only when a drip's
+  actual timing changes (`dripScheduleKey()`), not on every unrelated state
+  change; the empty-alarm text now mirrors the 10/5-min notifications'
+  phrasing. See `plan/architecture.md` §4a.4.
 
 ## 4. Acceptance criteria
 
@@ -147,12 +289,49 @@ unambiguous, usable one-handed with gloves at night.
 - **AC-5 (SC-9)** Each drip's finish time = start + volume/rate within ±1 min; the
   **10-min pre-end alarm**, the **5-min pre-end alarm**, and the **at-empty
   alarm** all fire, in airplane mode, each with a distinguishable pattern.
+- **AC-5a (2026-07-24, Owner report; FR-6)** Adding a drip whose total bag
+  run time is ≤10 min does **not** immediately fire the 10-min alarm; if
+  also ≤5 min, the 5-min alarm does not immediately fire either. Only the
+  at-empty alarm (and, for a bag between 5 and 10 min, the 5-min alarm at
+  its real crossing point) still fire normally.
 - **AC-6 (SC-9)** With **5 concurrent drips** at different rates, each keeps its own
   correct countdown and fires its own alarms independently; a 6th is blocked.
-- **AC-6a** With **"Без будильника" checked** on one drip, none of its three alarms
-  (10-min, 5-min, at-empty) fire; other concurrent drips' alarms are unaffected
-  and fire normally. Unchecking it re-enables future alarms for that drip
-  (already-passed thresholds do not fire retroactively).
+- **AC-6a** With **"Без будильника" enabled** (via a ~600 ms press-and-hold, not
+  a tap) on one drip, none of its three alarms (10-min, 5-min, at-empty) fire;
+  other concurrent drips' alarms are unaffected and fire normally. A quick
+  tap/release that doesn't complete the hold leaves the drip unmuted. Tapping
+  once on an already-muted drip disables the mute instantly and re-enables
+  future alarms for that drip (already-passed thresholds do not fire
+  retroactively).
+- **AC-6b (2026-07-22, UX review)** Regardless of `silenced`, once a drip
+  crosses the 10-min, 5-min, or empty threshold, its card (and Focus view)
+  shows a matching visual escalation (border/text color, increasing urgency)
+  that persists until the drip is removed — recoverable by sight alone, not
+  only audible at the instant it fires.
+- **AC-6c (2026-07-22, UX review; SC-7)** A running drip's card and its Focus
+  view show a compact source/verification badge for its whole lifetime (drug
+  or burn-formula record snapshotted at add-time), not only in the setup
+  selector before the drip is added. bagtime-mode drips (no underlying
+  record) show no badge.
+- **AC-6d (2026-07-24, Owner decision; FR-8a)** A drip's optional
+  `displayTag`, once set in Focus mode, appears next to its label on the
+  card and in Focus, and survives retitration/mute-toggle/renumbering. It
+  never appears in any OS notification title/body (FR-12) and is never
+  written to `localStorage` or any file — gone when the drip is removed or
+  the app restarts, same as the rest of `drips`.
+- **AC-6e (2026-07-24, Owner report; FR-12)** After the app is killed (swiped
+  away, or reclaimed by the OS) with drips running, **no alarm from that dead
+  session ever fires**: on next launch every still-pending notification is
+  cancelled and any already-delivered one is cleared from the tray. Since live
+  drips are deliberately not persisted (§6), a pending drip alarm at startup
+  belongs to no drip and is by definition an orphan.
+- **AC-6f (2026-07-24, Owner decision; FR-13)** After the app is killed with
+  drips running and reopened, those drips are back on screen with correct
+  elapsed/remaining time, marked `unconfirmed` (dashed border, dimmed, warning
+  banner, per-card confirm action), and their alarms are re-armed. Confirming
+  clears the marking without altering any number. A restored drip carries no
+  `displayTag`. Corrupt/absent storage, or a bag that ran dry more than an
+  hour ago, leaves the list empty rather than failing to start.
 - **AC-7** Out-of-range input → blocking message, no computed number.
 - **AC-8 (SC-3)** Fully functional offline; zero network.
 - **AC-9 (FR-12)** With the screen locked (or the app backgrounded) before a
@@ -174,8 +353,14 @@ modes, >5 concurrent drips, cross-drip interaction logic.
 - Screen sleep / app backgrounded → alarms must still fire — **implemented
   2026-07-21 via local notifications (FR-12)**; audio metronome may still be
   suspended and re-anchors on resume (documented in architecture, §4a).
-- App killed → on relaunch, warn that running drips/timers were lost (no false
-  sense of a still-running countdown). MVP does not persist live drips.
+- ~~App killed → on relaunch, warn that running drips/timers were lost (no false
+  sense of a still-running countdown). MVP does not persist live drips.~~
+  **Superseded 2026-07-24 by FR-13/AC-6f:** drips *are* now persisted and
+  restored, because discarding them while the OS alarms survived meant alarms
+  fired for drips the app couldn't show — and, after the AC-6e sweep, could
+  cancel warnings for a bag still physically running. The original concern
+  (no false sense of a still-running countdown) is now handled by restoring
+  them `unconfirmed` rather than by throwing the state away.
 
 ## Clarifications needed
 
@@ -186,7 +371,7 @@ modes, >5 concurrent drips, cross-drip interaction logic.
   confirm.
 - **Rounding policy — RESOLVED (Owner, 2026-07-13):** compute **exact**, round only
   the final displayed drops/min (option A). Keep full precision internally (e.g.
-  ml/min = 0.267, not 0.26). Consequence accepted: two cells of the *sedation* table
+  ml/min = 0.267, not 0.26). Consequence accepted: two cells of the _sedation_ table
   (1.25 & 1.75 mg/kg/h) read 1 ml/h below CPG-61's printed card (CPG derives ml/h
   from rounded µg/kg/min) — clinically trivial, and the analgesia drip has no printed
   card to clash with.

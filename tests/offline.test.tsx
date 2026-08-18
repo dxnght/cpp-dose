@@ -42,7 +42,7 @@ describe("offline / zero exfiltration", () => {
     render(<App />);
     // First-run disclaimer is up; acknowledge it, then visit every screen.
     fireEvent.click(screen.getByRole("button", { name: "Я зрозумів(-ла)" }));
-    for (const label of ["Крапельниця", "Препарати", "Про застосунок / джерела", "Застереження"]) {
+    for (const label of ["Крапельниця", "Препарати", "Про застосунок", "Застереження"]) {
       fireEvent.click(screen.getByRole("button", { name: label }));
     }
     for (const s of egressSpies) expect(s).not.toHaveBeenCalled();

@@ -5,13 +5,19 @@ import {
   mlPerHToGtt,
   secPerDrop,
   bagRunHours,
+  retitratedStartedAt,
+  dripEndsAt,
   parseConcentrationMgPerMl,
   burnRuleOfTenMlPerH,
   doseRangeMg,
   clamp,
+  preSatisfiedAlarmStages,
   WEIGHT,
   VOLUME,
 } from "../src/drip/calc";
+
+const WARN10_MS = 10 * 60_000;
+const WARN5_MS = 5 * 60_000;
 
 describe("burn Rule of Ten", () => {
   it("(40%,70kg)=400, (40%,100kg)=600, (30%,80kg)=300", () => {
@@ -31,6 +37,11 @@ describe("bolus mg from mg/kg string", () => {
     expect(doseRangeMg("0.2-0.3 mg/kg", 80)).toBe("16–24 мг");
     expect(doseRangeMg("1 mg/kg", 80)).toBe("80 мг");
   });
+
+  it("also parses the Cyrillic unit form now stored in dose_per_kg (2026-08-17 i18n pass)", () => {
+    expect(doseRangeMg("0.2-0.3 мг/кг", 80)).toBe("16–24 мг");
+    expect(doseRangeMg("1 мг/кг", 80)).toBe("80 мг");
+  });
 });
 
 describe("bag-volume stepper stays on the 50 ml grid (Owner-reported regression, 2026-07-21)", () => {
@@ -38,6 +49,124 @@ describe("bag-volume stepper stays on the 50 ml grid (Owner-reported regression,
     // A min not aligned to the step let the DripScreen stepper clamp to the
     // floor, then climb off-grid (51, 101, 151 ml…) instead of round values.
     expect(VOLUME.min % 50).toBe(0);
+  });
+});
+
+describe("preSatisfiedAlarmStages (Owner-reported regression, 2026-07-24)", () => {
+  // Owner report: adding an 8-min bag immediately fired the "10 min left"
+  // alarm at creation — remaining time started out already below the
+  // threshold, so there was never a moment of crossing down through it.
+  it("an 8-min bag pre-satisfies warned10 but not warned5", () => {
+    // 100 ml @ 750 ml/h = 0.1333h = 8 min.
+    expect(preSatisfiedAlarmStages(100, 750, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: false,
+    });
+  });
+
+  it("a 3-min bag pre-satisfies both stages (nothing to warn about at all)", () => {
+    // 100 ml @ 2000 ml/h = 0.05h = 3 min.
+    expect(preSatisfiedAlarmStages(100, 2000, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: true,
+    });
+  });
+
+  it("a 15-min bag pre-satisfies neither — both alarms are still real crossings", () => {
+    // 100 ml @ 400 ml/h = 0.25h = 15 min.
+    expect(preSatisfiedAlarmStages(100, 400, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
+  });
+
+  it("exactly 10 min is pre-satisfied for warned10 (boundary is inclusive)", () => {
+    // 100 ml @ 600 ml/h = 0.16667h = 10 min exactly.
+    expect(preSatisfiedAlarmStages(100, 600, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: true,
+      warned5: false,
+    });
+  });
+
+  it("no bag timer (bagMl null) pre-satisfies neither — moot, never checked", () => {
+    expect(preSatisfiedAlarmStages(null, 750, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
+  });
+
+  it("mlPerH <= 0 pre-satisfies neither (guards the same way bagRunHours does)", () => {
+    expect(preSatisfiedAlarmStages(100, 0, WARN10_MS, WARN5_MS)).toEqual({
+      warned10: false,
+      warned5: false,
+    });
+  });
+});
+
+describe("retitratedStartedAt (code review 2026-08-01 — retitration finish-time bug)", () => {
+  const START = 1_700_000_000_000;
+
+  it("preserves the true remaining-volume end time across a rate change", () => {
+    // 500 ml bag at 200 ml/h; after 1h, 200 ml infused, 300 ml left. Dropping
+    // to 100 ml/h should still empty the bag 4h after the original start
+    // (1h elapsed + 300/100h remaining) — not 5h (500/100h from scratch).
+    const oneHourIn = START + 3600_000;
+    const newStart = retitratedStartedAt(START, 200, 100, oneHourIn);
+    const endAt = newStart + bagRunHours(500, 100) * 3600_000;
+    expect(endAt).toBe(START + 4 * 3600_000);
+  });
+
+  it("is a no-op when the rate doesn't change", () => {
+    const now = START + 1234;
+    expect(retitratedStartedAt(START, 100, 100, now)).toBe(START);
+  });
+
+  it("speeding up moves the end time earlier, not later (the safe direction)", () => {
+    const oneHourIn = START + 3600_000;
+    const newStart = retitratedStartedAt(START, 100, 200, oneHourIn);
+    const endAt = newStart + bagRunHours(500, 200) * 3600_000;
+    // Original rate (100 ml/h) would have emptied at START + 5h.
+    expect(endAt).toBeLessThan(START + 5 * 3600_000);
+  });
+
+  it("handles a second retitration correctly (re-anchors from the first)", () => {
+    // 500 ml @ 200 ml/h -> after 1h, drop to 100 ml/h -> after another 1h
+    // (2h total elapsed), drop to 50 ml/h.
+    // At the second retitration: 200 ml infused in hour 1, 100 ml infused in
+    // hour 2 (at 100 ml/h) = 300 ml infused total, 200 ml left. At 50 ml/h
+    // that's 4h more, so the bag should empty at START + 2h + 4h = START+6h.
+    const oneHourIn = START + 3600_000;
+    const twoHoursIn = START + 2 * 3600_000;
+    const afterFirst = retitratedStartedAt(START, 200, 100, oneHourIn);
+    const afterSecond = retitratedStartedAt(afterFirst, 100, 50, twoHoursIn);
+    const endAt = afterSecond + bagRunHours(500, 50) * 3600_000;
+    expect(endAt).toBe(START + 6 * 3600_000);
+  });
+
+  it("clamps a backward clock jump instead of anchoring into the future (code review 2026-08-02)", () => {
+    // Device clock is corrected backward after the drip started, so `now`
+    // ends up before `startedAt`. Without clamping, elapsed time would go
+    // negative and the new anchor would land after `now` — a startedAt in
+    // the future, which deserializeDrips() would reject outright on the
+    // next restart, silently losing an otherwise-live drip.
+    const clockJumpedBack = START - 60_000;
+    const newStart = retitratedStartedAt(START, 200, 100, clockJumpedBack);
+    expect(newStart).toBe(clockJumpedBack);
+    expect(newStart).toBeLessThanOrEqual(clockJumpedBack);
+  });
+});
+
+describe("dripEndsAt (code review 2026-08-02 — single source for the bag end-time formula)", () => {
+  const START = 1_700_000_000_000;
+
+  it("matches startedAt + bagRunHours(bagMl, mlPerH)", () => {
+    expect(dripEndsAt(START, 500, 100)).toBe(
+      START + bagRunHours(500, 100) * 3600_000,
+    );
+  });
+
+  it("(500 ml @ 100 ml/h) ends 5h after start", () => {
+    expect(dripEndsAt(START, 500, 100)).toBe(START + 5 * 3600_000);
   });
 });
 

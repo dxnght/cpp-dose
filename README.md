@@ -12,6 +12,8 @@ animation — all fully offline, at night, with gloves.
 
 Ukrainian UI · offline (zero network at runtime) · light + dark themes · Android + iOS.
 
+> **Створено інструкторами 151 НЦ.**
+
 ---
 
 ## What it does
@@ -41,10 +43,30 @@ A wrong number can kill, so the app is **fail-closed by construction**:
    promotes them to `VERIFIED:<name>:<date>`. Agents/code can never write a `VERIFIED`
    status.
 3. **Only verified content ships.** A build compiles a `field-bundle.json` containing
-   *only* verified + archived records; the app can't render anything else.
+   _only_ verified + archived records; the app can't render anything else.
 
 See [`memory/constitution.md`](memory/constitution.md) and
 [`specs/005-clinical-content-pipeline`](specs/005-clinical-content-pipeline/spec.md).
+
+## Try it
+
+**PWA (no install, works offline after first load):** `https://cpp-dose.probleminu.workers.dev/` —
+see [`reports/DEPLOY-PWA.md`](reports/DEPLOY-PWA.md) to publish it.
+Note the web build's alarm only runs while the app is open and the screen is
+on; the Android APK adds the OS-level locked-screen backstop.
+
+## Build variants
+
+One codebase, two builds (replaced the old `variant/play-store` branch, which
+drifted 20 commits behind before anyone noticed):
+
+```bash
+npm run build            # apk variant (default) — full alarm stack
+npm run build:play       # Play Store variant — no OS notifications,
+                         #   no USE_EXACT_ALARM (Play-restricted permission)
+```
+
+See [`src/config.ts`](src/config.ts) for why the split exists.
 
 ## Quick start
 
@@ -125,8 +147,12 @@ cpp-dose/
 ## Status
 
 MVP feature-complete (drip engine, by-drug, bag-time, burn, focus mode, calibrator).
-6 clinical records verified and live. Remaining: on-device Lighthouse pass, and each
-verified record is the Owner's sign-off (`clinical/OPEN-CLINICAL-QUESTIONS.md`).
+**43 clinical records verified and live** (31 drugs + 12 antibiotic-prophylaxis
+regimens); 8 more are still `UNVERIFIED` and are deliberately not rendered.
+Run `npm run compile:field` or `npm run gate:release` for the current count
+rather than trusting this line — it read "6" until 2026-07-24, long after the
+antibiotics set landed. Remaining: on-device Lighthouse pass, and each verified
+record is the Owner's sign-off (`clinical/OPEN-CLINICAL-QUESTIONS.md`).
 
 ## License
 

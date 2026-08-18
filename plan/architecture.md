@@ -1,6 +1,6 @@
 # Technical Plan — Architecture (the HOW)
 
-Covers all P0 features (Specs 001–003, 005). This is the *implementation* plan;
+Covers all P0 features (Specs 001–003, 005). This is the _implementation_ plan;
 intent lives in the specs. Nothing here may weaken `memory/constitution.md`.
 
 ## Constitution Check
@@ -25,13 +25,13 @@ intent lives in the specs. Nothing here may weaken `memory/constitution.md`.
 
 ## 2. Module map
 
-| Module | Spec | Notes |
-|--------|------|-------|
-| `drip/` | 001 | formula, drop-factor, metronome scheduler, end-of-bag timer |
-| `dose/` | 002 | weight input, drug list from field bundle, dose math, confirm-to-reveal |
-| `burn/` | 003 | Rule of Nines diagram, Rule of Ten rate, hand-off to `drip/` |
-| `clinical/` | 005 | field-bundle loader, guards, source/verification badges |
-| `shell/` | 000 | night theme, disclaimer, navigation, ≥48 px targets, i18n (uk) |
+| Module      | Spec | Notes                                                                   |
+| ----------- | ---- | ----------------------------------------------------------------------- |
+| `drip/`     | 001  | formula, drop-factor, metronome scheduler, end-of-bag timer             |
+| `dose/`     | 002  | weight input, drug list from field bundle, dose math, confirm-to-reveal |
+| `burn/`     | 003  | Rule of Nines diagram, Rule of Ten rate, hand-off to `drip/`            |
+| `clinical/` | 005  | field-bundle loader, guards, source/verification badges                 |
+| `shell/`    | 000  | night theme, disclaimer, navigation, ≥48 px targets, i18n (uk)          |
 
 ## 3. Clinical content build pipeline (safety-critical)
 
@@ -119,6 +119,225 @@ behind a loud watermark and is never shippable.
   verified from the build sandbox; same division of labor as the existing
   APK field-test.
 
+### 4a.1 v2 fix: notification channel (2026-07-21, same day)
+
+- **Problem:** v1 above scheduled onto the `@capacitor/local-notifications`
+  plugin's implicit "Default" channel (`IMPORTANCE_DEFAULT`). Owner confirmed
+  the notification _posted_ on time and with the right text, but with **no
+  audible/vibration signal** noticeable on a locked screen — the actual
+  point of the feature. Android notification channels are immutable after
+  first creation (importance/sound/vibration can only change via the user
+  going into system settings), so patching the old channel isn't possible
+  from app code.
+- **Fix:** a new, dedicated channel `drip-alarms-v2` (`ensureChannel()` in
+  `notifications.ts`) created with `importance: 5` (HIGH — heads-up popup +
+  sound even over other apps), `visibility: 1` (PUBLIC — full text on the
+  lock screen, not redacted), and vibration on. Each scheduled notification
+  now sets `channelId` to this channel, plus `ongoing: true` (can't be
+  swiped away by accident) and `autoCancel: true` (tapping it both opens the
+  app and clears it).
+- **Owner's "stopwatch" idea — evaluated.** Ask: a persistent, interactive,
+  always-on-top notification-shade item showing a live-updating remaining
+  time on the lock screen, like a timer app. Assessment:
+  - The "pinned, high-priority, visible-on-lock-screen" part is exactly what
+    `ongoing` + the new channel now does.
+  - A true **live-updating countdown text** (like Android's stopwatch/timer
+    chronometer, ticking every second without the app needing to be alive)
+    is **not exposed by `@capacitor/local-notifications`** — no
+    `chronometer`/`countDown` field on `LocalNotificationSchema` (checked
+    the plugin's TypeScript defs and Android source directly). Android's own
+    `NotificationCompat.Builder.setUsesChronometer()` API can do this
+    natively, but this plugin doesn't wrap it.
+  - Getting real chronometer behavior would need either (a) a small custom
+    native Android addition — either forking this plugin's Java source
+    (fragile: a plugin update would silently drop the patch) or writing a
+    tiny local Capacitor plugin that lives outside the gitignored `android/`
+    folder so it survives regeneration, or (b) faking a countdown by
+    scheduling many periodic notification updates in advance (e.g. one per
+    minute for the whole drip duration) — wasteful, hits Doze's "once per
+    ~9 min per app" non-exact-alarm cap well before granularity would look
+    smooth, and multiplies scheduled alarms 5× with up to 5 concurrent drips.
+  - "Always on top of every other app's notifications" isn't something
+    Android lets any app guarantee outside a small set of system categories
+    (calls, media playback) — `importance: 5` + recency gets it _near_ the
+    top in practice, which is as far as this can honestly go.
+  - **Recommendation:** ship this channel fix now (directly fixes the
+    reported defect, low risk, no native code); treat a true chronometer
+    countdown as a separate, bigger R&D item — needs real native Android
+    work and on-device testing this environment can't do, so it shouldn't be
+    attempted opportunistically inside the same change.
+
+### 4a.2 v3 fix: notification-visibility patch + drop `ongoing` (2026-07-22)
+
+- **Regression reported:** after 4a.1 shipped, the Owner found (a) still no
+  vibration on the locked screen (sound was present), and (b) the
+  notification **stopped appearing on the lock screen at all** — worse than
+  before the channel fix. Also noted, as a comparison point: Telegram's
+  notifications do wake/break through this phone's lock screen.
+- **Root cause 1 (found by reading the plugin's Android source,
+  `LocalNotificationManager.java`):** `buildNotification()` unconditionally
+  calls `mBuilder.setVisibility(NotificationCompat.VISIBILITY_PRIVATE)` on
+  _every_ notification, regardless of the channel's configured
+  `visibility`. This is a real bug/limitation in
+  `@capacitor/local-notifications` 6.1.3 — the channel-level `visibility: 1`
+  (PUBLIC) set in 4a.1 was silently overridden and never actually took
+  effect. (There's even a `// TODO control visibility by flag
+Notification.VISIBILITY_PRIVATE` left in the plugin's own source,
+  acknowledging this is hardcoded.)
+- **Fix 1:** patched that one line to `VISIBILITY_PUBLIC` via `patch-package`
+  (`patches/@capacitor+local-notifications+6.1.3.patch`, `postinstall:
+patch-package` in `package.json`). Editing `node_modules` directly doesn't
+  survive `npm install`/`npm ci`; `patch-package` regenerates the same edit
+  automatically every install, which is the standard, durable way to carry a
+  small fix to a third-party dependency.
+- **Root cause 2 (hypothesis, not confirmed from source):** `ongoing: true`
+  was new in 4a.1 and is the most likely trigger for the "disappeared from
+  lock screen" regression specifically — some heavily-customized Android
+  skins (common on budget/Chinese-brand devices) treat `ongoing`
+  (`FLAG_ONGOING_EVENT`) notifications as a low-priority "background service
+  running" indicator (like a music player) rather than an alert, and
+  deprioritize or hide them from heads-up/lock-screen display. Removed
+  `ongoing: true` from all three scheduled notifications; kept `autoCancel:
+true` (tap dismisses + opens the app).
+- **Channel bumped to `drip-alarms-v3`** (fresh id) since channel settings
+  are immutable once created on a device — any earlier, differently
+  configured channel from testing 4a.1 would otherwise stay stuck with the
+  old (broken) settings forever, muddying the next test.
+- **On "Telegram breaks through the lock screen" — investigated, not
+  matched.** Checked the plugin's Android source specifically for
+  `fullScreenIntent`/`setCategory(CATEGORY_ALARM)` support — **it has
+  none**. This is the actual Android mechanism alarm-clock apps and
+  incoming-call UIs (and very likely Telegram's own call handling) use to
+  wake the screen and draw a full-screen view over the lock screen
+  entirely. `@capacitor/local-notifications` cannot do this regardless of
+  configuration — it would need a small custom native Android plugin (kept
+  outside the gitignored `android/` folder, e.g. a local Capacitor plugin
+  package, so it survives regeneration). Not attempted here: real native
+  Android work, needs on-device iteration this environment can't do, and is
+  a materially bigger scope than a config/patch fix. Flagged as the next
+  concrete step if v3 still isn't sufficient after on-device testing.
+- **Still needs on-device confirmation** — this environment cannot verify
+  Android lock-screen/heads-up/vibration behavior at all; every fix in this
+  section is source-verified (read the actual plugin code causing each
+  symptom) but not device-verified.
+
+### 4a.3 v4 fix: invalid importance value + live health check + battery-optimization lead (2026-07-22, later)
+
+- **Field report came back inconsistent**, not a clean pass/fail: unlocked
+  worked (no alarm tone, as expected — the metronome "Звук" toggle
+  controlling _that_ was off, unrelated in code to the alarm/notification
+  path at all); locked-but-screen-on produced nothing (no notification, no
+  sound); locked-and-asleep worked fully, both while locked and after
+  unlocking. Screen-on/off doesn't line up with a Doze explanation (Doze is
+  _more_ restrictive screen-off, but that's the case that worked), and the
+  one tracked variable (the metronome toggle) has no code path to the alarm
+  system at all — so neither of the Owner's two candidate explanations
+  actually fits the pattern.
+- **Bug found while re-checking the channel config against real Android
+  constants:** `ensureChannel()` requested `importance: 5`. Android's actual
+  `NotificationManager` importance scale is `NONE=0, MIN=1, LOW=2,
+DEFAULT=3, HIGH=4` — **there is no 5**. The plugin's TypeScript type
+  (`Importance = 1|2|3|4|5`) doesn't catch this at compile time, so it
+  silently passed an out-of-range value straight to Android's
+  `NotificationChannel` constructor. Not confirmed as _the_ cause of the
+  inconsistent field report, but a definite, real bug on its own — fixed to
+  the correct constant, `4`. Channel bumped to `drip-alarms-v4` (fresh id,
+  since importance can't be changed on an already-created channel).
+- **Most likely actual explanation — Android's App Standby / battery
+  optimization bucket**, not anything in this app's code. Android throttles
+  background alarms/notifications more aggressively for apps it hasn't seen
+  recently used, independent of any toggle inside the app; this is exactly
+  why messaging apps (the Owner's own comparison — Telegram) request
+  battery-optimization exemption. This can't be fixed by any notification
+  config; it's a per-device, per-app OS setting. Added a permanent, low-key
+  (non-alarming) in-app tip recommending the medic exempt CPP-DOSE from
+  battery optimization (Settings → Apps → CPP-DOSE → Battery), shown
+  whenever a drip has a bag timer and no other known problem is detected.
+  Still no additional native plugin — Android does have a plain intent
+  (`ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) an app can launch to
+  prompt for this directly, but that needs _some_ native bridge to invoke
+  from JS; out of scope for this pass per Owner instruction (no new Android
+  plugins this version) — manual settings instruction only.
+- **Live health check added** (`checkNotificationHealth()` in
+  `notifications.ts`): re-checks permission grant _and_ the actual channel
+  importance (via `LocalNotifications.listChannels()`) every time the drips
+  effect runs, not just once at app launch. The old code snapshotted
+  permission status once at mount, so the in-app warning banner could show a
+  stale "fine" even after the OS silently downgraded something (e.g. the
+  user or system disabling the channel) mid-session. The red warning banner
+  now only shows for a _detected_ problem (permission denied, or channel
+  importance reported below HIGH); the battery-optimization tip is separate
+  and always shown, since that specific restriction isn't queryable from
+  this plugin.
+
+### 4a.4 v5 fix: OS notification and in-app alarm were cancelling each other (2026-07-22, later still)
+
+- **Three more field reports, same day:** (1) the empty-bag notification's
+  text ("CPP-DOSE — дріп порожній", no lead-in) looked like a stray,
+  out-of-context glitch; (2) the notification consistently appeared on the
+  lock screen roughly a minute _before_ the in-app alarm sounded; (3) with
+  the drip's own metronome "Звук" toggle off and the screen locked, no
+  notification arrived at all — yet with that same toggle on, the locked-
+  screen notification was "абсолютно вірна" (fully correct).
+- **Root cause, found in `DripScreen.tsx`'s reschedule effect, not in
+  `notifications.ts` itself:** the effect computed
+  `fireAt10: d.warned10 ? null : endAt - PRE_END_ALARM_MS_10` (and the same
+  for `warned5`/`warnedEmpty`) — i.e. it gated the _OS-level_ notification
+  directly on the _in-app_ alarm's one-shot-per-stage flags.
+  `rescheduleDripAlarms()` unconditionally cancels a drip's 3 notification
+  ids on every call, before rescheduling. So the instant the in-app tick
+  effect (its own independent 1-second poll of `Date.now()`) noticed the
+  same threshold crossing and flipped e.g. `warned10` to `true`, the
+  reschedule effect re-ran (since `drips` changed) and cancelled —
+  dismissed — notification id `warn10`, even when the OS had already
+  delivered and displayed it.
+- **Why this produced exactly this pattern:** the WebView's timers are
+  suspended while the screen is locked (§4a above) and only resume once the
+  screen is unlocked / the app is foregrounded again. So the in-app tick's
+  catch-up — and therefore the self-cancel it triggers — fires right as the
+  medic looks at the phone, which is also the worst possible moment for a
+  notification to vanish. This explains all three reports as one bug:
+  - The ~1-minute gap between "notification shows" and "alarm sounds" was
+    never two systems racing — it's the delay between the OS notification
+    firing on time and the medic unlocking the phone, which is exactly when
+    the in-app catch-up (and the resulting self-cancel) happens.
+  - The sound-toggle correlation was a confound of the same mechanism, not
+    a real code path (there is none — confirmed by reading the toggle's
+    only consumer, the metronome effect). A page actively playing audio is
+    exempt from Chromium's background-tab timer throttling, so with the
+    metronome's sound on, the in-app tick barely lags the OS notification —
+    too narrow a window to ever notice the self-cancel. With sound off, the
+    WebView freezes harder while locked, widening that window and making
+    the vanish reliably observable.
+  - The empty-alarm text looking like an isolated glitch was very likely a
+    side effect too: if the 10-min and 5-min notifications had already been
+    silently self-cancelled earlier in the same session, only the final
+    "дріп порожній" notification would ever be seen, with no lead-up context
+    to make sense of it.
+- **Fix:** the OS notification and the in-app alarm are now fully
+  independent channels, matching the original intent of adding OS
+  notifications in the first place (§4a) — `warned10/5/Empty` gate _only_
+  the in-app audio/haptic (the separate `now`-driven tick effect) and are no
+  longer read anywhere near the notification-scheduling call. A new pure
+  helper, `dripScheduleKey(bagMl, mlPerH, startedAt, silenced)` (exported
+  from `notifications.ts`, unit-tested in `tests/notifications.test.ts`),
+  lets the reschedule effect skip drips whose actual alarm timing hasn't
+  changed, so unrelated `drips` updates (e.g. a different drip's stage
+  flipping) no longer trigger a redundant cancel+reschedule round trip
+  either. Also fixed the empty-alarm text to mirror the 10/5-min
+  notifications' phrasing instead of a bare "дріп порожній" fragment. A
+  small additional robustness fix: a `visibilitychange`/`focus` listener now
+  forces an immediate `now` refresh the moment the screen unlocks, instead
+  of waiting up to 1s for the next interval tick — shaves a small, avoidable
+  extra delay off the in-app catch-up, though it does not (and cannot)
+  change when the screen itself unlocks.
+- **What's still unverified:** this fix is fully explained and reasoned from
+  the actual code (not a guess), and is covered by a unit test for the
+  now-independent scheduling key, but the original three-report pattern was
+  only ever observed on-device — on-device re-confirmation of all three
+  scenarios (sound on/off × screen locked, empty-bag wording) is the
+  remaining step, same as the rest of §4a.
+
 ## 5. Offline & zero-exfiltration (Art. V)
 
 - Service worker precaches the whole app shell + `field-bundle.json`. No runtime
@@ -133,14 +352,14 @@ behind a loud watermark and is never shippable.
 Proposed defaults (Owner to confirm; these are engineering guardrails, not clinical
 values):
 
-| Input | Min | Max | On violation |
-|-------|-----|-----|--------------|
-| Patient weight | 30 kg | 150 kg | suppress outputs + reason |
-| Volume (drip) | 1 ml | 1000 ml | block + reason |
-| Time (drip) | 1 min | 24 h | block + reason |
-| Drop factor | 1 | 100 gtt/ml | block + reason |
-| gtt/min (inverse) | 1 | 600 | warn above practical gravity range |
-| TBSA % | 0 | 100 | round to nearest 10% |
+| Input             | Min   | Max        | On violation                       |
+| ----------------- | ----- | ---------- | ---------------------------------- |
+| Patient weight    | 30 kg | 150 kg     | suppress outputs + reason          |
+| Volume (drip)     | 1 ml  | 1000 ml    | block + reason                     |
+| Time (drip)       | 1 min | 24 h       | block + reason                     |
+| Drop factor       | 1     | 100 gtt/ml | block + reason                     |
+| gtt/min (inverse) | 1     | 600        | warn above practical gravity range |
+| TBSA %            | 0     | 100        | round to nearest 10%               |
 
 Per-drug `min_max` dose clamps come from the clinical record, not from this table.
 Sub-40 kg / pediatric behavior is `TODO(clinical-review)` (Specs 002/003) — until
