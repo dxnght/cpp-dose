@@ -541,6 +541,14 @@ h2 {
 .add-btn {
   width: 100%;
   margin-top: 8px;
+  /* Same class of issue .stepper/.silence-btn guard against: a long-press
+     on this button's "＋" glyph can raise the native selection/copy-lookup
+     callout on mobile WebViews. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .add-btn:disabled {
   opacity: 0.45;

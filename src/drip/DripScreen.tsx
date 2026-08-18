@@ -1344,6 +1344,7 @@ export function DripScreen({
         className="primary add-btn"
         disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
         onClick={addDrip}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {drips.length >= MAX_DRIPS
           ? `Максимум ${MAX_DRIPS} дріпів`
