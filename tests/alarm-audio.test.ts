@@ -103,7 +103,7 @@ describe("alarm audio (iOS silence regression, 2026-07-25)", () => {
     const { alarm } = await freshModules();
 
     expect(rec.state).toBe("suspended");
-    alarm("warn10");
+    await alarm("warn10");
 
     expect(rec.resumeCalls).toBeGreaterThan(0);
     expect(rec.started).toBeGreaterThan(0);
@@ -136,7 +136,7 @@ describe("alarm audio (iOS silence regression, 2026-07-25)", () => {
     const rec = installFakeAudio({ prefixedOnly: true });
     const { alarm } = await freshModules();
 
-    alarm("warn5");
+    await alarm("warn5");
 
     expect(rec.count).toBe(1);
     expect(rec.started).toBeGreaterThan(0);
@@ -146,7 +146,7 @@ describe("alarm audio (iOS silence regression, 2026-07-25)", () => {
     // No AudioContext at all (old browser, locked-down webview): the alarm
     // must degrade to haptics, never crash the drip screen.
     const { alarm } = await freshModules();
-    expect(() => alarm("empty")).not.toThrow();
+    await expect(alarm("empty")).resolves.toBeUndefined();
   });
 
   it("unlockAudio plays a silent buffer — the part iOS actually requires", async () => {
@@ -172,7 +172,7 @@ describe("alarm audio (iOS silence regression, 2026-07-25)", () => {
     ] as const) {
       const rec = installFakeAudio();
       const { alarm } = await freshModules();
-      alarm(kind);
+      await alarm(kind);
       expect(rec.started, `${kind} should sound ${beeps}x`).toBe(beeps);
     }
   });

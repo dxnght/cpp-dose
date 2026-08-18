@@ -87,9 +87,14 @@ export function unlockAudio(): void {
 
 /** Nudge the context awake before making a sound. iOS suspends it whenever
  * the app is backgrounded, and an alarm firing on return would otherwise be
- * silent. Cheap enough to call unconditionally. */
-export function resumeAudio(): void {
-  if (ctx && ctx.state === "suspended") void ctx.resume().catch(() => {});
+ * silent. Cheap enough to call unconditionally. Returns a promise so a
+ * caller that schedules sound relative to ctx.currentTime (e.g. alarm())
+ * can await the context actually being running first — resume() is
+ * asynchronous, so a fire-and-forget call can still leave the context
+ * "suspended" on the very next line. */
+export function resumeAudio(): Promise<void> {
+  if (ctx && ctx.state === "suspended") return ctx.resume().catch(() => {});
+  return Promise.resolve();
 }
 
 /** Test seam only — resets the module between test cases. */

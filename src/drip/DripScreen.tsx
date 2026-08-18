@@ -640,17 +640,17 @@ export function DripScreen({
         if (d.bagMl == null || d.mlPerH <= 0) return d;
         const remMs = dripEndsAt(d.startedAt, d.bagMl, d.mlPerH) - now;
         if (!d.warned10 && remMs <= PRE_END_ALARM_MS_10 && remMs > 0) {
-          if (!d.silenced) alarm("warn10");
+          if (!d.silenced) void alarm("warn10");
           changed = true;
           return { ...d, warned10: true };
         }
         if (!d.warned5 && remMs <= PRE_END_ALARM_MS_5 && remMs > 0) {
-          if (!d.silenced) alarm("warn5");
+          if (!d.silenced) void alarm("warn5");
           changed = true;
           return { ...d, warned5: true };
         }
         if (!d.warnedEmpty && remMs <= 0) {
-          if (!d.silenced) alarm("empty");
+          if (!d.silenced) void alarm("empty");
           changed = true;
           return { ...d, warnedEmpty: true };
         }

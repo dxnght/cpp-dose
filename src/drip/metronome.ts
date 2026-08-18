@@ -61,7 +61,7 @@ export class Metronome {
       this.ctx = getAudioContext();
       if (!this.ctx) return; // no Web Audio (e.g. jsdom) — silently no-op
     }
-    resumeAudio();
+    void resumeAudio();
     const period = 60 / gttPerMin;
     if (anchorWallSec != null && typeof performance !== "undefined") {
       // Align ticks to the visual chamber's phase (anchorWallSec + n·period) so the
