@@ -3,7 +3,7 @@
 // behaviour unchanged.
 import { Chamber, SilenceToggle } from "./components";
 import { SourceBadge } from "../components/SourceBadge";
-import type { DripScreenProps } from "./types";
+import { DripScreenProps } from "./types";
 
 export function DripCard({
   drip: d,

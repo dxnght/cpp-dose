@@ -52,6 +52,46 @@ export interface ActiveDrip {
 
 export type Mode = "dose" | "bagtime" | "burn";
 
+export interface DripFormProps {
+  dripsCount: number;
+  maxDrips: number;
+  mode: Mode;
+  onModeChange: (m: Mode) => void;
+  presets: ConcPreset[];
+  preset: ConcPreset | undefined;
+  presetIdx: number;
+  onPresetIdxChange: (i: number) => void;
+  dropFactor: number;
+  onDropFactorChange: (f: number) => void;
+  weight: number;
+  onWeightChange: (v: number) => void;
+  dose: number;
+  onDoseChange: (v: number) => void;
+  bolus: Drug | undefined;
+  tbsa: number;
+  onTbsaChange: (v: number) => void;
+  bagMl: number;
+  onBagMlChange: (v: number) => void;
+  bagGtt: number;
+  onBagGttChange: (v: number) => void;
+  burnGated: boolean;
+  burnFormula: Formula | undefined;
+  live: { mlPerH: number; gtt: number };
+  spd: number;
+  onCalibrate: () => void;
+  onAddDrip: () => void;
+}
+
+export interface DripEngineProps {
+  mode: Mode;
+  preset: ConcPreset | undefined;
+  burnFormula: Formula | undefined;
+  dropFactor: number;
+  bagMl: number;
+  live: { mlPerH: number; gtt: number };
+  onStatusChange?: (status: DripBadgeStatus) => void;
+}
+
 // Reported to the parent (App.tsx) so the bottom nav can badge the
 // "Крапельниця" tab with the active-drip count — since DripScreen now stays
 // mounted (just `hidden`) across tab navigation, a drip's clock keeps

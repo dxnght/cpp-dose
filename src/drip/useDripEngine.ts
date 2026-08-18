@@ -32,7 +32,7 @@ import { nowMs } from "./format";
 import { alarm } from "./alarm-audio";
 import { unlockAudio } from "./audio";
 import { LS } from "./local-storage";
-import type { ActiveDrip, ConcPreset, Mode, DripBadgeStatus } from "./types";
+import { ActiveDrip, DripBadgeStatus, DripEngineProps } from "./types";
 
 // Spec 001 FR-6: two-stage pre-end alarm lead times (Owner decision
 // 2026-07-21) — a heads-up at 10 min remaining, then a second, more urgent
@@ -58,15 +58,7 @@ export function useDripEngine({
   bagMl,
   live,
   onStatusChange,
-}: {
-  mode: Mode;
-  preset: ConcPreset | undefined;
-  burnFormula: Formula | undefined;
-  dropFactor: number;
-  bagMl: number;
-  live: { mlPerH: number; gtt: number };
-  onStatusChange?: (status: DripBadgeStatus) => void;
-}) {
+}: DripEngineProps) {
   // Restore drips left running by a previous session (FR-13/AC-6f, Owner
   // decision 2026-07-24). They come back `unconfirmed` — countdown and alarms
   // active, but visibly un-trusted until the medic acknowledges them (see

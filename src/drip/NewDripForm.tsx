@@ -5,8 +5,7 @@ import { Stepper } from "./components";
 import { SourceBadge } from "../components/SourceBadge";
 import { clamp, DOSE, WEIGHT, VOLUME, DROP_FACTORS, doseRangeMg } from "./calc";
 import { fmtHours, fmtHM } from "./format";
-import type { Drug, Formula } from "../clinical/types";
-import type { ConcPreset, Mode } from "./types";
+import { DripFormProps } from "./types";
 
 export function NewDripForm({
   dripsCount,
@@ -36,35 +35,7 @@ export function NewDripForm({
   spd,
   onCalibrate,
   onAddDrip,
-}: {
-  dripsCount: number;
-  maxDrips: number;
-  mode: Mode;
-  onModeChange: (m: Mode) => void;
-  presets: ConcPreset[];
-  preset: ConcPreset | undefined;
-  presetIdx: number;
-  onPresetIdxChange: (i: number) => void;
-  dropFactor: number;
-  onDropFactorChange: (f: number) => void;
-  weight: number;
-  onWeightChange: (v: number) => void;
-  dose: number;
-  onDoseChange: (v: number) => void;
-  bolus: Drug | undefined;
-  tbsa: number;
-  onTbsaChange: (v: number) => void;
-  bagMl: number;
-  onBagMlChange: (v: number) => void;
-  bagGtt: number;
-  onBagGttChange: (v: number) => void;
-  burnGated: boolean;
-  burnFormula: Formula | undefined;
-  live: { mlPerH: number; gtt: number };
-  spd: number;
-  onCalibrate: () => void;
-  onAddDrip: () => void;
-}) {
+}: DripFormProps) {
   return (
     <>
       {dripsCount > 0 && <h2>Новий дріп</h2>}
