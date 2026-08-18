@@ -184,11 +184,11 @@ export interface DripAlarmPlan {
   id: string;
   label: string;
   silenced: boolean;
-  /** Absolute epoch-ms fire time, or null if that stage already fired
-   * in-app (or the drip has no bag timer) and needs no native backstop. */
-  fireAt10: number | null;
-  fireAt5: number | null;
-  fireAtEmpty: number | null;
+  /** Absolute epoch-ms fire time. A stage already in the past is silently
+   * skipped below — callers always pass all three, never omit one. */
+  fireAt10: number;
+  fireAt5: number;
+  fireAtEmpty: number;
 }
 
 /** (Re)schedule a drip's three alarm notifications from scratch. Always
@@ -214,7 +214,7 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
   const notifications: Parameters<
     typeof LocalNotifications.schedule
   >[0]["notifications"] = [];
-  if (plan.fireAt10 != null && plan.fireAt10 > now) {
+  if (plan.fireAt10 > now) {
     notifications.push({
       id: ids.warn10,
       title: "CPP-DOSE — 10 хв до кінця",
@@ -224,7 +224,7 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       schedule: { at: new Date(plan.fireAt10), allowWhileIdle: true },
     });
   }
-  if (plan.fireAt5 != null && plan.fireAt5 > now) {
+  if (plan.fireAt5 > now) {
     notifications.push({
       id: ids.warn5,
       title: "CPP-DOSE — 5 хв до кінця",
@@ -234,7 +234,7 @@ export async function rescheduleDripAlarms(plan: DripAlarmPlan): Promise<void> {
       schedule: { at: new Date(plan.fireAt5), allowWhileIdle: true },
     });
   }
-  if (plan.fireAtEmpty != null && plan.fireAtEmpty > now) {
+  if (plan.fireAtEmpty > now) {
     notifications.push({
       id: ids.empty,
       title: "CPP-DOSE — дріп/мішок закінчився",
