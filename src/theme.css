@@ -472,6 +472,12 @@ h2 {
   align-items: center;
   justify-content: center;
   padding: 4px;
+  /* Same class of issue .stepper > button guards against above: a long
+     press on the label/value (e.g. "Вага", "Доза", "Об'єм мішка") raises
+     native text selection / the copy-lookup callout on mobile WebViews. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .stepper-label {
   font-size: var(--fs-badge);
