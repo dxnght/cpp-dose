@@ -10,6 +10,15 @@ const DISCLAIMER_ACK_KEY = "cpp-dose.disclaimer.acknowledged.v1";
 
 const NO_DRIPS: DripBadgeStatus = { count: 0, stage: "" };
 
+// CSS alone (theme.css `button`) has proven insufficient on some Android
+// WebViews for suppressing the native selection/copy-lookup callout a
+// long/gloved press can raise — same fix SilenceToggle needed. One delegated
+// handler at the app root covers every button/tab instead of wiring this to
+// each one by hand.
+function suppressButtonContextMenu(e: React.MouseEvent) {
+  if ((e.target as HTMLElement).closest("button")) e.preventDefault();
+}
+
 export function App() {
   const [screen, setScreen] = useState<Screen>("drip");
   // Show the full disclaimer on first run (Constitution Art. IV.2).
@@ -36,7 +45,7 @@ export function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app" onContextMenu={suppressButtonContextMenu}>
       <DisclaimerBanner />
       <main className="content">
         {/* DripScreen stays mounted (just hidden) instead of unmounting on
