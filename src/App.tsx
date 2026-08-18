@@ -4,7 +4,8 @@ import { FirstRunDisclaimer } from "./components/FirstRunDisclaimer";
 import { Navigation, type Screen } from "./components/Navigation";
 import { DrugsScreen } from "./screens/DrugsScreen";
 import { AboutScreen } from "./screens/AboutScreen";
-import { DripScreen, type DripBadgeStatus } from "./drip/DripScreen";
+import { DripScreen } from "./drip/DripScreen";
+import type { DripBadgeStatus } from "./drip/types";
 
 const DISCLAIMER_ACK_KEY = "cpp-dose.disclaimer.acknowledged.v1";
 

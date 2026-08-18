@@ -1,5 +1,5 @@
 import { t } from "../i18n";
-import type { DripBadgeStatus } from "../drip/DripScreen";
+import type { DripBadgeStatus } from "../drip/types";
 
 export type Screen = "drip" | "drugs" | "about";
 
