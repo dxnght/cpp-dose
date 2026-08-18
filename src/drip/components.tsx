@@ -1,7 +1,7 @@
 // Presentational pieces of the drip screen. Extracted from DripScreen.tsx
 // (2026-07-24) to get the main file back under control; behaviour unchanged,
 // covered by the existing suite.
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dur, nowMs } from "./format";
 
 export function Stepper(props: {
@@ -143,6 +143,14 @@ export function SilenceToggle({
     }
     setHolding(false);
   }
+
+  // If the card unmounts mid-hold (drip removed, focus overlay closed), the
+  // pending timer must not fire onSetSilenced(true) against a gone drip.
+  useEffect(() => {
+    return () => {
+      if (holdTimer.current != null) window.clearTimeout(holdTimer.current);
+    };
+  }, []);
 
   function onPointerDown() {
     // Reset defensively on every new press: on some Android WebViews the
