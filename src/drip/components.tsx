@@ -20,6 +20,11 @@ export function Stepper(props: {
         onClick={() =>
           props.onChange(Math.max(props.min, props.value - props.step))
         }
+        // Same class of issue .silence-btn guards against below: CSS
+        // (theme.css) stops the visual selection, this stops the
+        // callout/context-menu some Android WebViews still raise on top of
+        // a long-press on a bare glyph.
+        onContextMenu={(e) => e.preventDefault()}
       >
         −
       </button>
@@ -32,6 +37,7 @@ export function Stepper(props: {
         onClick={() =>
           props.onChange(Math.min(props.max, props.value + props.step))
         }
+        onContextMenu={(e) => e.preventDefault()}
       >
         +
       </button>
