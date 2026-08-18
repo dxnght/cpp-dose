@@ -10,7 +10,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fieldBundle } from "../clinical/loader";
 import { isRenderable } from "../clinical/guard";
-import { SourceBadge } from "../components/SourceBadge";
 import type { Drug, Formula } from "../clinical/types";
 import { Metronome } from "./metronome";
 import { tapHaptic } from "./haptics";
@@ -25,10 +24,6 @@ import {
   CHANNEL_IMPORTANCE_HIGH,
 } from "./notifications";
 import {
-  clamp,
-  DOSE,
-  WEIGHT,
-  VOLUME,
   DROP_FACTORS,
   doseToMlPerH,
   mlPerHToGtt,
@@ -36,7 +31,6 @@ import {
   dripEndsAt,
   retitratedStartedAt,
   burnRuleOfTenMlPerH,
-  doseRangeMg,
   parseConcentrationMgPerMl,
   preSatisfiedAlarmStages,
 } from "./calc";
@@ -46,10 +40,14 @@ import {
   serializeDrips,
 } from "./persistence";
 import { NOTIFICATIONS_ENABLED } from "../config";
-import { nowMs, fmtHours, fmtHM } from "./format";
+import { nowMs } from "./format";
 import { alarm } from "./alarm-audio";
-import { Stepper, Chamber, SilenceToggle, PaceToggles } from "./components";
+import { PaceToggles } from "./components";
 import { unlockAudio } from "./audio";
+import { FocusOverlay } from "./FocusOverlay";
+import { CalibratorOverlay } from "./CalibratorOverlay";
+import { DripCard } from "./DripCard";
+import { NewDripForm } from "./NewDripForm";
 import type { ConcPreset, ActiveDrip, Mode, DripBadgeStatus } from "./types";
 
 // Spec 001 FR-6: two-stage pre-end alarm lead times (Owner decision
@@ -822,109 +820,33 @@ export function DripScreen({
   return (
     <section>
       {focusDrip && (
-        <div
-          className="focus-overlay"
-          role="dialog"
-          aria-label="фокус-режим"
-          onClick={() => setFocusId(null)}
-        >
-          <div className="focus-label">{focusDrip.label}</div>
-          <input
-            type="text"
-            className="focus-tag"
-            value={focusDrip.displayTag ?? ""}
-            onChange={(e) => setDisplayTag(focusDrip.id, e.target.value)}
-            onClick={(e) => e.stopPropagation()}
-            placeholder="мітка (напр. ліжко 3) — необов'язково"
-            aria-label="мітка дріпу, лише на цьому екрані"
-            maxLength={40}
-          />
-          <div className="focus-retit" onClick={(e) => e.stopPropagation()}>
-            <button
-              aria-label="повільніше"
-              onClick={() => retitrate(focusDrip.id, -1)}
-            >
-              −
-            </button>
-            <div className="focus-gtt">
-              {focusDrip.gtt}
-              <span> кр/хв</span>
-            </div>
-            <button
-              aria-label="швидше"
-              onClick={() => retitrate(focusDrip.id, 1)}
-            >
-              +
-            </button>
-          </div>
-          <div className="focus-chamber-scale">
-            <Chamber
-              gtt={focusDrip.gtt}
-              animStart={focusDrip.animStart}
-              muted={focusDrip.id !== activeId}
-            />
-          </div>
-          <div className={`focus-rem ${alarmStage(focusDrip)}`}>
-            Залишок: {remaining(focusDrip)}
-          </div>
-          {focusDrip.sourceRecord && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <SourceBadge record={focusDrip.sourceRecord} compact />
-            </div>
-          )}
-          <button
-            className={`focus-pace${focusDrip.id === activeId ? " on" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              togglePacing(focusDrip.id);
-            }}
-          >
-            {focusDrip.id === activeId ? "◼ Метроном" : "▶ Метроном"}
-          </button>
-          {focusDrip.id === activeId && (
-            <PaceToggles
-              audio={audio}
-              haptic={haptic}
-              onAudioChange={setAudio}
-              onHapticChange={setHaptic}
-              onClick={(e) => e.stopPropagation()}
-            />
-          )}
-          <div className="focus-hint">Торкніться фону, щоб вийти</div>
-        </div>
+        <FocusOverlay
+          drip={focusDrip}
+          activeId={activeId}
+          audio={audio}
+          haptic={haptic}
+          onAudioChange={setAudio}
+          onHapticChange={setHaptic}
+          onClose={() => setFocusId(null)}
+          onDisplayTagChange={setDisplayTag}
+          onRetitrate={retitrate}
+          onTogglePacing={togglePacing}
+          remaining={remaining}
+          alarmStage={alarmStage}
+        />
       )}
 
       {calib && (
-        <div className="focus-overlay" role="dialog" aria-label="калібратор">
-          <div className="focus-label">Стукай у такт краплям</div>
-          <div className="focus-gtt">
-            {calRate ?? "—"}
-            <span> кр/хв</span>
-          </div>
-          <button
-            className="calib-tap"
-            onClick={() => setTaps((t) => [...t, nowMs()].slice(-20))}
-          >
-            ТАП
-          </button>
-          <div className="focus-rem">
-            {taps.length} тапів
-            {calRate
-              ? ` · ${bagMl} мл ~ ${fmtHM(bagMl / ((calRate * 60) / dropFactor))}`
-              : ""}
-          </div>
-          <div className="calib-actions" onClick={(e) => e.stopPropagation()}>
-            <button onClick={() => setTaps([])}>Скинути</button>
-            <button
-              className="primary"
-              disabled={!calRate}
-              onClick={applyCalib}
-            >
-              Застосувати
-            </button>
-            <button onClick={() => setCalib(false)}>Закрити</button>
-          </div>
-        </div>
+        <CalibratorOverlay
+          calRate={calRate}
+          taps={taps}
+          bagMl={bagMl}
+          dropFactor={dropFactor}
+          onTap={() => setTaps((t) => [...t, nowMs()].slice(-20))}
+          onReset={() => setTaps([])}
+          onApply={applyCalib}
+          onClose={() => setCalib(false)}
+        />
       )}
 
       <h1>Крапельниця</h1>
@@ -979,76 +901,22 @@ export function DripScreen({
                 навіть якщо сповіщення дозволені.
               </div>
             )}
-          {drips.map((d) => {
-            const isActive = d.id === activeId;
-            const stage = alarmStage(d);
-            return (
-              <article
-                key={d.id}
-                className={`drip-card${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}${d.unconfirmed ? " unconfirmed" : ""}`}
-              >
-                {d.unconfirmed && (
-                  <button
-                    className="drip-confirm"
-                    onClick={() => confirmDrip(d.id)}
-                  >
-                    ⟳ Відновлено після перезапуску — підтвердь, що ще крапає
-                  </button>
-                )}
-                <div className="drip-tap" onClick={() => enterFocus(d.id)}>
-                  <div className="drip-mini-top">
-                    <span className="drip-mini-name">
-                      {d.label}
-                      {d.displayTag && (
-                        <span className="drip-tag"> · {d.displayTag}</span>
-                      )}
-                    </span>
-                    <span className="expand" aria-hidden="true">
-                      ⤢
-                    </span>
-                  </div>
-                  <div className="drip-mini-gtt">
-                    {d.gtt}
-                    <span> кр/хв</span>
-                  </div>
-                  <Chamber
-                    gtt={d.gtt}
-                    animStart={d.animStart}
-                    muted={d.id !== activeId}
-                  />
-                  <div className="drip-mini-meta">
-                    {d.dropFactor} gtt/ml · {d.mlPerH.toFixed(0)} мл/год ·{" "}
-                    {remaining(d)}
-                  </div>
-                  <div className="tap-hint">Тап — на весь екран</div>
-                  {d.sourceRecord && (
-                    <SourceBadge record={d.sourceRecord} compact />
-                  )}
-                </div>
-                <div className="drip-actions">
-                  <button
-                    className={isActive ? "on" : ""}
-                    onClick={() => togglePacing(d.id)}
-                  >
-                    {isActive ? "◼ Метроном" : "▶ Метроном"}
-                  </button>
-                  <button
-                    className={confirmId === d.id ? "danger" : ""}
-                    onClick={() => onRemoveClick(d.id)}
-                  >
-                    {confirmId === d.id ? "Точно прибрати?" : "Прибрати"}
-                  </button>
-                </div>
-                {d.bagMl != null && (
-                  <SilenceToggle
-                    silenced={d.silenced}
-                    hint={quietHint(d)}
-                    onSetSilenced={(v) => setSilenced(d.id, v)}
-                  />
-                )}
-              </article>
-            );
-          })}
+          {drips.map((d) => (
+            <DripCard
+              key={d.id}
+              drip={d}
+              isActive={d.id === activeId}
+              confirmId={confirmId}
+              remaining={remaining}
+              quietHint={quietHint}
+              alarmStage={alarmStage}
+              onConfirm={confirmDrip}
+              onEnterFocus={enterFocus}
+              onTogglePacing={togglePacing}
+              onRemoveClick={onRemoveClick}
+              onSetSilenced={setSilenced}
+            />
+          ))}
           {activeId != null && (
             <PaceToggles
               audio={audio}
@@ -1065,231 +933,38 @@ export function DripScreen({
         </>
       )}
 
-      {drips.length > 0 && <h2>Новий дріп</h2>}
-      <div className="seg" role="tablist" aria-label="режим">
-        {presets.length > 0 && (
-          <button
-            className={mode === "dose" ? "on" : ""}
-            onClick={() => setMode("dose")}
-          >
-            За дозою
-          </button>
-        )}
-        <button
-          className={mode === "bagtime" ? "on" : ""}
-          onClick={() => setMode("bagtime")}
-        >
-          Час мішка
-        </button>
-        <button
-          className={mode === "burn" ? "on" : ""}
-          onClick={() => setMode("burn")}
-        >
-          Опіки
-        </button>
-      </div>
-
-      <p className="fieldlabel">Крапель у мл (набір)</p>
-      <div className="df-grid">
-        {DROP_FACTORS.map((f) => (
-          <button
-            key={f}
-            className={f === dropFactor ? "on" : ""}
-            onClick={() => setDropFactor(f)}
-          >
-            {f} gtt/ml
-          </button>
-        ))}
-      </div>
-
-      {mode === "dose" && preset && (
-        <>
-          <p className="fieldlabel">Препарат / концентрація</p>
-          <select
-            className="conc-select"
-            aria-label="препарат і концентрація"
-            value={presetIdx}
-            onChange={(e) => setPresetIdx(Number(e.target.value))}
-          >
-            {presets.map((p, i) => (
-              <option key={p.drug.id} value={i}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-          {preset.use === "Седація" && (
-            <div className="banner banner--warn">
-              ⚠ Седація — складний процес. Без телемедичної консультації краще
-              не застосовувати.
-            </div>
-          )}
-          <Stepper
-            label="Вага"
-            value={weight}
-            display={`${weight} кг`}
-            step={5}
-            min={WEIGHT.min}
-            max={WEIGHT.max}
-            onChange={setWeight}
-          />
-          <Stepper
-            label="Доза, мг/кг/год"
-            value={dose}
-            display={dose.toFixed(2)}
-            step={0.05}
-            min={DOSE.min}
-            max={DOSE.max}
-            onChange={(v) => setDose(clamp(Math.round(v * 100) / 100, DOSE))}
-          />
-          {bolus?.dose_per_kg && (
-            <div className="banner banner--info bolus">
-              Болюс перед дріпом:{" "}
-              <b>
-                {doseRangeMg(bolus.dose_per_kg, weight) ?? bolus.dose_per_kg}
-              </b>
-              <span className="bolus-sub">
-                {" "}
-                <div>{"\n"}</div>
-                або <b>{bolus.dose_per_kg}</b> - {bolus.route}
-              </span>
-            </div>
-          )}
-          <Stepper
-            label="Об'єм мішка, мл"
-            value={bagMl}
-            display={`${bagMl} мл`}
-            step={50}
-            min={VOLUME.min}
-            max={VOLUME.max}
-            onChange={setBagMl}
-          />
-          <div className="runtime">
-            Мішка вистачить на ~
-            {fmtHours(live.mlPerH > 0 ? bagMl / live.mlPerH : Infinity)}
-          </div>
-        </>
-      )}
-
-      {mode === "burn" && (
-        <>
-          <Stepper
-            label="% опіків (TBSA)"
-            value={tbsa}
-            display={`${tbsa} %`}
-            step={5}
-            min={0}
-            max={100}
-            onChange={setTbsa}
-          />
-          <Stepper
-            label="Вага"
-            value={weight}
-            display={`${weight} кг`}
-            step={5}
-            min={WEIGHT.min}
-            max={WEIGHT.max}
-            onChange={setWeight}
-          />
-          <Stepper
-            label="Об'єм мішка, мл"
-            value={bagMl}
-            display={`${bagMl} мл`}
-            step={50}
-            min={VOLUME.min}
-            max={VOLUME.max}
-            onChange={setBagMl}
-          />
-          {!burnGated && (
-            <div className="runtime">
-              Мішка вистачить на ~
-              {fmtHours(live.mlPerH > 0 ? bagMl / live.mlPerH : Infinity)}
-            </div>
-          )}
-        </>
-      )}
-
-      {mode === "bagtime" && (
-        <>
-          <p className="runtime left">
-            Скільки ще протримається мішок при поточній швидкості.
-          </p>
-          <Stepper
-            label="Об'єм мішка, мл"
-            value={bagMl}
-            display={`${bagMl} мл`}
-            step={50}
-            min={VOLUME.min}
-            max={VOLUME.max}
-            onChange={setBagMl}
-          />
-          <Stepper
-            label="Крапель/хв (зараз)"
-            value={bagGtt}
-            display={`${bagGtt} кр/хв`}
-            step={1}
-            min={1}
-            max={600}
-            onChange={setBagGtt}
-          />
-          <button
-            className="add-btn"
-            onClick={() => {
-              setTaps([]);
-              setCalib(true);
-            }}
-          >
-            ⊙ Калібрувати постукуванням
-          </button>
-        </>
-      )}
-
-      <div className="hero">
-        {burnGated ? (
-          <>
-            <div className="hero-label">Опіки — правило десяток</div>
-            <div className="hero-sub">
-              Формула ще не підтверджена. Підтвердьте запис burn_rule_of_ten,
-              щоб рахувати.
-            </div>
-          </>
-        ) : mode === "bagtime" ? (
-          <>
-            <div className="hero-label">Мішка вистачить на</div>
-            <div className="hero-num">
-              {fmtHM(live.mlPerH > 0 ? bagMl / live.mlPerH : Infinity)}
-            </div>
-            <div className="hero-sub">
-              год:хв · {live.mlPerH.toFixed(0)} мл/год
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="hero-label">
-              {mode === "burn" ? "Швидкість → крапель/хв" : "Крапель / хв"}
-            </div>
-            <div className="hero-num">{live.gtt}</div>
-            <div className="hero-sub">
-              {live.gtt > 0
-                ? `1 крапля / ${spd} с · ${live.mlPerH.toFixed(0)} мл/год`
-                : "перевір параметри"}
-            </div>
-          </>
-        )}
-      </div>
-
-      {mode === "dose" && preset && <SourceBadge record={preset.drug} />}
-      {mode === "burn" && burnFormula && <SourceBadge record={burnFormula} />}
-
-      <button
-        className="primary add-btn"
-        disabled={drips.length >= MAX_DRIPS || live.gtt <= 0}
-        onClick={addDrip}
-        onContextMenu={(e) => e.preventDefault()}
-      >
-        {drips.length >= MAX_DRIPS
-          ? `Максимум ${MAX_DRIPS} дріпів`
-          : "＋ Додати дріп"}
-      </button>
+      <NewDripForm
+        dripsCount={drips.length}
+        maxDrips={MAX_DRIPS}
+        mode={mode}
+        onModeChange={setMode}
+        presets={presets}
+        preset={preset}
+        presetIdx={presetIdx}
+        onPresetIdxChange={setPresetIdx}
+        dropFactor={dropFactor}
+        onDropFactorChange={setDropFactor}
+        weight={weight}
+        onWeightChange={setWeight}
+        dose={dose}
+        onDoseChange={setDose}
+        bolus={bolus}
+        tbsa={tbsa}
+        onTbsaChange={setTbsa}
+        bagMl={bagMl}
+        onBagMlChange={setBagMl}
+        bagGtt={bagGtt}
+        onBagGttChange={setBagGtt}
+        burnGated={burnGated}
+        burnFormula={burnFormula}
+        live={live}
+        spd={spd}
+        onCalibrate={() => {
+          setTaps([]);
+          setCalib(true);
+        }}
+        onAddDrip={addDrip}
+      />
     </section>
   );
 }
