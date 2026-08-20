@@ -954,3 +954,246 @@ button.danger {
   background: var(--surface);
   padding: 20px;
 }
+
+/* ============================================================
+   PROTOTYPE — active-drips density exploration (throwaway, dev
+   build only). Delete this block along with src/drip/prototype-density/
+   once a direction is picked — see NOTES.md there.
+   ============================================================ */
+.proto-switcher {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #000;
+  color: #fff;
+  font-size: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.proto-switcher button {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  border: none;
+  width: 28px;
+  height: 28px;
+  min-height: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+.proto-density-toggle {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0 10px;
+}
+.proto-density-toggle button {
+  flex: 1;
+  min-height: 36px;
+  font-size: 13px;
+}
+.proto-density-toggle button.on {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+/* One shared card for the collapsed row + its silence toggle (2026-08-20
+   feedback — they used to be two separately-bordered siblings and read as
+   unrelated). The card carries the border/background/alarm-stage styling;
+   the tap row and SilenceToggle are just sections inside it. */
+.proto-row-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.proto-row-card.warn10 {
+  border-color: var(--warn);
+}
+.proto-row-card.warn5 {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+.proto-row-card.empty {
+  border-color: var(--danger);
+  background: var(--danger-tint);
+}
+.proto-row-card.unconfirmed {
+  border-style: dashed;
+  border-color: var(--warn);
+}
+.proto-row-tap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  cursor: pointer;
+}
+.proto-row-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--go);
+}
+.proto-row-dot.warn10,
+.proto-row-dot.warn5 {
+  background: var(--warn);
+}
+.proto-row-dot.empty {
+  background: var(--danger);
+}
+.proto-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proto-row-gtt {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--go);
+}
+.proto-row-gtt span {
+  margin-left: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fg-dim);
+}
+.proto-row-rem {
+  flex: 0 0 auto;
+  min-width: 48px;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--fg-dim);
+}
+.proto-row-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: 16px;
+  line-height: 1;
+}
+.proto-row-icon.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.proto-row-icon.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+/* Only the idle silence toggle blends into the card as a hairline-divided
+   section — :not(.holding/.on) so the loud hold/silenced states keep their
+   own full-strength background, which must stay the louder signal. */
+.proto-row-card .silence-btn:not(.holding):not(.on) {
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.proto-row-card .silence-btn {
+  margin-top: 8px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.proto-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 12px 8px 10px;
+  margin-top: 6px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--go);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  cursor: pointer;
+}
+.proto-strip.warn10 {
+  border-left-color: var(--warn);
+}
+.proto-strip.warn5 {
+  border-left-color: var(--warn);
+  background: var(--warn-bg);
+}
+.proto-strip.empty {
+  border-left-color: var(--danger);
+  background: var(--danger-tint);
+}
+.proto-strip.unconfirmed {
+  border-style: dashed;
+  border-color: var(--warn);
+  border-left-style: solid;
+}
+.proto-strip.active {
+  border-left-width: 6px;
+  border-left-color: var(--accent);
+  background: var(--accent-tint);
+}
+.proto-strip-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.proto-strip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proto-strip-sub {
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--go);
+}
+.proto-strip-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+}
+.proto-chamber-mini {
+  width: 20px;
+  height: 32px;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.proto-chamber-mini .chamber {
+  transform: scale(0.6);
+  transform-origin: top left;
+}
+.proto-medium-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.proto-medium-gtt {
+  font-size: 28px;
+}
+.proto-medium-meta {
+  font-size: var(--fs-xs);
+  color: var(--fg-dim);
+  text-align: right;
+}
