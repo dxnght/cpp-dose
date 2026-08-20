@@ -27,6 +27,7 @@ export function VariantB(props: DripScreenProps & { compact: boolean }) {
       <article
         className={`proto-strip${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}${d.unconfirmed ? " unconfirmed" : ""}`}
         onClick={() => onEnterFocus(d.id)}
+        onContextMenu={(e) => e.preventDefault()}
       >
         <div className="proto-strip-main">
           <div className="proto-strip-name">

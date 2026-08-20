@@ -81,6 +81,7 @@ export function VariantC(props: DripScreenProps & { total: number }) {
       <article
         className={`proto-strip${isActive ? " active" : ""}${stage ? ` ${stage}` : ""}${d.unconfirmed ? " unconfirmed" : ""}`}
         onClick={() => onEnterFocus(d.id)}
+        onContextMenu={(e) => e.preventDefault()}
       >
         <div className="proto-chamber-mini">
           <Chamber gtt={d.gtt} animStart={d.animStart} muted={!isActive} />

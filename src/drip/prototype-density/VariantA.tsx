@@ -29,7 +29,11 @@ export function VariantA(props: DripScreenProps) {
           ⟳ Відновлено після перезапуску — підтвердь, що ще крапає
         </button>
       )}
-      <div className="proto-row-tap" onClick={() => onEnterFocus(d.id)}>
+      <div
+        className="proto-row-tap"
+        onClick={() => onEnterFocus(d.id)}
+        onContextMenu={(e) => e.preventDefault()}
+      >
         <span className={`proto-row-dot${stage ? ` ${stage}` : ""}`} aria-hidden="true" />
         <span className="proto-row-name">
           {d.label}

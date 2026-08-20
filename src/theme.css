@@ -1035,6 +1035,15 @@ button.danger {
   gap: 9px;
   min-height: 40px;
   cursor: pointer;
+  /* Same long-press-raises-the-copy-callout issue theme.css's global
+     `button` rule and .silence-btn already guard against — this container
+     is a <div>, not a <button>, so neither that rule nor App.tsx's
+     delegated onContextMenu (closest("button")) reach it. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .proto-row-dot {
   width: 10px;
@@ -1127,6 +1136,12 @@ button.danger {
   border-radius: var(--r-md);
   background: var(--surface);
   cursor: pointer;
+  /* Same reasoning as .proto-row-tap above — an <article>, not a <button>. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .proto-strip.warn10 {
   border-left-color: var(--warn);
