@@ -3,7 +3,7 @@
 // to get the main file back under control; behaviour unchanged.
 import { Stepper } from "./components";
 import { SourceBadge } from "../components/SourceBadge";
-import { clamp, DOSE, WEIGHT, VOLUME, DROP_FACTORS, doseRangeMg } from "./calc";
+import { clamp, CONC, DOSE, WEIGHT, VOLUME, DROP_FACTORS, doseRangeMg } from "./calc";
 import { fmtHours, fmtHM } from "./format";
 import { DripFormProps } from "./types";
 
@@ -22,6 +22,8 @@ export function NewDripForm({
   onWeightChange,
   dose,
   onDoseChange,
+  customConc,
+  onCustomConcChange,
   bolus,
   tbsa,
   onTbsaChange,
@@ -75,7 +77,7 @@ export function NewDripForm({
         ))}
       </div>
 
-      {mode === "dose" && preset && (
+      {mode === "dose" && (
         <>
           <p className="fieldlabel">Препарат / концентрація</p>
           <select
@@ -89,12 +91,28 @@ export function NewDripForm({
                 {p.label}
               </option>
             ))}
+            <option key="custom" value={presets.length}>
+              Інший препарат
+            </option>
           </select>
-          {preset.use === "Седація" && (
+          {preset?.use === "Седація" && (
             <div className="banner banner--warn">
               ⚠ Седація — складний процес. Без телемедичної консультації краще
               не застосовувати.
             </div>
+          )}
+          {!preset && (
+            <Stepper
+              label="Концентрація, мг/мл"
+              value={customConc}
+              display={customConc.toFixed(1)}
+              step={0.1}
+              min={CONC.min}
+              max={CONC.max}
+              onChange={(v) =>
+                onCustomConcChange(clamp(Math.round(v * 10) / 10, CONC))
+              }
+            />
           )}
           <Stepper
             label="Вага"

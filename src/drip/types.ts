@@ -67,6 +67,8 @@ export interface DripFormProps {
   onWeightChange: (v: number) => void;
   dose: number;
   onDoseChange: (v: number) => void;
+  customConc: number;
+  onCustomConcChange: (v: number) => void;
   bolus: Drug | undefined;
   tbsa: number;
   onTbsaChange: (v: number) => void;

@@ -87,6 +87,7 @@ export function DripScreen({
   });
   const [weight, setWeight] = useState(80);
   const [dose, setDose] = useState(0.2);
+  const [customConc, setCustomConc] = useState(1);
   const [tbsa, setTbsa] = useState(30);
   const [bagGtt, setBagGtt] = useState(5);
   const [bagMl, setBagMl] = useState(100);
@@ -94,7 +95,11 @@ export function DripScreen({
   const [taps, setTaps] = useState<number[]>([]);
 
   const preset = presets[presetIdx];
-  const conc = preset?.conc ?? 1;
+  // presetIdx === presets.length selects "Інший препарат" (no VERIFIED
+  // record) — preset is undefined and the medic supplies the concentration
+  // themselves via customConc, same "explicit medic input" path calc.ts
+  // already documents as legitimate alongside a record.
+  const conc = preset?.conc ?? customConc;
   const burnGated = mode === "burn" && !burnFormula;
   const calRate =
     taps.length >= 3
@@ -302,6 +307,8 @@ export function DripScreen({
         onWeightChange={setWeight}
         dose={dose}
         onDoseChange={setDose}
+        customConc={customConc}
+        onCustomConcChange={setCustomConc}
         bolus={bolus}
         tbsa={tbsa}
         onTbsaChange={setTbsa}

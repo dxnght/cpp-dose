@@ -18,6 +18,10 @@ export const DROP_FACTOR: Clamp = { min: 1, max: 100 }; // gtt/ml
 // 2026-07-21. 50 ml also matches the smallest real IV mini-bag size.
 export const VOLUME: Clamp = { min: 50, max: 1000 }; // ml
 export const TIME_MIN: Clamp = { min: 1, max: 24 * 60 }; // minutes
+// Manual-entry bound for the "Інший препарат" dose-mode option (no VERIFIED
+// record, so no concentration to read — the medic types their own bag's).
+// Engineering UI bound like the clamps above, not a clinical range.
+export const CONC: Clamp = { min: 0.1, max: 100 }; // mg/ml
 
 export function clamp(v: number, c: Clamp): number {
   return Math.min(c.max, Math.max(c.min, v));
