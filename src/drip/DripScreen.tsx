@@ -28,19 +28,6 @@ import { NewDripForm } from "./NewDripForm";
 import { LS } from "./local-storage";
 import { useDripEngine, MAX_DRIPS } from "./useDripEngine";
 import type { ConcPreset, Mode, DripBadgeStatus } from "./types";
-// PROTOTYPE — active-drips density exploration (throwaway, dev build only).
-// See src/drip/prototype-density/NOTES.md. Delete this import block + every
-// `PROTO_DENSITY &&` branch below once a direction is picked.
-import { VariantA } from "./prototype-density/VariantA";
-import { VariantB } from "./prototype-density/VariantB";
-import { VariantC } from "./prototype-density/VariantC";
-import {
-  ProtoDensitySwitcher,
-  getVariantFromUrl,
-  type VariantKey,
-} from "./prototype-density/Switcher";
-
-const PROTO_DENSITY = import.meta.env.DEV;
 
 export function DripScreen({
   onStatusChange,
@@ -106,11 +93,6 @@ export function DripScreen({
   const [bagMl, setBagMl] = useState(100);
   const [calib, setCalib] = useState(false);
   const [taps, setTaps] = useState<number[]>([]);
-  // PROTOTYPE — see NOTES.md above the imports.
-  const [protoVariant, setProtoVariant] = useState<VariantKey>(() =>
-    PROTO_DENSITY ? getVariantFromUrl() : "A",
-  );
-  const [protoCompact, setProtoCompact] = useState(false);
 
   const preset = presets[presetIdx];
   // presetIdx === presets.length selects "Інший препарат" (no VERIFIED
@@ -236,23 +218,6 @@ export function DripScreen({
           <h2>
             Активні дріпи ({drips.length}/{MAX_DRIPS})
           </h2>
-          {/* PROTOTYPE — variant B's manual density control. */}
-          {PROTO_DENSITY && protoVariant === "B" && (
-            <div className="proto-density-toggle">
-              <button
-                className={!protoCompact ? "on" : ""}
-                onClick={() => setProtoCompact(false)}
-              >
-                Детально
-              </button>
-              <button
-                className={protoCompact ? "on" : ""}
-                onClick={() => setProtoCompact(true)}
-              >
-                Компактно
-              </button>
-            </div>
-          )}
           {drips.some((d) => d.unconfirmed) && (
             <div className="banner banner--warn" role="alert">
               ⚠ Ці дріпи відновлено після перезапуску застосунку. Звір із
@@ -295,30 +260,22 @@ export function DripScreen({
                 навіть якщо сповіщення дозволені.
               </div>
             )}
-          {drips.map((d) => {
-            const cardProps = {
-              drip: d,
-              isActive: d.id === activeId,
-              confirmId,
-              remaining,
-              quietHint,
-              alarmStage,
-              onConfirm: confirmDrip,
-              onEnterFocus: enterFocus,
-              onTogglePacing: togglePacing,
-              onRemoveClick,
-              onSetSilenced: setSilenced,
-            };
-            // PROTOTYPE — pick the density variant under test; falls through
-            // to the real DripCard in production builds.
-            if (PROTO_DENSITY && protoVariant === "A")
-              return <VariantA key={d.id} {...cardProps} />;
-            if (PROTO_DENSITY && protoVariant === "B")
-              return <VariantB key={d.id} {...cardProps} compact={protoCompact} />;
-            if (PROTO_DENSITY && protoVariant === "C")
-              return <VariantC key={d.id} {...cardProps} total={drips.length} />;
-            return <DripCard key={d.id} {...cardProps} />;
-          })}
+          {drips.map((d) => (
+            <DripCard
+              key={d.id}
+              drip={d}
+              isActive={d.id === activeId}
+              confirmId={confirmId}
+              remaining={remaining}
+              quietHint={quietHint}
+              alarmStage={alarmStage}
+              onConfirm={confirmDrip}
+              onEnterFocus={enterFocus}
+              onTogglePacing={togglePacing}
+              onRemoveClick={onRemoveClick}
+              onSetSilenced={setSilenced}
+            />
+          ))}
           {activeId != null && (
             <PaceToggles
               audio={audio}
@@ -369,11 +326,6 @@ export function DripScreen({
         }}
         onAddDrip={addDrip}
       />
-
-      {/* PROTOTYPE — active-drips density switcher, dev build only. */}
-      {PROTO_DENSITY && (
-        <ProtoDensitySwitcher current={protoVariant} onChange={setProtoVariant} />
-      )}
     </section>
   );
 }
