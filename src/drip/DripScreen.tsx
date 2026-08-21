@@ -29,6 +29,11 @@ import { LS } from "./local-storage";
 import { useDripEngine, MAX_DRIPS } from "./useDripEngine";
 import type { ConcPreset, Mode, DripBadgeStatus } from "./types";
 
+// Single source of truth for both the form's initial state and what it
+// resets to after each addDrip() — avoids the two drifting apart (they
+// once did: bagGtt started at 5 but reset to 20).
+const NEW_DRIP_DEFAULTS = { weight: 80, bagMl: 100, bagGtt: 5, dose: 0.2, tbsa: 30 };
+
 export function DripScreen({
   onStatusChange,
 }: {
@@ -85,12 +90,12 @@ export function DripScreen({
     const i = presets.findIndex((p) => p.drug.id === id);
     return i >= 0 ? i : 0;
   });
-  const [weight, setWeight] = useState(80);
-  const [dose, setDose] = useState(0.2);
+  const [weight, setWeight] = useState(NEW_DRIP_DEFAULTS.weight);
+  const [dose, setDose] = useState(NEW_DRIP_DEFAULTS.dose);
   const [customConc, setCustomConc] = useState(1);
-  const [tbsa, setTbsa] = useState(30);
-  const [bagGtt, setBagGtt] = useState(5);
-  const [bagMl, setBagMl] = useState(100);
+  const [tbsa, setTbsa] = useState(NEW_DRIP_DEFAULTS.tbsa);
+  const [bagGtt, setBagGtt] = useState(NEW_DRIP_DEFAULTS.bagGtt);
+  const [bagMl, setBagMl] = useState(NEW_DRIP_DEFAULTS.bagMl);
   const [calib, setCalib] = useState(false);
   const [taps, setTaps] = useState<number[]>([]);
 
@@ -173,6 +178,15 @@ export function DripScreen({
     if (calRate) setBagGtt(Math.max(1, Math.min(600, calRate)));
     setCalib(false);
   }
+
+  const addDripAndRefreshState = () => {
+    addDrip();
+    setWeight(NEW_DRIP_DEFAULTS.weight);
+    setBagMl(NEW_DRIP_DEFAULTS.bagMl);
+    setBagGtt(NEW_DRIP_DEFAULTS.bagGtt);
+    setDose(NEW_DRIP_DEFAULTS.dose);
+    setTbsa(NEW_DRIP_DEFAULTS.tbsa);
+  };
 
   const spd = live.gtt > 0 ? Math.round(secPerDrop(live.gtt)) : 0;
 
@@ -324,7 +338,7 @@ export function DripScreen({
           setTaps([]);
           setCalib(true);
         }}
-        onAddDrip={addDrip}
+        onAddDrip={addDripAndRefreshState}
       />
     </section>
   );
