@@ -98,6 +98,13 @@ value still enters via the pipeline, source-tagged and Owner-verified.
   patient data involved). A *named* patient tag was explicitly not pursued —
   conflicts with the no-patient-data-on-a-capturable-device posture; would
   need a deliberate Owner call, not a UX-pass default.
+- **Lower dose floor for "Інший препарат"** (raised 2026-08-20) — let the
+  manual/custom dose-mode option (`src/drip/NewDripForm.tsx`) go down to
+  0.001 mg/kg/h instead of sharing the regular `DOSE` clamp (`calc.ts`,
+  currently 0.1–2 mg/kg/h, step 0.05 — tuned for the catalogued drugs, not a
+  wide-range manual entry). A fixed-step `Stepper` doesn't suit a range that
+  wide; would need its own clamp/step (or a different input widget) scoped
+  to just the custom-drug path, not the regular preset dropdown.
 
 ## Explicitly excluded (MVP red lines — need a Constitution amendment, not just a
 ## scope amendment)

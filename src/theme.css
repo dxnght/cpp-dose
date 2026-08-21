@@ -744,6 +744,124 @@ h2 {
   background: var(--danger-tint);
   font-weight: 600;
 }
+/* Collapsed single-line form of a non-paced drip (Owner decision
+   2026-08-20, density prototype Variant A) — only the drip currently being
+   paced needs the full .drip-card; the rest just need label/gtt/remaining
+   visible at a glance (spec FR-8) without the room a chamber animation and
+   full actions row cost. Row + SilenceToggle share this card's border
+   rather than sitting in two separately-bordered boxes. */
+.drip-row-card {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.drip-row-card.warn10 {
+  border-color: var(--warn);
+}
+.drip-row-card.warn5 {
+  border-color: var(--warn);
+  background: var(--warn-bg);
+}
+.drip-row-card.empty {
+  border-color: var(--danger);
+  background: var(--danger-tint);
+}
+.drip-row-card.unconfirmed {
+  border-style: dashed;
+  border-color: var(--warn);
+}
+.drip-row-tap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 40px;
+  cursor: pointer;
+  /* Long-press-raises-the-copy-callout — this container is a <div>, not a
+     <button>, so neither the global `button` rule above nor App.tsx's
+     delegated onContextMenu (closest("button")) reach it. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.drip-row-dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--go);
+}
+.drip-row-dot.warn10,
+.drip-row-dot.warn5 {
+  background: var(--warn);
+}
+.drip-row-dot.empty {
+  background: var(--danger);
+}
+.drip-row-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.drip-row-gtt {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 25px;
+  font-weight: 700;
+  color: var(--go);
+}
+.drip-row-gtt span {
+  margin-left: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fg-dim);
+}
+.drip-row-rem {
+  flex: 0 0 auto;
+  min-width: 48px;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--fg-dim);
+}
+.drip-row-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: 16px;
+  line-height: 1;
+}
+.drip-row-icon.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--danger-tint);
+}
+/* Only the idle silence toggle blends into the card as a hairline-divided
+   section — :not(.holding/.on) so the loud hold/silenced states keep their
+   own full-strength background, which must stay the louder signal. */
+.drip-row-card .silence-btn:not(.holding):not(.on) {
+  border: none;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.drip-row-card .silence-btn {
+  margin-top: 8px;
+  padding-left: 0;
+  padding-right: 0;
+}
 .drip-tap {
   cursor: pointer;
 }
