@@ -3,7 +3,15 @@
 // to get the main file back under control; behaviour unchanged.
 import { Stepper } from "./components";
 import { SourceBadge } from "../components/SourceBadge";
-import { clamp, CONC, DOSE, WEIGHT, VOLUME, DROP_FACTORS, doseRangeMg } from "./calc";
+import {
+  clamp,
+  CONC,
+  DOSE,
+  WEIGHT,
+  VOLUME,
+  DROP_FACTORS,
+  doseRangeMg,
+} from "./calc";
 import { fmtHours, fmtHM } from "./format";
 import { DripFormProps } from "./types";
 
@@ -79,7 +87,9 @@ export function NewDripForm({
 
       {mode === "dose" && (
         <>
-          <p className="fieldlabel">Препарат / концентрація</p>
+          <p className="fieldlabel">
+            {"Препарат / концентрація (розведено у фізрозчині)"}
+          </p>
           <select
             className="conc-select"
             aria-label="препарат і концентрація"
